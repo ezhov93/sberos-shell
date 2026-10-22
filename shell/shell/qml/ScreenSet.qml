@@ -49,8 +49,8 @@ QtObject {
     function sync() {
         if (!host || !screen || _syncing) return
         _syncing = true; _syncCalls++             // bindings re-enter sync while a panel is being built
-        if (!panel && (primary || wantPanel)) panel = _cPanel.createObject(set)
-        else if (panel && !primary && !wantPanel) { panel.destroy(); panel = null }
+        if (!panel && wantPanel) panel = _cPanel.createObject(set)
+        else if (panel && !wantPanel) { panel.destroy(); panel = null }
         _syncing = false
     }
     onWantPanelChanged: sync(); onPrimaryChanged: sync(); onHostChanged: sync(); onScreenChanged: sync()

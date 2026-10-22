@@ -3,9 +3,9 @@
 A liquid-glass shell for KDE Plasma 6 on Wayland. It replaces Plasma's panels with its own top bar and dock; KWin stays
 the window manager. Popups are not separate windows: they grow out of the bar and the dock as one glass shape.
 
-> **Status: alpha.** Built for and tested on exactly one machine: Plasma 6.6, Ubuntu 26.04, NVIDIA, one 5120×1440
-> screen. It works there every day. Other screen sizes, several monitors, other Plasma versions and other GPUs are
-> untested. It can always be switched off again with one command, and it switches itself off if it keeps crashing.
+> **Status: alpha.** Built for and tested on Plasma 6.6, Ubuntu 26.04 and NVIDIA. Multi-screen surface routing has an
+> isolated two-screen virtual-display check; physical multi-monitor Wayland hotplug, mixed scaling and other GPUs still
+> need verification. It can always be switched off again with one command, and it switches itself off if it keeps crashing.
 
 ## SberOS unified panel
 

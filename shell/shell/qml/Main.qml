@@ -27,11 +27,19 @@ QtObject {
         return panel ? panel.screen : null;
     }
     function sberPanel() {
+        return activePanel();
+    }
+    function activePanel() {
         for (let i = 0; i < sets.count; ++i) {
             const s = sets.objectAt(i);
             if (s && s.name === lastActiveScreenName && s.panel && !s.panel.userHidden) return s.panel;
         }
-        return primarySet && primarySet.panel && !primarySet.panel.userHidden ? primarySet.panel : null;
+        if (primarySet && primarySet.panel && !primarySet.panel.userHidden) return primarySet.panel;
+        for (let i = 0; i < sets.count; ++i) {
+            const s = sets.objectAt(i);
+            if (s && s.panel && !s.panel.userHidden) return s.panel;
+        }
+        return null;
     }
     function toggleSber(panel, keyboard) {
         const menu = win("sberMenu");
@@ -134,13 +142,13 @@ QtObject {
     readonly property string lockLook: Config.get("wallpaper", "") + "|" + Config.get("mode", "dark") + "|" + Config.get("accent", "")
     onLockLookChanged: lockSync.restart()
     property var _lockSync: Timer { id: lockSync; interval: 900; onTriggered: if (Shell.hasProgram("glass-lock-sync")) Shell.runDetached("glass-lock-sync", []) }
-    property var _themeLater: Timer { id: themeLater; interval: 350; onTriggered: { const q = main.dock ? main.dock.nativeControl : null; if (q && q.paletteOpen !== undefined) q.paletteOpen = true } }
+    property var _themeLater: Timer { id: themeLater; interval: 350; onTriggered: { const b = main.activePanel(); const q = b ? b.nativeControl : null; if (q && q.paletteOpen !== undefined) q.paletteOpen = true } }
     // ---- edit mode (right click on the panel, or D-Bus toggleEditMode)
     property bool editing: false
     function setEditing(on) { if (on === editing) return; if (on) closePopups(); editing = on; const s = win("editScene"); if (on) s.open(); else s.close_() }
     property var _cEdit: Component { EditScene {
-        screen: main.primarySet ? main.primarySet.screen : null
-        dockHole: main.dock ? Qt.rect(main.dock.x + main.dock.barRect.x - 12, main.dock.y + main.dock.barRect.y - 12, main.dock.barRect.width + 24, main.dock.barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+        screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
+        dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
         onDone: main.setEditing(false); onMoreSettings: { main.setEditing(false); main.win("settings").openIt() } } }
     property var _cTiles: Component { Tiles { onOpened: main.closePopups() } }
     property var _cCheatSheet: Component { CheatSheet { onOpened: main.closePopups() } }
@@ -151,27 +159,30 @@ QtObject {
     property var _keys: Connections { target: Shell
         // (main.dock is null until the primary set has built its panel, and while the primary screen is away)
         function onLauncherToggleRequested() { main.toggleSber(main.sberPanel(), true); }
-        function onLobeToggleRequested(name) { const b = main.dock; if (!b) return; if (name === "media") { if (!b.mediaAvailable) return; if (b.openLobe !== "media") b.placeMedia() } b.toggle(name) }
-        function onTrayMenuRequested(i) { if (main.dock) main.dock.openTrayMenuAt(i) }
+        function onLobeToggleRequested(name) { const b = main.activePanel(); if (!b) return; if (name === "media") { if (!b.mediaAvailable) return; if (b.openLobe !== "media") b.placeMedia() } b.toggle(name) }
+        function onTrayMenuRequested(i) { const b = main.activePanel(); if (b) b.openTrayMenuAt(i) }
         function onSettingsRequested() { main.win("settings").openIt() }
         function onSettingsPageRequested(page) { main.win("settings").openIt(page) }
-        function onSearchPreviewRequested(q) { main.win("search").preview(q) }
+        function onSearchPreviewRequested(q) { const b = main.activePanel(); if (b) b.focusSearch(q); }
         function onShortcutActivated(id) {
-            if (id === "search") { main.win("search").toggle(); return }
+            if (id === "search") {
+                const b = main.activePanel(); if (b) b.focusSearch();
+                return;
+            }
             if (id === "record") { main.recorder.toggleOrAsk(() => { const c = main.win("capture"); c.dryRun = false; c.mode = "record"; c.begin(main.windowRects(), "") }); return }
             if (id === "screenshot" || id === "screenshot-2") { main.win("capture").mode = "shot"; main.win("capture").dryRun = false; main.win("capture").begin(main.windowRects(), ""); return }
             if (id === "screenshot-preview") { main.win("capture").dryRun = true; main.win("capture").begin(main.windowRects(), Config.wallpaper !== "" ? Config.wallpaper : Shell.plasmaWallpaper()); return }
-            if (id === "theme-picker") { if (main.dock) { main.dock.openLobe = "gear"; themeLater.restart() } return }
+            if (id === "theme-picker") { const b = main.activePanel(); if (b) { b.openLobe = "gear"; themeLater.restart() } return }
             if (id === "edit") { main.setEditing(!main.editing); return }
             if (id === "tiles" || id === "tiles-preview") { const t = main.win("tiles"); t.dryRun = id === "tiles-preview"; t.toggle(); return }
             if (id === "clipboard") { main.win("clipboardPanel").toggle(); return }
             if (id === "cheatsheet") { main.win("cheatSheet").toggle(); return }
-            if (id === "notif-clear") { if (main.dock && main.dock.notifications) main.dock.notifications.clearAll(); return }
+            if (id === "notif-clear") { const b = main.activePanel(); if (b && b.notifications) b.notifications.clearAll(); return }
             if (id === "welcome") { main.win("welcome").open(); return }
             if (id === "power") { main.win("powerMenu").dryRun = false; main.win("powerMenu").toggle(); return }
             if (id === "power-preview") { main.win("powerMenu").dryRun = true; main.win("powerMenu").toggle(); return }
             if (id === "show-desktop") main.toggleShowDesktop();
-            else if (id.startsWith("dock-")) { const n = parseInt(id.substring(5)) - 1; const d = main.dock; if (d && d.tasksModel && n < d.tasksModel.count) d.activateCell(n); }
+            else if (id.startsWith("dock-")) { const n = parseInt(id.substring(5)) - 1; const d = main.activePanel(); if (d && d.tasksModel && n < d.tasksModel.count) d.activateCell(n); }
         } }
 
     // ---- click outside closes whatever is open

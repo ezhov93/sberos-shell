@@ -13,6 +13,9 @@ QtObject {
     property var actions: []
     property var originalLaunchers: []
     property bool wasPinned: false
+    property var savedScreens: null
+    property string primaryName: ""
+    property string secondaryName: ""
     function check(ok, text) { if (!ok) { console.error("PANEL FAIL:", text); Qt.exit(1); throw new Error(text); } }
     function click(x, y, button) { check(events.mouseClick(menu.contentItem, x, y, button || Qt.LeftButton, Qt.NoModifier, 0), "mouse event delivered"); }
     function key(key) { check(events.keyClick(key, Qt.NoModifier, 0), "key event delivered"); }
@@ -114,13 +117,47 @@ QtObject {
                 test.check(!test.menu.visible, "outside click closes parent");
             } else if (test.step === 9) {
                 if (Qt.application.screens.length > 1) {
-                    const a = Qt.application.screens[0], b = Qt.application.screens[1];
+                    const a = test.app.primarySet.screen;
+                    const b = Qt.application.screens.find(s => s.name !== a.name);
+                    test.primaryName = a.name;
+                    test.secondaryName = b.name;
+                    test.savedScreens = Config.get("screens", {}) || {};
+                    let second = null;
+                    for (let i = 0; i < test.app.sets.count; ++i) {
+                        const s = test.app.sets.objectAt(i);
+                        if (s && s.name === b.name) second = s.panel;
+                    }
+                    test.check(second, "second screen panel exists");
+                    test.app.lastActiveScreenName = b.name;
+                    test.check(test.app.activePanel() === second, "keyboard actions select the last active screen panel");
+                    const choices = Object.assign({}, test.savedScreens);
+                    choices[a.name] = Object.assign({}, choices[a.name] || {}, { panel: false });
+                    Shell.saveConfigKey("screens", choices);
+                }
+            } else if (test.step === 10) {
+                if (test.primaryName !== "") {
+                    test.check(test.app.primarySet.panel === null, "explicitly disabling the primary panel is respected");
+                    let second = null;
+                    for (let i = 0; i < test.app.sets.count; ++i) {
+                        const s = test.app.sets.objectAt(i);
+                        if (s && s.name === test.secondaryName) second = s.panel;
+                    }
+                    test.check(second && test.app.activePanel() === second, "active screen remains usable without a primary panel");
+                    test.app.lastActiveScreenName = "";
+                    test.check(test.app.sberPanel() === second, "global panel command falls back to the first enabled screen");
+                    Shell.saveConfigKey("screens", test.savedScreens);
+                    test.app.lastActiveScreenName = test.primaryName;
+                }
+            } else if (test.step === 11) {
+                const p = test.app.dock;
+                if (Qt.application.screens.length > 1) {
+                    const a = Qt.application.screens.find(s => s.name === test.primaryName);
+                    const b = Qt.application.screens.find(s => s.name === test.secondaryName);
                     let second = null, outside = null;
                     for (let i = 0; i < test.app.sets.count; ++i) {
                         const s = test.app.sets.objectAt(i);
                         if (s && s.name === b.name) { second = s.panel; outside = s.sberCatcher; }
                     }
-                    test.check(second, "second screen panel exists");
                     test.app.toggleSber(p, false);
                     test.entry(2);
                     test.check(outside && outside.visible, "other screen has a click catcher");

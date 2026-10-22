@@ -352,7 +352,7 @@ Dock {
         x: panel.essentialRect.x + 8
         y: panel.barRect.y
         height: panel.dockH
-        spacing: 6
+        spacing: 2
         PanelButton {
             symbol: "configure-symbolic"
             description: qsTr("Quick settings")
@@ -361,7 +361,7 @@ Dock {
         }
         PanelButton {
             id: clockButton
-            width: panel.systemZoneWidth - 16 - Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S) - 6
+            width: panel.systemZoneWidth - 16 - Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S) - 2
             property date now: new Date()
             Timer {
                 interval: 10000
@@ -376,34 +376,6 @@ Dock {
                 pixelSize: Math.min(Config.clockSize, 13),
                 bold: Config.clockBold
             })
-            contentItem: Item {
-                implicitWidth: clockLabel.implicitWidth + 26
-                implicitHeight: clockLabel.implicitHeight
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    spacing: 8
-                    Kirigami.Icon {
-                        width: 18
-                        height: 18
-                        anchors.verticalCenter: parent.verticalCenter
-                        source: "clock"
-                        isMask: true
-                        color: Theme.Palette.Text.Default.Primary
-                    }
-                    Sber.Label {
-                        id: clockLabel
-                        width: Math.max(0, parent.width - 26)
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: clockButton.text
-                        color: Theme.Palette.Text.Default.Primary
-                        font: clockButton.font
-                        elide: Text.ElideRight
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
             description: qsTr("Calendar")
             anchors.verticalCenter: parent.verticalCenter
             onClicked: panel.openAt("clock", this)

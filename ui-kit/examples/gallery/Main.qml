@@ -31,46 +31,28 @@ QQC.ApplicationWindow {
 
     ListModel {
         id: componentModel
-        ListElement { name: "Accordion" } ListElement { name: "ApplicationHeader" }
-        ListElement { name: "ApplicationWindow" } ListElement { name: "ArrowRectangle" }
-        ListElement { name: "Attach" } ListElement { name: "AutoComplite" }
-        ListElement { name: "Avatar" } ListElement { name: "AvatarGroup" }
-        ListElement { name: "BackgroundConfig" } ListElement { name: "Badge" }
-        ListElement { name: "BusyIndicator" } ListElement { name: "Button" }
-        ListElement { name: "ButtonRowGroup" } ListElement { name: "CalendarFunctions" }
-        ListElement { name: "CalendarView" } ListElement { name: "Carousel" }
-        ListElement { name: "CheckBox" } ListElement { name: "CheckDelegate" }
-        ListElement { name: "Chip" } ListElement { name: "ChipGroup" }
-        ListElement { name: "Colorizer" } ListElement { name: "ComboBox" }
-        ListElement { name: "Counter" } ListElement { name: "CursorDelegate" }
-        ListElement { name: "DashedBorder" } ListElement { name: "DateEdit" }
-        ListElement { name: "DateRangeEdit" } ListElement { name: "DateView" }
-        ListElement { name: "DefaultOverlay" } ListElement { name: "DefaultTextMenu" }
-        ListElement { name: "Dialog" } ListElement { name: "DialogButtonBox" }
-        ListElement { name: "Divider" } ListElement { name: "Drawer" }
-        ListElement { name: "DropZone" } ListElement { name: "Editable" }
-        ListElement { name: "FocusItem" } ListElement { name: "Icon" }
-        ListElement { name: "IconButton" } ListElement { name: "IconLabel" }
-        ListElement { name: "Indicator" } ListElement { name: "ItemDelegate" }
-        ListElement { name: "Label" } ListElement { name: "LinkButton" }
-        ListElement { name: "Menu" } ListElement { name: "MenuItem" }
-        ListElement { name: "MenuSeparator" } ListElement { name: "MonthView" }
-        ListElement { name: "Notification" } ListElement { name: "NumberInput" }
-        ListElement { name: "PageIndicator" } ListElement { name: "Pagination" }
-        ListElement { name: "Popup" } ListElement { name: "ProgressBar" }
-        ListElement { name: "RadioButton" } ListElement { name: "RadioDelegate" }
-        ListElement { name: "Range" } ListElement { name: "ScrollBar" }
-        ListElement { name: "ScrollView" } ListElement { name: "ShadowBox" }
-        ListElement { name: "Slider" } ListElement { name: "SpinBox" }
-        ListElement { name: "Step" } ListElement { name: "Steps" }
-        ListElement { name: "Switch" } ListElement { name: "SwitchDelegate" }
-        ListElement { name: "TabBar" } ListElement { name: "TabButton" }
-        ListElement { name: "TextArea" } ListElement { name: "TextAreaScroll" }
-        ListElement { name: "TextConfig" } ListElement { name: "TextField" }
-        ListElement { name: "ThemeGradient" } ListElement { name: "TimeDelimiter" }
-        ListElement { name: "TimePart" } ListElement { name: "TimePicker" }
-        ListElement { name: "TimePickerView" } ListElement { name: "ToolTip" }
-        ListElement { name: "YearView" } ListElement { name: "ThemeSettings" }
+        ListElement { name: "Button" }
+        ListElement { name: "Accordion" }
+        ListElement { name: "CalendarView" }
+        ListElement { name: "CheckBox" }
+        ListElement { name: "Chip" }
+        ListElement { name: "ChipGroup" }
+        ListElement { name: "ComboBox" }
+        ListElement { name: "DateEdit" }
+        ListElement { name: "DateRangeEdit" }
+        ListElement { name: "IconButton" }
+        ListElement { name: "LinkButton" }
+        ListElement { name: "NumberInput" }
+        ListElement { name: "Pagination" }
+        ListElement { name: "RadioButton" }
+        ListElement { name: "Slider" }
+        ListElement { name: "SpinBox" }
+        ListElement { name: "Steps" }
+        ListElement { name: "Switch" }
+        ListElement { name: "TabBar" }
+        ListElement { name: "TextArea" }
+        ListElement { name: "TextField" }
+        ListElement { name: "TimePicker" }
     }
 
     function openComponent(name) {

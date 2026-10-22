@@ -7,31 +7,25 @@ import Sber.Theme
 Item {
     id: page
     property string componentName
+    property string actionMessage: ""
+
+    onComponentNameChanged: actionMessage = ""
 
     function previewFor(name) {
         switch (name) {
         case "Accordion": return accordionPreview
-        case "Avatar": return avatarPreview
-        case "Badge": return badgePreview
-        case "BusyIndicator": return busyPreview
         case "Button": return buttonPreview
         case "CalendarView": return calendarPreview
         case "CheckBox": return checkBoxPreview
         case "Chip": return chipPreview
         case "ChipGroup": return chipGroupPreview
         case "ComboBox": return comboBoxPreview
-        case "Counter": return counterPreview
         case "DateEdit": return dateEditPreview
         case "DateRangeEdit": return dateRangePreview
-        case "Divider": return dividerPreview
-        case "Icon": return iconPreview
         case "IconButton": return iconButtonPreview
-        case "Label": return labelPreview
         case "LinkButton": return linkPreview
         case "NumberInput": return numberPreview
-        case "PageIndicator": return pageIndicatorPreview
         case "Pagination": return paginationPreview
-        case "ProgressBar": return progressPreview
         case "RadioButton": return radioPreview
         case "Slider": return sliderPreview
         case "SpinBox": return spinBoxPreview
@@ -41,7 +35,7 @@ Item {
         case "TextArea": return textAreaPreview
         case "TextField": return textFieldPreview
         case "TimePicker": return timePickerPreview
-        default: return catalogPreview
+        default: return null
         }
     }
 
@@ -64,6 +58,12 @@ Item {
             Layout.alignment: Qt.AlignTop
             sourceComponent: page.previewFor(page.componentName)
         }
+        Sber.Label {
+            Layout.fillWidth: true
+            text: page.actionMessage
+            visible: text !== ""
+            secondary: true
+        }
     }
 
     ListModel {
@@ -79,75 +79,56 @@ Item {
             title: qsTr("Состояния кнопки")
             ColumnLayout {
                 anchors.fill: parent
-                Sber.Button { text: qsTr("Основное действие"); type: Sber.Widget.Accient }
-                Sber.Button { text: qsTr("Вторичное действие"); type: Sber.Widget.Secondary }
+                Sber.Button { text: qsTr("Основное действие"); type: Sber.Widget.Accient; onClicked: page.actionMessage = qsTr("Основное действие выполнено") }
+                Sber.Button { text: qsTr("Вторичное действие"); type: Sber.Widget.Secondary; onClicked: page.actionMessage = qsTr("Вторичное действие выполнено") }
                 Sber.Button { text: qsTr("Недоступно"); enabled: false }
             }
         }
     }
     Component {
-        id: labelPreview
-        ColumnLayout {
-            Sber.Label { text: qsTr("Основной текст"); font: Theme.Fonts.BodyM }
-            Sber.Label { text: qsTr("Вторичный текст"); secondary: true }
-            Sber.Label { text: qsTr("Заголовок"); bold: true }
-        }
-    }
-    Component {
         id: textFieldPreview
         ColumnLayout {
-            Sber.TextField { Layout.fillWidth: true; labelText: qsTr("Имя"); placeholderText: qsTr("Введите имя") }
+            Sber.TextField { Layout.fillWidth: true; labelText: qsTr("Имя"); placeholderText: qsTr("Введите имя"); onTextEdited: page.actionMessage = qsTr("Введено символов: %1").arg(text.length) }
             Sber.TextField { Layout.fillWidth: true; labelText: qsTr("Электронная почта"); placeholderText: qsTr("name@example.com"); captionText: qsTr("Подпись под полем") }
         }
     }
     Component {
         id: textAreaPreview
-        Sber.TextArea { Layout.fillWidth: true; Layout.preferredHeight: 150; placeholderText: qsTr("Введите комментарий") }
+        Sber.TextArea { Layout.fillWidth: true; Layout.preferredHeight: 150; placeholderText: qsTr("Введите комментарий"); onTextEdited: page.actionMessage = qsTr("Введено символов: %1").arg(text.length) }
     }
     Component {
         id: checkBoxPreview
         ColumnLayout {
-            Sber.CheckBox { text: qsTr("Сохранить настройки"); checked: true }
-            Sber.CheckBox { text: qsTr("Получать новости") }
+            Sber.CheckBox { text: qsTr("Сохранить настройки"); checked: true; onToggled: page.actionMessage = checked ? qsTr("Настройки сохраняются") : qsTr("Настройки не сохраняются") }
+            Sber.CheckBox { text: qsTr("Получать новости"); onToggled: page.actionMessage = checked ? qsTr("Новости включены") : qsTr("Новости выключены") }
         }
     }
     Component {
         id: switchPreview
         ColumnLayout {
-            Sber.Switch { text: qsTr("Уведомления"); checked: true }
-            Sber.Switch { text: qsTr("Автоматическое обновление") }
+            Sber.Switch { text: qsTr("Уведомления"); checked: true; onToggled: page.actionMessage = checked ? qsTr("Уведомления включены") : qsTr("Уведомления выключены") }
+            Sber.Switch { text: qsTr("Автоматическое обновление"); onToggled: page.actionMessage = checked ? qsTr("Обновление включено") : qsTr("Обновление выключено") }
         }
     }
     Component {
         id: radioPreview
         ColumnLayout {
-            Sber.RadioButton { text: qsTr("Стандартный режим"); checked: true }
-            Sber.RadioButton { text: qsTr("Расширенный режим") }
+            Sber.RadioButton { text: qsTr("Стандартный режим"); checked: true; onToggled: if (checked) page.actionMessage = qsTr("Выбран стандартный режим") }
+            Sber.RadioButton { text: qsTr("Расширенный режим"); onToggled: if (checked) page.actionMessage = qsTr("Выбран расширенный режим") }
         }
     }
     Component {
         id: comboBoxPreview
-        Sber.ComboBox { Layout.fillWidth: true; labelText: qsTr("Раздел"); model: optionsModel }
+        Sber.ComboBox { Layout.fillWidth: true; labelText: qsTr("Раздел"); model: optionsModel; onActivated: page.actionMessage = qsTr("Раздел: %1").arg(currentText) }
     }
     Component {
         id: sliderPreview
-        Sber.Slider { Layout.fillWidth: true; labelText: qsTr("Уровень"); from: 0; to: 100; value: 64 }
+        Sber.Slider { Layout.fillWidth: true; labelText: qsTr("Уровень"); from: 0; to: 100; value: 64; onValueEdited: (value) => page.actionMessage = qsTr("Значение: %1").arg(Math.round(value)) }
     }
-    Component {
-        id: progressPreview
-        ColumnLayout {
-            Sber.ProgressBar { Layout.fillWidth: true; value: 64 }
-            Sber.ProgressBar { Layout.fillWidth: true; value: 38; warning: true }
-            Sber.ProgressBar { Layout.fillWidth: true; value: 82; error: true }
-        }
-    }
-    Component { id: busyPreview; Sber.BusyIndicator { running: true; implicitWidth: 48; implicitHeight: 48 } }
-    Component { id: badgePreview; Sber.Badge { text: qsTr("Новое"); type: Sber.Widget.Accient } }
-    Component { id: counterPreview; Sber.Counter { count: 7 } }
     Component {
         id: chipPreview
         RowLayout {
-            Sber.Chip { text: qsTr("Дизайн"); closable: true }
+            Sber.Chip { text: qsTr("Дизайн"); idx: "design"; closable: true; onClosed: (idx) => page.actionMessage = qsTr("Метка удалена: %1").arg(idx) }
             Sber.Chip { text: qsTr("Qt 6") }
         }
     }
@@ -157,6 +138,7 @@ Item {
             Layout.fillWidth: true
             width: 480
             closable: true
+            onClosed: (idx) => page.actionMessage = qsTr("Метка удалена: %1").arg(idx)
             Component.onCompleted: {
                 add(qsTr("Профиль"), "profile")
                 add(qsTr("Уведомления"), "notifications")
@@ -164,23 +146,20 @@ Item {
             }
         }
     }
-    Component { id: iconPreview; RowLayout { Sber.Icon { name: "Search"; size: 28 } Sber.Icon { name: "Plus"; size: 28 } } }
-    Component { id: iconButtonPreview; Sber.IconButton { icon.name: "Plus"; Accessible.name: qsTr("Добавить") } }
-    Component { id: linkPreview; Sber.LinkButton { text: qsTr("Открыть ссылку") } }
-    Component { id: dividerPreview; ColumnLayout { Sber.Label { text: qsTr("Содержимое до разделителя") } Sber.Divider { Layout.fillWidth: true } Sber.Label { text: qsTr("Содержимое после разделителя") } } }
-    Component { id: avatarPreview; RowLayout { Sber.Avatar { size: 56; status: Sber.Widget.Online } Sber.Avatar { size: 56; status: Sber.Widget.Afk } Sber.Avatar { size: 56; status: Sber.Widget.Offline } } }
-    Component { id: pageIndicatorPreview; Sber.PageIndicator { count: 5; currentIndex: 2 } }
-    Component { id: paginationPreview; Sber.Pagination { count: 12; currentIndex: 2 } }
-    Component { id: dateEditPreview; Sber.DateEdit { Layout.fillWidth: true; labelText: qsTr("Дата") } }
-    Component { id: dateRangePreview; Sber.DateRangeEdit { Layout.fillWidth: true; labelText: qsTr("Период") } }
-    Component { id: timePickerPreview; Sber.TimePicker { Layout.fillWidth: true; labelText: qsTr("Время") } }
-    Component { id: numberPreview; Sber.NumberInput { Layout.fillWidth: true; labelText: qsTr("Количество"); from: 0; to: 100; Component.onCompleted: setValue(12) } }
-    Component { id: spinBoxPreview; Sber.SpinBox { from: 0; to: 10; Component.onCompleted: setValue(3) } }
+    Component { id: iconButtonPreview; Sber.IconButton { icon.name: "Plus"; Accessible.name: qsTr("Добавить"); onClicked: page.actionMessage = qsTr("Кнопка добавления нажата") } }
+    Component { id: linkPreview; Sber.LinkButton { text: qsTr("Открыть ссылку"); onClicked: page.actionMessage = qsTr("Ссылка нажата") } }
+    Component { id: paginationPreview; Sber.Pagination { count: 12; currentIndex: 2; onCurrentIndexChanged: page.actionMessage = qsTr("Страница %1").arg(currentIndex + 1) } }
+    Component { id: dateEditPreview; Sber.DateEdit { Layout.fillWidth: true; labelText: qsTr("Дата"); onAccepted: page.actionMessage = qsTr("Дата подтверждена") } }
+    Component { id: dateRangePreview; Sber.DateRangeEdit { Layout.fillWidth: true; labelText: qsTr("Период"); onAccepted: page.actionMessage = qsTr("Период подтверждён") } }
+    Component { id: timePickerPreview; Sber.TimePicker { Layout.fillWidth: true; labelText: qsTr("Время"); onAccepted: page.actionMessage = qsTr("Время подтверждено") } }
+    Component { id: numberPreview; Sber.NumberInput { Layout.fillWidth: true; labelText: qsTr("Количество"); from: 0; to: 100; Component.onCompleted: setValue(12); onValueChanged: (value) => page.actionMessage = qsTr("Количество: %1").arg(value) } }
+    Component { id: spinBoxPreview; Sber.SpinBox { from: 0; to: 10; Component.onCompleted: setValue(3); onValueChanged: (value) => page.actionMessage = qsTr("Значение: %1").arg(value) } }
     Component {
         id: stepsPreview
         Sber.Steps {
             Layout.fillWidth: true
             currentIndex: 1
+            onCurrentIndexChanged: page.actionMessage = qsTr("Шаг %1").arg(currentIndex + 1)
             Sber.Step { title: qsTr("Профиль") }
             Sber.Step { title: qsTr("Подтверждение") }
             Sber.Step { title: qsTr("Готово") }
@@ -193,6 +172,7 @@ Item {
             title: qsTr("Информация о компоненте")
             opened: true
             hasBackground: true
+            onOpenedChanged: page.actionMessage = opened ? qsTr("Раздел раскрыт") : qsTr("Раздел свёрнут")
             Sber.Label { text: qsTr("Аккордеон раскрывает и скрывает вложенное содержимое."); wrapMode: Text.WordWrap }
         }
     }
@@ -200,6 +180,7 @@ Item {
         id: tabBarPreview
         Sber.TabBar {
             Layout.fillWidth: true
+            onCurrentIndexChanged: page.actionMessage = qsTr("Вкладка %1").arg(currentIndex + 1)
             Sber.TabButton { text: qsTr("Обзор") }
             Sber.TabButton { text: qsTr("Активность") }
             Sber.TabButton { text: qsTr("Настройки") }
@@ -207,25 +188,6 @@ Item {
     }
     Component {
         id: calendarPreview
-        Sber.CalendarView { Layout.alignment: Qt.AlignLeft | Qt.AlignTop }
-    }
-    Component {
-        id: catalogPreview
-        QQC.GroupBox {
-            title: qsTr("Компонент UI Kit")
-            Layout.fillWidth: true
-            ColumnLayout {
-                anchors.fill: parent
-                Sber.Label {
-                    Layout.fillWidth: true
-                    text: qsTr("%1 доступен в модуле Sber.Controls или Sber.Widgets. Для компонентов с собственным экранным видом здесь отображается отдельный интерактивный пример.").arg(page.componentName)
-                    wrapMode: Text.WordWrap
-                }
-                Sber.Label {
-                    text: qsTr("Объявления и свойства: ui-kit/docs/API-catalog.md")
-                    secondary: true
-                }
-            }
-        }
+        Sber.CalendarView { Layout.alignment: Qt.AlignLeft | Qt.AlignTop; onDateChanged: page.actionMessage = qsTr("Дата изменена") }
     }
 }

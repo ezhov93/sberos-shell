@@ -76,6 +76,7 @@ class Tokens:
         self.resources = resources
         self.inputs = {}
         self.theme = self.read('theme/sdds_os.json')
+        self.sizes = self.read('theme/sizes_os.json')
 
     def read(self, relative):
         data = (self.resources / relative).read_bytes()
@@ -209,7 +210,25 @@ def gtk_css(p):
 def generate(resources, output):
     tokens = Tokens(resources)
     files = {}
-    manifest = {'schema': 1, 'roles': ROLES, 'modes': {}}
+    manifest = {
+        'schema': 1,
+        'roles': ROLES,
+        'modes': {},
+        'darklyStyle': {
+            'Common': {
+                'CornerRadius': lookup(tokens.sizes, 'BorderRadius.s'),
+            },
+            'Style': {
+                'MenuOpacity': 100,
+                'DolphinSidebarOpacity': 100,
+                'DolphinViewOpacity': 100,
+                'TransparentDolphinView': False,
+                'MenuBarOpacity': 100,
+                'ToolBarOpacity': 100,
+                'TabBarOpacity': 100,
+            },
+        },
+    }
     for mode, name in [('Light', 'SberOSLight'), ('Dark', 'SberOSDark')]:
         p = palette(tokens, mode)
         files[f'kde/{name}.colors'] = kde_scheme(p, name)

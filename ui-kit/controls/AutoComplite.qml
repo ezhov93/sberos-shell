@@ -18,6 +18,21 @@ TextField {
 
     opacity: enabled ? 1 : 0.4
 
+    QtObject {
+        id: internal
+
+        function modelCount() {
+            var sourceModel = control.model;
+            if (Array.isArray(sourceModel))
+                return sourceModel.length;
+            if (sourceModel && typeof sourceModel.count === "number")
+                return sourceModel.count;
+            if (sourceModel && typeof sourceModel.rowCount === "function")
+                return sourceModel.rowCount();
+            return 0;
+        }
+    }
+
     onTextEdited: {
         currentIndex = -1;
         popup.toggle(true);
@@ -31,7 +46,7 @@ TextField {
             control.text = cur.text;
     }
     onActiveFocusChanged: {
-        if (activeFocus && model.rowCount() > 0)
+        if (activeFocus && internal.modelCount() > 0)
             popup.toggle(!(text == "" || text.match("^[0-9 ]+$")));
         else if (!loader.focus)
             popup.close();
@@ -39,7 +54,8 @@ TextField {
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
             popup.toggle(true);
-            loader.item.Keys.pressed(event);
+            if (loader.status === Loader.Ready)
+                loader.item.Keys.pressed(event);
         }
     }
 
@@ -86,7 +102,9 @@ TextField {
                                          modelData[control.valueRole] ? modelData[control.valueRole] : "" :
                                          model[control.valueRole] ? model[control.valueRole] : "") :
                                     ""
-            captionText: control.captionRole ? model[control.captionRole] : ""
+            captionText: control.captionRole ?
+                             (Array.isArray(control.model) ? modelData[control.captionRole] : model[control.captionRole]) :
+                             ""
             tight: control.tight
             indicator.visible: true
             highlighted: index === control.currentIndex
@@ -106,11 +124,11 @@ TextField {
                 event.accepted = true;
 
                 var incr = event.key === Qt.Key_Up ? -1 : 1;
-                for (var i = 1; i < model.rowCount(); i++) {
+                for (var i = 1; i < internal.modelCount(); i++) {
                     var cur = listView.currentIndex + incr * i;
                     if (cur === -1)
-                        cur = model.rowCount() - 1;
-                    if (cur >= model.rowCount())
+                        cur = internal.modelCount() - 1;
+                    if (cur >= internal.modelCount())
                         cur = 0;
                     var item = itemAtIndex(cur);
                     if (item && item.active) {
@@ -124,6 +142,7 @@ TextField {
 
     Popup {
         id: popup
+        objectName: "autoCompletePopup"
         y: control.background.y + control.background.height
         width: control.width
         radius: control.background.radius
@@ -140,7 +159,7 @@ TextField {
 
         function hasVisibleItems() {
             var count = 0;
-            for (var i = 0; i < model.rowCount(); i++) {
+            for (var i = 0; i < internal.modelCount(); i++) {
                 var item = loader.item.itemAtIndex(i);
                 if (item) {
                     item.active = control.text == "" || item.text.indexOf(control.text) === 0

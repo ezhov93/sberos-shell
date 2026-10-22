@@ -904,10 +904,10 @@ property alias notation
 property int delimiter
 property int lineHeight
 function valueFrom()
-function setValueFrom()
+function setValueFrom(value)
 signal valueFromChanged(real value)
 function valueTo()
-function setValueTo()
+function setValueTo(value)
 signal valueToChanged(real value)
 property BackgroundConfig backgroundConfig
 property Colorizer colorizer

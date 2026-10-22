@@ -150,7 +150,9 @@ Sber.Button {
 
 `TextField.textLimit` показывает счётчик и выставляет `status = Widget.Error` при превышении; ввод не обрезает. Признак `required` показывает индикатор обязательности и сам по себе не валидирует значение. В текущей реализации Return, Enter **и Escape** вызывают `accepted()` и снимают фокус. Не считать Escape отменой ввода без отдельной обработки и проверки.
 
-`ComboBox` по умолчанию: `textRole = "text"`, `valueRole = "value"`, `captionRole = "caption"`, `checkStateRole = "checkState"`, `currentIndex = -1`, `multiselect = false`. Для обычного выбора использовать `ListModel` с ролями `text` и `value`. Поддержку произвольных JS-массивов и многовыбора не считать проверенной: реализация использует разные пути доступа к ролям и изменения модели. При использовании этих режимов дополнить контракт результатом проверки.
+`ComboBox` по умолчанию: `textRole = "text"`, `valueRole = "value"`, `captionRole = "caption"`, `checkStateRole = "checkState"`, `currentIndex = -1`, `multiselect = false`. Для обычного выбора использовать `ListModel` с ролями `text` и `value`. Для многовыбора поддержаны `ListModel` и массив объектов с ролями, указанными выше; `checkState` хранит `Qt.Checked` или `Qt.Unchecked`. Другие реализации модели требуют отдельной проверки.
+
+`Range.setValueFrom(value)` и `Range.setValueTo(value)` задают значения полей начала и конца независимо.
 
 ### Слайдер: пользовательское изменение и завершение
 

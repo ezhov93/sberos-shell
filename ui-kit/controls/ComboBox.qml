@@ -77,33 +77,73 @@ T.ComboBox {
 
         ChipGroup {
             id: chipsGroup
+            objectName: "comboBoxChips"
             z: 500
             oneLine: true
             lineHeight: control.lineHeight
             type: Widget.Secondary
 
             function update() {
-                if (control.multiselect) {
-                    var chipIndex = 0;
-                    for (var i = 0; i < model.count; i++) {
-                        if (model.data(model.index(i, 0), 0) == Qt.Checked) {
-                            if (chipIndex >= chips.length) {
-                                chipsGroup.add(model.data(model.index(i, 0), 2), i);
-                            } else {
-                                chips[chipIndex].text = model.data(model.index(i, 0), 2);
-                                chips[chipIndex].idx = i;
-                            }
-                            chipIndex++;
-                        }
+                if (!control.multiselect)
+                    return;
+
+                var selected = [];
+                for (var i = 0; i < modelCount(); i++) {
+                    if (roleValue(i, control.checkStateRole) === Qt.Checked)
+                        selected.push({ index: i, caption: roleValue(i, control.captionRole) });
+                }
+
+                for (var i = 0; i < selected.length; i++) {
+                    if (i < chips.length) {
+                        chips[i].text = selected[i].caption;
+                        chips[i].idx = selected[i].index;
+                    } else {
+                        chipsGroup.add(selected[i].caption, selected[i].index);
                     }
-                    for (var i = chips.length - 1; i >= chipIndex; i--)
-                        chips[i].destroy();
-                    chips.length = chipIndex;
+                }
+                for (var i = chips.length - 1; i >= selected.length; i--) {
+                    chipsGroup.remove(chips[i].idx);
                 }
             }
+
+            function modelCount() {
+                var sourceModel = control.model;
+                if (Array.isArray(sourceModel))
+                    return sourceModel.length;
+                if (sourceModel && typeof sourceModel.length === "number")
+                    return sourceModel.length;
+                if (sourceModel && typeof sourceModel.count === "number")
+                    return sourceModel.count;
+                if (sourceModel && typeof sourceModel.rowCount === "function")
+                    return sourceModel.rowCount();
+                return 0;
+            }
+
+            function roleValue(index, role) {
+                var sourceModel = control.model;
+                var row = sourceModel && typeof sourceModel.get === "function" ?
+                              sourceModel.get(index) : sourceModel ? sourceModel[index] : null;
+                return row ? row[role] : undefined;
+            }
+
+            function setRoleValue(index, role, value) {
+                var sourceModel = control.model;
+                if (sourceModel && typeof sourceModel.setProperty === "function") {
+                    sourceModel.setProperty(index, role, value);
+                } else if (sourceModel) {
+                    var row = sourceModel[index];
+                    if (row)
+                        row[role] = value;
+                }
+            }
+
+            function isArrayModel() {
+                return Array.isArray(control.model) ||
+                       control.model && typeof control.model.length === "number";
+            }
             onClosed: (idx) => {
-                if (idx >= 0 && model.rowCount() > idx) {
-                    model.setProperty(idx, "checkState", Qt.Unchecked);
+                if (idx >= 0 && idx < chipsGroup.modelCount()) {
+                    chipsGroup.setRoleValue(idx, control.checkStateRole, Qt.Unchecked);
                 }
             }
 
@@ -156,30 +196,34 @@ T.ComboBox {
         highlighted: index == control.currentIndex
 
         text: control.textRole ?
-                  (Array.isArray(modelData) ? modelData[control.textRole] : model[control.textRole]) :
+                  (chipsGroup.isArrayModel() ? modelData[control.textRole] : model[control.textRole]) :
                   modelData
         property var value: control.valueRole ?
-                                (Array.isArray(control.modelData) ?
+                                (chipsGroup.isArrayModel() ?
                                      modelData[control.valueRole] ? modelData[control.valueRole] : "" :
                                      model[control.valueRole] ? model[control.valueRole] : "") :
                                 ""
         captionText: control.captionRole ?
-                         (Array.isArray(control.modelData) ?
+                         (chipsGroup.isArrayModel() ?
                               modelData[control.captionRole] ? modelData[control.captionRole] : "" :
                               model[control.captionRole] ? model[control.captionRole] : "") :
                          ""
         checkState: control.multiselect ?
                         control.checkStateRole ?
-                             (Array.isArray(control.modelData) ?
+                             (chipsGroup.isArrayModel() ?
                                   modelData[control.checkStateRole] ? modelData[control.checkStateRole] : Qt.Unchecked :
                                   model[control.checkStateRole] ? model[control.checkStateRole] : Qt.Unchecked) :
                              Qt.Unchecked :
                         Qt.Unchecked
         onCheckStateChanged: {
             if (control.multiselect) {
-                if (Array.isArray(control.modelData)) {
+                if (chipsGroup.isArrayModel()) {
                     if (modelData[control.checkStateRole] != checkState)
                         modelData[control.checkStateRole] = checkState;
+                } else if (control.model && typeof control.model.setProperty === "function") {
+                    var row = control.model.get(index);
+                    if (row[control.checkStateRole] !== checkState)
+                        control.model.setProperty(index, control.checkStateRole, checkState);
                 } else {
                     if (model[control.checkStateRole] != checkState)
                         model[control.checkStateRole] = checkState;

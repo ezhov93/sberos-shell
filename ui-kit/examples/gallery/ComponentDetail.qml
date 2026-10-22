@@ -148,7 +148,7 @@ Item {
     }
     Component { id: iconButtonPreview; Sber.IconButton { icon.name: "Plus"; Accessible.name: qsTr("Добавить"); onClicked: page.actionMessage = qsTr("Кнопка добавления нажата") } }
     Component { id: linkPreview; Sber.LinkButton { text: qsTr("Открыть ссылку"); onClicked: page.actionMessage = qsTr("Ссылка нажата") } }
-    Component { id: paginationPreview; Sber.Pagination { count: 12; currentIndex: 2; onCurrentIndexChanged: page.actionMessage = qsTr("Страница %1").arg(currentIndex + 1) } }
+    Component { id: paginationPreview; Sber.Pagination { count: 12; visibleCount: 5; currentIndex: 2; onCurrentIndexChanged: page.actionMessage = qsTr("Страница %1").arg(currentIndex + 1) } }
     Component { id: dateEditPreview; Sber.DateEdit { Layout.fillWidth: true; labelText: qsTr("Дата"); onAccepted: page.actionMessage = qsTr("Дата подтверждена") } }
     Component { id: dateRangePreview; Sber.DateRangeEdit { Layout.fillWidth: true; labelText: qsTr("Период"); onAccepted: page.actionMessage = qsTr("Период подтверждён") } }
     Component { id: timePickerPreview; Sber.TimePicker { Layout.fillWidth: true; labelText: qsTr("Время"); onAccepted: page.actionMessage = qsTr("Время подтверждено") } }

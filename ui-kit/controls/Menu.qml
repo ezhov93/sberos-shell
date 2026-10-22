@@ -12,7 +12,7 @@ T.Menu {
 
     implicitWidth: contentWidth + leftPadding + rightPadding
     implicitHeight: contentHeight + topPadding + bottomPadding
-    width: implicitHeight
+    width: implicitWidth
 
     padding: 2
     overlap: 1

@@ -34,23 +34,28 @@ Item {
     }
 
     function remove(idx: string) {
-        for (var i = 0; i < chips.length; ++i) {
+        var removed = false;
+        for (var i = 0; i < chips.length;) {
             if (chips[i].idx == idx) {
                 chips[i].destroy();
                 internal.removeItem(i);
-            }
+                removed = true;
+            } else
+                ++i;
         }
         internal.updateChipsPosition();
-        closed(idx);
+        if (removed)
+            closed(idx);
     }
     function removeByText(text: string) {
         var arr = [];
-        for (var i = 0; i < chips.length; ++i) {
+        for (var i = 0; i < chips.length;) {
             if (chips[i].text == text) {
                 arr.push(chips[i].idx);
                 chips[i].destroy();
                 internal.removeItem(i);
-            }
+            } else
+                ++i;
         }
         internal.updateChipsPosition();
         for (var i = 0; i < arr.length; i++)
@@ -95,6 +100,9 @@ Item {
                 }
                 chipGroup.implicitWidth = Math.max(maxX, curX);
                 chipGroup.implicitHeight = curY + chips[0].implicitHeight;
+            } else {
+                chipGroup.implicitWidth = 0;
+                chipGroup.implicitHeight = 0;
             }
         }
 

@@ -51,11 +51,11 @@ Control {
     width: implicitWidth
 
     function valueFrom() { return inputFrom.value(); }
-    function setValueFrom() { return inputFrom.setValue(); }
+    function setValueFrom(value) { return inputFrom.setValue(value); }
     signal valueFromChanged(real value);
 
     function valueTo() { return inputTo.value(); }
-    function setValueTo() { return inputTo.setValue(); }
+    function setValueTo(value) { return inputTo.setValue(value); }
     signal valueToChanged(real value);
 
     property BackgroundConfig backgroundConfig: BackgroundConfig {
@@ -136,7 +136,6 @@ Control {
         decimals: inputFrom.decimals
         inputMethodHints: inputFrom.inputMethodHints
         validator: inputFrom.validator
-        text: inputFrom.text
         notation: inputFrom.notation
         background.visible: false
         z: 100

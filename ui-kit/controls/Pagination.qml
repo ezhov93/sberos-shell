@@ -58,6 +58,7 @@ T.Control {
             model: Math.min(control.visibleCount, control.count)
             Button {
                 id: button
+                objectName: "paginationPage%1".arg(index)
                 lineHeight: control.lineHeight
                 background: Rectangle {
                     id: bg
@@ -127,62 +128,54 @@ T.Control {
     onCountChanged: updatePagination();
 
     function updatePagination() {
-        if (control.count == 0 || control.visibleCount == 0 || repeater.count < control.visibleCount)
+        if (control.count == 0 || control.visibleCount == 0)
             return;
 
-        var leftCount = 0;
-        var centralCount = 0;
-        var rightCount = 0;
+        var pages = [];
+        var currentIndex = Math.max(0, Math.min(control.currentIndex, control.count - 1));
+        var visibleCount = Math.min(control.visibleCount, control.count);
 
-        var middle = Math.floor(control.visibleCount / 2)
-        if (control.currentIndex < middle) {
-            leftCount = Math.max(middle, control.currentIndex + 2);
-            centralCount = 0;
-            rightCount = control.visibleCount - 1 - leftCount;
-        } else if (control.currentIndex > control.count - middle) {
-            rightCount = Math.max(middle, control.count - control.currentIndex + 2);
-            centralCount = 0;
-            leftCount = control.visibleCount - 1 - rightCount;
+        if (control.count <= visibleCount) {
+            for (var i = 0; i < control.count; i++)
+                pages.push(i + 1);
+        } else if (visibleCount < 5) {
+            var start = Math.max(0, Math.min(currentIndex - Math.floor(visibleCount / 2),
+                                             control.count - visibleCount));
+            for (var i = 0; i < visibleCount; i++)
+                pages.push(start + i + 1);
         } else {
-            leftCount = Math.floor((control.visibleCount - 2) / 3);
-            rightCount = leftCount;
-            centralCount = control.visibleCount - 2 - leftCount - rightCount;
+            var edgePageCount = Math.floor((visibleCount - 1) / 2);
+            var lastIndex = control.count - 1;
+            if (currentIndex <= edgePageCount) {
+                for (var i = 0; i < visibleCount - 2; i++)
+                    pages.push(i + 1);
+                pages.push("...");
+                pages.push(control.count);
+            } else if (currentIndex >= lastIndex - edgePageCount) {
+                pages.push(1);
+                pages.push("...");
+                for (var i = control.count - visibleCount + 3; i <= control.count; i++)
+                    pages.push(i);
+            } else {
+                var centerCount = visibleCount - 4;
+                var firstCenter = currentIndex - Math.floor((centerCount - 1) / 2);
+                firstCenter = Math.max(2, Math.min(firstCenter, control.count - centerCount));
+                pages.push(1);
+                pages.push("...");
+                for (var i = 0; i < centerCount; i++)
+                    pages.push(firstCenter + i + 1);
+                pages.push("...");
+                pages.push(control.count);
+            }
         }
 
-        var pos = 0;
-        for (var i = 0; i < leftCount && pos + i < control.count; i++) {
-            repeater.itemAt(pos + i).text = i + 1;
-            repeater.itemAt(pos + i).enabled = true;
-        }
-        pos += leftCount;
-        if (pos >= control.count)
-            return;
-
-        repeater.itemAt(pos).text = '...';
-        repeater.itemAt(pos).enabled = false;
-        pos += 1;
-        if (pos >= control.count)
-            return;
-
-        for (var i = 0; i < centralCount && pos + i < control.count; i++) {
-            repeater.itemAt(pos + i).text = control.currentIndex - Math.floor(centralCount / 2) + i + 1;
-            repeater.itemAt(pos + i).enabled = true;
-        }
-        pos += centralCount;
-        if (pos >= control.count)
-            return;
-
-        if (centralCount > 0) {
-            repeater.itemAt(leftCount + centralCount + 1).text = '...';
-            repeater.itemAt(leftCount + centralCount + 1).enabled = false;
-            pos += 1;
-            if (pos >= control.count)
-                return;
-        }
-
-        for (var i = 0; i < rightCount && pos + i < control.count; i++) {
-            repeater.itemAt(pos + i).text = control.count - rightCount + i + 1;
-            repeater.itemAt(pos + i).enabled = true;
+        for (var i = 0; i < repeater.count; i++) {
+            var button = repeater.itemAt(i);
+            if (!button)
+                continue;
+            var page = i < pages.length ? pages[i] : "";
+            button.text = page;
+            button.enabled = page !== "..." && page !== "";
         }
     }
 }

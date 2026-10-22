@@ -1,0 +1,9 @@
+{
+    "base": "#f0f0f4",
+    "highlight": "#1fb23a",
+    "highlightedText": "#171d18",
+    "platform": "wayland",
+    "qt": "6.11.2",
+    "text": "#202020",
+    "window": "#f7f7f8"
+}

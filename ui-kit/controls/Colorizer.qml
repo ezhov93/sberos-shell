@@ -46,6 +46,14 @@ Item {
                 currentColor: activeColor
                 borderWidth: 2
             }
+        },
+        State {
+            name: "selected"
+            PropertyChanges {
+                target: colorizer
+                currentColor: activeColor
+                borderWidth: 2
+            }
         }
     ]
     transitions: [

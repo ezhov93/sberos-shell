@@ -40,8 +40,8 @@ GridLayout {
             model.append({"text": qsTr("Light"), "value": Settings.Light})
             model.append({"text": qsTr("Dark"), "value": Settings.Dark})
             model.append({"text": qsTr("System"), "value": Settings.System})
-            for (var i = 0; i < model.rowCount(); i++) {
-                if (valueAt(i) == Core.Settings.getThemeMode()) {
+            for (let i = 0; i < model.count; i++) {
+                if (valueAt(i) === Core.Settings.getThemeMode()) {
                     currentIndex = i;
                     return;
                 }
@@ -67,8 +67,8 @@ GridLayout {
             model.append({"text": ("M"), "value": Theme.Sizes.LineHeight.M})
             model.append({"text": ("L"), "value": Theme.Sizes.LineHeight.L})
 
-            for (var i = 0; i < model.rowCount(); i++) {
-                if (valueAt(i) == Core.Settings.LineHeight) {
+            for (let i = 0; i < model.count; i++) {
+                if (valueAt(i) === Core.Settings.LineHeight) {
                     currentIndex = i;
                     return;
                 }

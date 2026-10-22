@@ -11,7 +11,7 @@ Rectangle {
     property alias text: label.text
     property string idx: ""
     property alias icon: label.icon
-    property alias closable: closeArea.visible
+    property alias closable: closeIcon.visible
     property bool circle: false
     
     property int lineHeight: Core.Settings.LineHeight
@@ -64,21 +64,25 @@ Rectangle {
     
     MouseArea {
         id: closeArea
-        anchors.fill: parent
+        x: closeIcon.x - chip.spacing / 2
+        y: 0
+        width: chip.width - x
+        height: chip.height
         acceptedButtons: Qt.LeftButton
         hoverEnabled: true
         onClicked: chip.closed(chip.idx);
         z: 1000
-        
-        Icon {
-            id: closeIcon
-            x: parent.width - (parent.height - height) / 2 - width
-            y: (parent.height - height) / 2
-            name: "Close"
-            color: label.color
-            size: chip.lineHeight <= Theme.Sizes.LineHeight.Xs ? 12 :
-                  chip.lineHeight <= Theme.Sizes.LineHeight.S  ? 16 :
-                                                                 24
-        }
+        visible: closeIcon.visible
+    }
+
+    Icon {
+        id: closeIcon
+        x: chip.width - (chip.height - height) / 2 - width
+        y: (chip.height - height) / 2
+        name: "Close"
+        color: label.color
+        size: chip.lineHeight <= Theme.Sizes.LineHeight.Xs ? 12 :
+              chip.lineHeight <= Theme.Sizes.LineHeight.S  ? 16 :
+                                                             24
     }
 }

@@ -154,6 +154,8 @@ Sber.Button {
 
 `Range.setValueFrom(value)` и `Range.setValueTo(value)` задают значения полей начала и конца независимо.
 
+`Colorizer.selected` задаёт активное оформление (`activeColor`, ширина границы 2), как и `activated`.
+
 ### Слайдер: пользовательское изменение и завершение
 
 Точные имена: **`decimials`**, **`labelPacement`**, `Sber.Slider.View.Accient` (значение enum View). Шаг называется `stepSize`. Это другой API, чем Sirca GlassSlider: сигналов `committed` и `moved(value)` нет.

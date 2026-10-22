@@ -1,13 +1,13 @@
 {
   "CMakeLists.txt": "ddc8df4792d4af0f14880d370f2789b8bf827408ca6177fecb097b7357c22994",
   "controls/Accordion.qml": "adbf47ed68f24027f72c3e2ca014cc552a58bf38c342d52bad6e17771c46fb3a",
-  "controls/ApplicationHeader.qml": "7b7c5dfe8b1f4f8f286eaabcf36897559839c79b0ce876c4d6d22f8e695f3ec4",
+  "controls/ApplicationHeader.qml": "488f646bfed25f27f4580f5c236c9d1afaa91dd0e9fa1cb00c1b33e5fe972437",
   "controls/ApplicationWindow.qml": "f5ad080d9b2a0911ec5b252524c695e17d066da6fd7ced0e8a8b39a9b9f892b8",
   "controls/ArrowRectangle.qml": "6f373153f0f0c05ec596310009c40252f37ad62b3c48d39a83419df6f9510e9b",
   "controls/Attach.qml": "5ad2ad9dba333ec349d8bba6a550a3ad7b230ce3abb9558290829827ab7c78af",
   "controls/AutoComplite.qml": "e5ce18626834e1ebf65f49143370b8736a6b1a603b3dae8921da28f158d3abb7",
   "controls/Avatar.qml": "ae558e5c8187221f616439922c7e19e2dbc7501941cc2b9d58ef139fd5d0c2a3",
-  "controls/AvatarGroup.qml": "3e429caa3057abed0b12f35757d9fa9c3d94dc749d5cb5724c448d35e3c977ef",
+  "controls/AvatarGroup.qml": "bd71c28a18756b7d341579dead0d8a65965c91648abc093d3b3e955799bba57f",
   "controls/BackgroundConfig.qml": "7c425717d5a13e591598af5d31b8fb6d70f99750a6483bb8d06670189aa16852",
   "controls/Badge.qml": "c0b75b1b20cc8267fddb19601dc457596a92a3f175e85b671441a3e8a20adfc6",
   "controls/BusyIndicator.qml": "00b88e3fb06d997bfc6e1156ea1f29b54b2cfd0a24652a11eb7e63220f63d6d9",
@@ -19,9 +19,9 @@
   "controls/Carousel.qml": "efec16ead1939ea3728d11562f750083792ce985663e6e14a7dc9e8bf1bb4216",
   "controls/CheckBox.qml": "38da3732b387619e86c09ad6c6cedb61d0817754e608e33f7a6506cd4dcb6fd6",
   "controls/CheckDelegate.qml": "ba220f7755f0b6254a67a540041991911197ddf13495a9f5b19892a8534bb841",
-  "controls/Chip.qml": "781befb69188f2345b87cf9aa0daacefc48ccca6e9358573232331fb2763a08f",
+  "controls/Chip.qml": "78ae33cee8e6678c921e47e3a3c1e5e4ef893df6f01d0d31ddbbfd83413cbcfd",
   "controls/ChipGroup.qml": "3fa596fbb13877a0bd271f14f187c3329e133a12cf16ce9df48afa09da044001",
-  "controls/Colorizer.qml": "b963a0a0f9b95b6068cca7ef932f2094fef5a9879962d2c976f217f790fac32c",
+  "controls/Colorizer.qml": "97147839f71f537955f8914c567fc632515c344ab131831b7368de34980d1929",
   "controls/ComboBox.qml": "b9d2554c463bb637129a579357ba195c940a57ae8344643387a3fe03ddd21b1b",
   "controls/Counter.qml": "c3dec5441e42d1a165f8f2570756eeb4f087225f5873f7f1875cee6c3d6279e3",
   "controls/CursorDelegate.qml": "8bf64a039bec691a8094a9be556d7b6a56e65188a3c8d8b0c99460134295cb50",
@@ -53,7 +53,7 @@
   "controls/NumberInput.qml": "bf1fddd505331b29a462ba080784b69c104758c852f2b4207248f18dbb4c787d",
   "controls/PageIndicator.qml": "57f940e3e45893267a35af0ed2b6dffa73e1b3f25cdf606054135aa11d7c3186",
   "controls/Pagination.qml": "42b24ee79906f1f2827b074aa5738c3a79192a0020e1d080c1982a5e3092273b",
-  "controls/Popup.qml": "993d474e915a5b4c4236717bc867e8dbdab036a9c3183b0e094c3740bf3d0d7e",
+  "controls/Popup.qml": "c4b9f9eabc1c955fc68204689b338399caf51ee40bf7ffcf9c64686012727140",
   "controls/ProgressBar.qml": "1aaca55ebad515fbb3f1a93015f310d058eed333958fc69a5468bb8a881d9f31",
   "controls/RadioButton.qml": "4d8fa3aab95a05c0afbb18e2ad92dab2af42a926432b3c7fb0bed7d53e2054cc",
   "controls/RadioDelegate.qml": "26119b15b450ae0816ae6a74fe2ae051eb5102e02b503897d587264322216084",
@@ -421,5 +421,5 @@
   "utils/types_provider.h": "8c450eb212c48080ce6e4e0f10438988d503c65cafc691db8d4276abd34f2df4",
   "version.txt": "b088605fcdb87d2c44580d18a9a4ab2b3af36eb0d4f1cdab9aaca70f06e45f17",
   "widgets/CMakeLists.txt": "ed1d50bf5cda462cdd434cf56c20f51808a43df0264c3dffcc02f0c0b713650d",
-  "widgets/ThemeSettings.qml": "f60ab7d6b804a1954e72b568a4852f24dbf9bb998354e5f2ab59c316e6533d32"
+  "widgets/ThemeSettings.qml": "4d86859c698af6c353d49725805e59644eadb8d2237656bd884a83f85773c9d3"
 }

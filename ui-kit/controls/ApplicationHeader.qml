@@ -90,6 +90,9 @@ Rectangle {
             }
 
             Component.onCompleted: {
+                if (!root.appWindow)
+                    return;
+
                 const minBtn = buttonComponent.createObject(row, {"icon.name": "WindowMinimize", "visible": (root.controls & Settings.Minimize) !== 0, "focusPolicy": root.buttonsFocusPolicy});
                 minBtn.clicked.connect(function() {
                     root.appWindow.visibility = Window.Minimized;
@@ -173,6 +176,9 @@ Rectangle {
     }
 
     function maximizeWindow() {
+        if (!root.appWindow)
+            return;
+
         if (root.appWindow.visibility === Window.Maximized)
             root.appWindow.visibility = Window.AutomaticVisibility;
         else

@@ -77,7 +77,7 @@ Dock {
     systemOpen: openLobe !== "" || showingCards
     systemFocus: openLobe !== "" || searchField.activeFocus
     restingKeyboardMode: cards.replyingCount > 0 ? "ondemand" : "none"
-    systemWidth: openLobe === "search" || showingCards ? oskaWidth
+    systemWidth: openLobe === "search" || openLobe === "notif" || showingCards ? oskaWidth
         : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
     systemGap: openLobe === "search" ? 16 : openLobe === "notif" || showingCards ? 8 : 0
     systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * lobePad)
@@ -627,6 +627,7 @@ Dock {
             id: historyLoader
             active: panel.warm
             visible: panel.openLobe === "notif"
+            width: systemContent.width
             sourceComponent: NotificationCenter {
                 open: panel.openLobe === "notif"
             }

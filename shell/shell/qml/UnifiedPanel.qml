@@ -11,10 +11,11 @@ Dock {
     id: panel
     unified: true
     title: "SberOS — Panel"
-    // Fixed centre and right-hand budgets keep system changes out of the task/search geometry.
+    // Keep Oska centred while sizing its island from the usable panel width.
     readonly property real zoneGap: 8
-    readonly property real oskaWidth: Math.min(448, screenW * 0.25)
     readonly property real systemZoneWidth: 260
+    readonly property real oskaWidth: Math.min(dockW * 0.25,
+        Math.max(0, dockW - 2 * systemZoneWidth - 4 * zoneGap))
     readonly property real indicatorsAvailableWidth:
         Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap)
     readonly property real indicatorsWidth:

@@ -26,17 +26,20 @@ Item {
     property bool jobBusy: false                  // running, but the total is unknown (a download without a size): a sweeping bar instead of a stuck 0 %
     property string jobInfo: ""                   // "12.4 MB of 80 MB  ·  3.1 MB/s"
     property bool compact: false
+    // Single-line notification row used by the Oska island popup stack. The history
+    // view keeps the full card layout below.
+    property bool oskaStyle: false
     readonly property bool hovered: hh.hovered
     signal closeClicked()
     signal defaultInvoked()
     signal actionInvoked(string name)
     signal replied(string text)
     width: 364
-    height: content.implicitHeight + (compact ? 20 : 26)
+    height: oskaStyle ? 56 : content.implicitHeight + (compact ? 20 : 26)
     property bool replying: false
 
     opacity: low ? 0.72 : 1
-    Rectangle { anchors.fill: parent; radius: 16
+    Rectangle { anchors.fill: parent; radius: card.oskaStyle ? 20 : 16
         color: Config.fg(hh.hovered ? 0.085 : 0.055); border.width: 1
         border.color: card.critical ? Qt.rgba(Config.accent.r, Config.accent.g, Config.accent.b, 0.55) : Config.fg(hh.hovered ? 0.16 : 0.09)
         Behavior on color { ColorAnimation { duration: Config.quick } } }
@@ -48,7 +51,86 @@ Item {
     property int overControls: 0                      // how many of the card's own buttons the pointer is over
     TapHandler { enabled: card.hasDefaultAction && !card.replying && card.overControls === 0; onTapped: card.defaultInvoked() }
 
-    Column { id: content; x: card.critical ? 18 : 14; y: card.compact ? 10 : 13; width: parent.width - (card.critical ? 32 : 28); spacing: 6
+    Row {
+        id: oskaRow
+        visible: card.oskaStyle
+        anchors.fill: parent
+        anchors.margins: 8
+        spacing: 10
+
+        Rectangle {
+            width: 40
+            height: 40
+            radius: width / 2
+            anchors.verticalCenter: parent.verticalCenter
+            color: Config.fg(0.08)
+
+            Kirigami.Icon {
+                anchors.centerIn: parent
+                width: 24
+                height: 24
+                source: card.appIcon || "preferences-desktop-notification"
+                roundToIconSize: false
+            }
+        }
+
+        Text {
+            id: oskaText
+            width: parent.width - 40 - 20 - 20
+            height: parent.height
+            verticalAlignment: Text.AlignVCenter
+            text: card.summary + (card.body !== "" && card.body !== card.summary ? " · " + card.body : "")
+            color: Config.ink
+            font.pixelSize: 14
+            font.weight: Font.Medium
+            elide: Text.ElideRight
+            maximumLineCount: 1
+            textFormat: Text.PlainText
+        }
+
+        Item {
+            width: 20
+            height: 20
+            anchors.verticalCenter: parent.verticalCenter
+
+            Kirigami.Icon {
+                anchors.fill: parent
+                source: card.picture || ""
+                roundToIconSize: false
+                visible: !oskaClose.visible && !!card.picture && card.picture !== ""
+                    && String(card.picture) !== String(card.appIcon)
+            }
+
+            Item {
+                id: oskaClose
+                anchors.fill: parent
+                opacity: hh.hovered ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: Config.quick } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: Config.fg(oskaCloseHover.hovered ? 0.18 : 0.08)
+                }
+                Kirigami.Icon {
+                    anchors.centerIn: parent
+                    width: 10
+                    height: 10
+                    source: "window-close-symbolic"
+                    isMask: true
+                    color: Config.fgSolid
+                    roundToIconSize: false
+                }
+                HoverHandler {
+                    id: oskaCloseHover
+                    onHoveredChanged: card.overControls += hovered ? 1 : -1
+                }
+                TapHandler { onTapped: card.closeClicked() }
+            }
+        }
+    }
+
+    Column { id: content; visible: !card.oskaStyle; x: card.critical ? 18 : 14; y: card.compact ? 10 : 13; width: parent.width - (card.critical ? 32 : 28); spacing: 6
         // app line
         Item { width: parent.width; height: 16
             Kirigami.Icon { id: aIcon; width: 14; height: 14; anchors.verticalCenter: parent.verticalCenter; source: card.appIcon || "preferences-desktop-notification"; roundToIconSize: false }

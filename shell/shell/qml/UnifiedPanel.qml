@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.notificationmanager as NotificationManager
 import Sber.Controls as Sber
 import Sber.Core as SberCore
 import Sber.Theme
@@ -11,11 +12,10 @@ Dock {
     id: panel
     unified: true
     title: "SberOS — Panel"
-    // Keep Oska centred while sizing its island from the usable panel width.
+    // Fixed centre and right-hand budgets keep system changes out of the task/search geometry.
     readonly property real zoneGap: 8
+    readonly property real oskaWidth: Math.min(448, screenW * 0.25)
     readonly property real systemZoneWidth: essential.implicitWidth + 16
-    readonly property real oskaWidth: Math.min(dockW * 0.25,
-        Math.max(0, dockW - 2 * systemZoneWidth - 4 * zoneGap))
     readonly property real indicatorsAvailableWidth:
         Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap)
     readonly property real indicatorsWidth:
@@ -40,23 +40,50 @@ Dock {
     property var activeIcon
     signal showDesktopRequested
     signal sberRequested
-    signal searchRequested
     property string openLobe: ""
+    property bool greetingVisible: true
     property string requestedPage: "main"
     property real popupAnchor: essentialRect.x + essentialRect.width / 2
     readonly property var nativeControl: controlLoader.item
     readonly property var notifications: historyLoader.item
+    property int oskaNotificationRevision: 0
+    readonly property bool oskaNotificationsInhibited: oskaNotificationSettings.notificationsInhibitedByApplication
+        || (oskaNotificationSettings.notificationsInhibitedUntil instanceof Date
+            && !isNaN(oskaNotificationSettings.notificationsInhibitedUntil.getTime())
+            && Date.now() < oskaNotificationSettings.notificationsInhibitedUntil.getTime())
+    readonly property var oskaNotification: {
+        oskaNotificationRevision;
+        const roles = NotificationManager.Notifications;
+        if (oskaFeed.count === 0)
+            return null;
+        const index = oskaFeed.index(0, 0);
+        return {
+            id: oskaFeed.data(index, roles.IdRole),
+            summary: String(oskaFeed.data(index, roles.SummaryRole) || ""),
+            body: String(oskaFeed.data(index, roles.BodyRole) || ""),
+            applicationIcon: String(oskaFeed.data(index, roles.ApplicationIconNameRole) || ""),
+            icon: String(oskaFeed.data(index, roles.IconNameRole) || ""),
+        };
+    }
+    readonly property bool oskaNotificationVisible: openLobe === "search" && oskaNotification !== null
+    readonly property real oskaNotificationHeight: oskaNotificationVisible ? 56 : 0
+    readonly property real activeSystemViewHeight: openLobe === "search"
+        ? searchResults.y + searchResults.height + (oskaNotificationVisible ? 8 + oskaNotificationHeight : 0)
+        : systemView ? systemView.y + (systemView.implicitHeight || systemView.height) : 0
     readonly property bool mediaAvailable: media.hasTrack
     readonly property int barW: dockW
-    readonly property bool showingCards: openLobe === "" && !launcherOpen && !previewShown && cards.count > 0
-    readonly property Item systemView: showingCards ? cards : openLobe === "clock" ? calendarLoader.item : openLobe === "gear" ? controlLoader.item : openLobe === "notif" ? historyLoader.item : openLobe === "tray" ? trayMenuLoader.item : openLobe === "media" ? mediaLoader.item : openLobe === "disks" ? disksLoader.item : openLobe === "system" ? monitorLoader.item : null
+    readonly property bool showingCards: openLobe === "" && !searchField.activeFocus && !launcherOpen && !previewShown && cards.count > 0
+    readonly property Item systemView: showingCards ? cards : openLobe === "search" ? searchResults : openLobe === "clock" ? calendarLoader.item : openLobe === "gear" ? controlLoader.item : openLobe === "notif" ? historyLoader.item : openLobe === "tray" ? trayMenuLoader.item : openLobe === "media" ? mediaLoader.item : openLobe === "disks" ? disksLoader.item : openLobe === "system" ? monitorLoader.item : null
     systemOpen: openLobe !== "" || showingCards
-    systemFocus: openLobe !== ""
+    systemFocus: openLobe !== "" || searchField.activeFocus
     restingKeyboardMode: cards.replyingCount > 0 ? "ondemand" : "none"
-    systemWidth: Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
-    systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (systemView ? systemView.implicitHeight || systemView.height : 240) + 2 * lobePad)
-    systemAnchorX: popupAnchor
-    onSystemCloseRequested: openLobe = ""
+    systemWidth: openLobe === "search" || showingCards ? oskaWidth
+        : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
+    systemGap: openLobe === "search" && oskaNotificationVisible ? 0 : openLobe === "search" ? 16 : 0
+    systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * lobePad)
+    systemAnchorX: openLobe === "search" || showingCards
+        ? searchField.mapToItem(panel.contentItem, searchField.width / 2, 0).x : popupAnchor
+    onSystemCloseRequested: { if (openLobe === "search") searchField.focus = false; openLobe = "" }
     onOpenLobeChanged: {
         if (openLobe !== "") {
             warm = true;
@@ -91,6 +118,12 @@ Dock {
     function openSoundPage() {
         openPage("sound");
     }
+    function focusSearch(query) {
+        if (query !== undefined)
+            searchField.text = String(query);
+        openLobe = searchField.text.trim() === "" ? "" : "search";
+        searchField.forceActiveFocus();
+    }
     function openTrayMenuAt(index) {
         nativeTray.requestMenuAt(index);
     }
@@ -99,6 +132,39 @@ Dock {
         SberCore.Core.Settings.setThemeMode(Config.dark ? SberCore.Settings.Dark : SberCore.Settings.Light);
     }
     Component.onCompleted: syncTheme()
+    NotificationManager.Settings { id: oskaNotificationSettings }
+    NotificationManager.Notifications {
+        id: oskaFeed
+        limit: 256
+        showExpired: false
+        showDismissed: false
+        showAddedDuringInhibition: false
+        showJobs: false
+        blacklistedDesktopEntries: oskaNotificationSettings.popupBlacklistedApplications
+        blacklistedNotifyRcNames: oskaNotificationSettings.popupBlacklistedServices
+        whitelistedDesktopEntries: panel.oskaNotificationsInhibited ? oskaNotificationSettings.doNotDisturbPopupWhitelistedApplications : []
+        whitelistedNotifyRcNames: panel.oskaNotificationsInhibited ? oskaNotificationSettings.doNotDisturbPopupWhitelistedServices : []
+        sortMode: NotificationManager.Notifications.SortByDate
+        sortOrder: Qt.AscendingOrder
+        groupMode: NotificationManager.Notifications.GroupDisabled
+        urgencies: NotificationManager.Notifications.LowUrgency
+            | NotificationManager.Notifications.NormalUrgency
+            | NotificationManager.Notifications.CriticalUrgency
+    }
+    Connections {
+        target: oskaFeed
+        function onCountChanged() { panel.oskaNotificationRevision++ }
+        function onDataChanged() { panel.oskaNotificationRevision++ }
+        function onRowsInserted() { panel.oskaNotificationRevision++ }
+        function onRowsRemoved() { panel.oskaNotificationRevision++ }
+        function onModelReset() { panel.oskaNotificationRevision++ }
+        function onLayoutChanged() { panel.oskaNotificationRevision++ }
+    }
+    Timer {
+        interval: 10000
+        running: true
+        onTriggered: panel.greetingVisible = false
+    }
     Connections {
         target: Config
         function onDarkChanged() {
@@ -181,21 +247,57 @@ Dock {
             description: qsTr("Notifications")
             onClicked: panel.openAt("notif", this)
         }
-        PanelButton {
-            id: searchButton
-            x: notificationButton.x + notificationButton.width + 4
-            width: Math.max(0, layoutButton.x - x - 4)
-            anchors.verticalCenter: parent.verticalCenter
-            description: qsTr("Find a document or application")
-            text: description
-            contentItem: Sber.Label {
-                text: searchButton.text
-                elide: Text.ElideRight
-                verticalAlignment: Text.AlignVCenter
-                color: Theme.Palette.Text.Default.Secondary
-                font: Theme.Fonts.BodySB
+        TextInput {
+            id: searchField
+            objectName: "searchButton"
+            x: notificationButton.x + notificationButton.width + 10
+            y: 4
+            width: Math.max(0, layoutButton.x - x - 8)
+            height: parent.height - 8
+            verticalAlignment: TextInput.AlignVCenter
+            color: Theme.Palette.Text.Default.Primary
+            font: Theme.Fonts.BodyM
+            clip: true
+            selectByMouse: true
+            selectionColor: Theme.Palette.Surface.Default.Accent
+            selectedTextColor: Theme.Palette.Text.Default.Primary
+            onTextChanged: {
+                searchResults.currentIndex = 0;
+                if (text.trim() !== "")
+                    panel.openLobe = "search";
+                else if (panel.openLobe === "search")
+                    panel.openLobe = "";
             }
-            onClicked: panel.searchRequested()
+            Keys.onPressed: event => {
+                if (event.key === Qt.Key_Escape) {
+                    if (text !== "") text = "";
+                    else focus = false;
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Down) {
+                    searchResults.moveSelection(1);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Up) {
+                    searchResults.moveSelection(-1);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    searchResults.runCurrent();
+                    event.accepted = true;
+                }
+            }
+            Accessible.name: qsTr("Find a document or application")
+        }
+        Text {
+            anchors.left: searchField.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: searchField.width
+            visible: searchField.text === ""
+            text: panel.greetingVisible
+                ? qsTr("Привет, Михаил! Желаю хорошего дня")
+                : qsTr("Найти приложение или документ")
+            color: Theme.Palette.Text.Default.Secondary
+            font: Theme.Fonts.BodySB
+            elide: Text.ElideRight
+            enabled: false
         }
         KeyboardInfo { id: keyboard }
         PanelButton {
@@ -396,7 +498,7 @@ Dock {
         width: Math.max(1, panel.systemWidth - 2 * panel.lobePad)
         height: Math.max(0, panel.systemRect.height - 2 * panel.lobePad)
         contentWidth: width
-        contentHeight: panel.systemView ? panel.systemView.implicitHeight || panel.systemView.height : 0
+        contentHeight: panel.activeSystemViewHeight
         visible: panel.systemUp
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -407,8 +509,89 @@ Dock {
                 systemContent.contentY = 0;
             }
         }
+        OskaSearchResults {
+            id: searchResults
+            width: systemContent.width
+            height: implicitHeight
+            y: 0
+            query: searchField.text
+            iconLeftInset: searchField.x - panel.lobePad - listMargin
+            textLeftInset: searchField.x + 36 - panel.lobePad - listMargin
+            textRightInset: searchField.x + searchField.width - panel.lobePad - listMargin
+            visible: panel.openLobe === "search"
+            onActivated: {
+                searchField.text = "";
+                searchField.forceActiveFocus();
+            }
+        }
+        Item {
+            id: oskaNotificationBanner
+            x: 0
+            y: searchResults.y + searchResults.height + 8
+            width: systemContent.width
+            height: panel.oskaNotificationHeight
+            visible: panel.oskaNotificationVisible
+            Rectangle {
+                anchors.fill: parent
+                radius: 20
+                color: Theme.Palette.Background.Default.Secondary
+                border.width: 1
+                border.color: Theme.Palette.Outline.Default.SolidPrimary
+            }
+            Row {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 10
+                Rectangle {
+                    width: 40
+                    height: 40
+                    radius: width / 2
+                    color: Theme.Palette.Background.Default.Tertiary
+                    anchors.verticalCenter: parent.verticalCenter
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        source: panel.oskaNotification
+                            ? panel.oskaNotification.applicationIcon || panel.oskaNotification.icon
+                            : "preferences-desktop-notification"
+                        roundToIconSize: false
+                    }
+                }
+                Column {
+                    width: parent.width - 40 - 18 - 20
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text {
+                        width: parent.width
+                        text: panel.oskaNotification
+                            ? panel.oskaNotification.summary + (panel.oskaNotification.body !== ""
+                                && panel.oskaNotification.body !== panel.oskaNotification.summary
+                                ? " · " + panel.oskaNotification.body : "") : ""
+                        color: Theme.Palette.Text.Default.Primary
+                        font: Theme.Fonts.BodyM
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+                Kirigami.Icon {
+                    width: 20
+                    height: 20
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: panel.oskaNotification ? panel.oskaNotification.icon : "preferences-desktop-notification"
+                    isMask: true
+                    color: Theme.Palette.Text.Default.Primary
+                    roundToIconSize: false
+                    visible: panel.oskaNotification
+                        && panel.oskaNotification.applicationIcon !== ""
+                        && panel.oskaNotification.icon !== ""
+                        && panel.oskaNotification.icon !== panel.oskaNotification.applicationIcon
+                }
+            }
+        }
         NotificationCards {
             id: cards
+            width: systemContent.width
             visible: panel.showingCards
             muted: panel.busy && Config.quietWhenBusy
         }

@@ -22,7 +22,7 @@ Item {
     onMutedChanged: if (dbg) console.log("NOTIF muted", muted)
     onCountChanged: if (dbg) console.log("NOTIF cards", count)
     readonly property bool anyReplying: { for (let i = 0; i < rep.count; ++i) { const c = rep.itemAt(i); if (c && c.replying) return true } return false }
-    width: 364 ; height: col.height
+    width: parent ? parent.width : 364 ; height: col.height
     NotificationManager.Settings { id: settings }
     readonly property bool inhibited: settings.notificationsInhibitedByApplication
         || (settings.notificationsInhibitedUntil instanceof Date && !isNaN(settings.notificationsInhibitedUntil.getTime()) && Date.now() < settings.notificationsInhibitedUntil.getTime())
@@ -39,7 +39,7 @@ Item {
         urgencies: { let u = 0;
             if (!cards.inhibited || settings.criticalPopupsInDoNotDisturbMode) u |= NotificationManager.Notifications.CriticalUrgency;
             if (!cards.inhibited && !cards.muted) u |= NotificationManager.Notifications.NormalUrgency;
-            if (!cards.inhibited && !cards.muted && settings.lowPriorityPopups) u |= NotificationManager.Notifications.LowUrgency;
+            if (!cards.inhibited && !cards.muted) u |= NotificationManager.Notifications.LowUrgency;
             return u } }
 
     Column { id: col; width: parent.width; spacing: 8
@@ -48,10 +48,12 @@ Item {
             delegate: NotifCard { id: c
                 required property int index
                 required property var model
+                width: cards.width
                 onReplyingChanged: cards.replyingCount += replying ? 1 : -1
                 Component.onDestruction: if (replying) cards.replyingCount--
                 readonly property var idx: popups.index(index, 0)
                 readonly property bool job: model.type === NotificationManager.Notifications.JobType
+                oskaStyle: !job && !(model.actionNames && model.actionNames.length > 0) && !model.hasReplyAction
                 appName: model.applicationName || ""; appIcon: model.applicationIconName || ""
                 summary: model.summary || ""; body: job ? (model.body || "") : (model.body || "")
                 picture: model.image || model.iconName || ""

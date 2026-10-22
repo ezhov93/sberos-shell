@@ -131,6 +131,7 @@ Item {
                 readonly property var idx: history.index(row.index, 0)
                 readonly property bool job: row.model.type === NotificationManager.Notifications.JobType
                 width: row.width; compact: true
+                oskaStyle: !job && !(row.model.actionNames && row.model.actionNames.length > 0) && !row.model.hasReplyAction
                 appName: row.model.applicationName || ""; appIcon: row.model.applicationIconName || ""
                 summary: row.model.summary || ""; body: row.model.body || ""; picture: row.model.image || row.model.iconName || ""
                 actionNames: row.model.actionNames || []; actionLabels: row.model.actionLabels || []

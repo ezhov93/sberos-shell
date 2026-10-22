@@ -349,7 +349,7 @@ Dock {
     Row {
         id: essential
         enabled: !panel.editing
-        x: panel.essentialRect.x + 8
+        x: panel.essentialRect.x + panel.systemZoneWidth - width - 8
         y: panel.barRect.y
         height: panel.dockH
         spacing: 2
@@ -361,7 +361,6 @@ Dock {
         }
         PanelButton {
             id: clockButton
-            width: panel.systemZoneWidth - 16 - Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S) - 2
             property date now: new Date()
             Timer {
                 interval: 10000

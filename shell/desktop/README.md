@@ -1,5 +1,13 @@
 # Glass Desktop
 
+## SberOS adaptation
+
+The isolated SberOS palette generator reads the shared UI Kit resources and writes
+light/dark KDE and GTK palettes without applying them. See
+[the migration map, token mapping and checks](docs/SBEROS.md) (DESKTOP-001).
+The Glass commands below remain the upstream compatibility path; they do not
+install the generated SberOS palettes.
+
 The themes that go with [Sirca Shell](../shell): one design, generated from one file (`design/tokens.json`) into
 every toolkit, plus a matching lock screen. KWin stays the window manager; nothing here replaces it.
 

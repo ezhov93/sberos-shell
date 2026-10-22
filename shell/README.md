@@ -51,6 +51,10 @@ The bundled theme tools coordinate light or dark mode across the shell, KDE and 
 
 ## SberOS workspace adaptation
 
+The adapted shell now combines the top bar and dock into one bottom panel by
+default (`panelLayout: "split"` restores the original layout). See
+[shell/README.md](shell/README.md#sberos-unified-panel).
+
 The shell's settings window now uses the shared SberOS UI Kit from `../ui-kit/`.
 Build the UI Kit before building or installing this adapted shell; the build and
 runtime path are documented in [shell/README.md](shell/README.md#sberos-adaptation).

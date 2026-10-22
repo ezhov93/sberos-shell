@@ -7,6 +7,27 @@ the window manager. Popups are not separate windows: they grow out of the bar an
 > screen. It works there every day. Other screen sizes, several monitors, other Plasma versions and other GPUs are
 > untested. It can always be switched off again with one command, and it switches itself off if it keeps crashing.
 
+## SberOS unified panel
+
+This adapted shell defaults to one bottom `UnifiedPanel`: search and show-desktop
+on the left, launcher/tasks in the middle, tray, clock, notifications and quick
+settings on the right. The task model, pinning and app previews are reused from
+Dock. System popups open upward inside the same layer-shell surface. Long task
+and status areas scroll independently.
+
+`panelLayout` defaults to `unified`; set it to `split` in the existing config file
+to restore the original two-panel layout. No existing configuration is deleted.
+The unified panel uses `dock…` sizing/visibility/style options and fills the screen
+with `dockFillMargin` side margins. `screens.<output>.panel` enables it per screen;
+without that key, old `bar`/`dock` choices are combined. Hosted tray/calendar/control
+fallbacks and the original group-placement editor remain available in split mode.
+
+[ADR-0008](../../docs/adr/0008-unified-bottom-panel.md),
+[requirements](../../docs/rules/unified-panel.md), and
+[verification report](tests/panel/README.md) describe the migration and its limits.
+The upstream feature list below describes the original implementation; placement
+in the adapted default follows this section.
+
 ## What is in it
 
 - **Top bar** - show desktop, workspaces, tray (StatusNotifier host with its own menus), focused window title, clock

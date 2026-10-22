@@ -30,8 +30,13 @@ QtObject {
     property var _remap: Connections { target: Shell; function onRemapWallpaperRequested() { if (set.wallpaper) set.wallpaper.remapNow() } }
 
     // the bar and the dock: built at once on the primary screen, on demand elsewhere
-    property var bar: null
-    property var dock: null
+    readonly property bool wantPanel: choice.panel !== undefined ? !!choice.panel : wantBar || wantDock
+    property var panel: null
+    property var _layout: Connections { target: Config; function onUnifiedPanelChanged() { set.sync() } }
+    property var splitBar: null
+    property var splitDock: null
+    readonly property var bar: Config.unifiedPanel ? panel : splitBar
+    readonly property var dock: Config.unifiedPanel ? panel : splitDock
     readonly property var _cBar: Component { TopBar { screen: set.screen; userHidden: !set.wantBar; maximizedHere: set.dock ? set.dock.anyMaximized : false
         recorder: set.host.recorder; editing: set.host.editing; onEditRequested: set.host.setEditing(true)
         quiet: set.host.fullscreenActive; busy: set.host.fullscreenActive || set.host.gameActive; showingDesktop: set.host.showingDesktop
@@ -42,18 +47,37 @@ QtObject {
     readonly property var _cDock: Component { Dock { screen: set.screen; userHidden: !set.wantDock
         editing: set.host.editing; onEditRequested: set.host.setEditing(true); onLauncherOpenChanged: if (launcherOpen) set.host.closeLobes()
         covered: { set.host.rev; return !set.host.showingDesktop && set.host.overlaps(Qt.rect(set.ox + x + (width - dockW) / 2, set.oy + y + height - strutSize, dockW, strutSize)) } } }
+    readonly property var _cPanel: Component { UnifiedPanel {
+        screen: set.screen; userHidden: !set.wantPanel
+        recorder: set.host.recorder; editing: set.host.editing
+        showingDesktop: set.host.showingDesktop
+        activeTitle: set.host.activeTitle; activeApp: set.host.activeApp; activeIcon: set.host.activeIcon
+        onEditRequested: set.host.setEditing(true)
+        onSearchRequested: set.host.win("search").toggle()
+        onShowDesktopRequested: set.host.toggleShowDesktop()
+        onLauncherOpenChanged: if (launcherOpen) set.host.closeLobes()
+        covered: { set.host.rev; return !set.host.showingDesktop && set.host.overlaps(Qt.rect(set.ox + x + (width - dockW) / 2, set.oy + y + height - strutSize, dockW, strutSize)) }
+    } }
     property bool _syncing: false
     property int _syncCalls: 0
     function sync() {
         if (!host || !screen || _syncing) return
         _syncing = true; _syncCalls++             // building a bar re-evaluates bindings that call sync again: one at a time
-        if (!bar && (primary || wantBar)) bar = _cBar.createObject(set)
-        else if (bar && !primary && !wantBar) { bar.destroy(); bar = null }
-        if (!dock && (primary || wantDock)) dock = _cDock.createObject(set)
-        else if (dock && !primary && !wantDock) { dock.destroy(); dock = null }
+        if (Config.unifiedPanel) {
+            if (splitBar) { splitBar.destroy(); splitBar = null }
+            if (splitDock) { splitDock.destroy(); splitDock = null }
+            if (!panel && (primary || wantPanel)) panel = _cPanel.createObject(set)
+            else if (panel && !primary && !wantPanel) { panel.destroy(); panel = null }
+        } else {
+            if (panel) { panel.destroy(); panel = null }
+            if (!splitBar && (primary || wantBar)) splitBar = _cBar.createObject(set)
+            else if (splitBar && !primary && !wantBar) { splitBar.destroy(); splitBar = null }
+            if (!splitDock && (primary || wantDock)) splitDock = _cDock.createObject(set)
+            else if (splitDock && !primary && !wantDock) { splitDock.destroy(); splitDock = null }
+        }
         _syncing = false
     }
-    onWantBarChanged: sync(); onWantDockChanged: sync(); onPrimaryChanged: sync(); onHostChanged: sync(); onScreenChanged: sync()
+    onWantPanelChanged: sync(); onWantBarChanged: sync(); onWantDockChanged: sync(); onPrimaryChanged: sync(); onHostChanged: sync(); onScreenChanged: sync()
     Component.onCompleted: { findScreen(); sync() }
-    Component.onDestruction: { if (bar) bar.destroy(); if (dock) dock.destroy(); if (wallpaper) wallpaper.destroy() }
+    Component.onDestruction: { if (panel) panel.destroy(); if (splitBar) splitBar.destroy(); if (splitDock) splitDock.destroy(); if (wallpaper) wallpaper.destroy() }
 }

@@ -10,6 +10,8 @@ QtObject {
     readonly property var user: load(Shell.configRevision)
     function get(key, fallback) { return (user && user[key] !== undefined) ? user[key] : fallback }
 
+    readonly property bool unifiedPanel: get("panelLayout", "unified") !== "split"
+
     // ---- light / dark. `mode` is written by the quick-settings toggle (tools: glass-mode, which also switches the KDE colour
     // scheme, GTK, icons and the wallpaper). Everything drawn ON the glass goes through fg(): white in dark mode, near-black in
     // light mode. Things that sit on a coloured fill (badges, the record pill's dot, accent buttons) stay literally white.

@@ -19,7 +19,7 @@ TestCase {
     function find(predicate) { return allItems(settings, predicate)[0] }
     function init() {
         Shell.wallpapers = []
-        Shell.config = ({mode: "light"}); Shell.configRevision++
+        Shell.config = ({mode: "light", panelLayout: "split"}); Shell.configRevision++
         const component = Qt.createComponent("Settings.qml")
         compare(component.status, Component.Ready, component.errorString())
         settings = component.createObject(null)

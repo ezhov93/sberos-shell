@@ -42,10 +42,10 @@ Window {
             name: "Appearance"
         },
         {
-            name: "Top bar"
+            name: Config.unifiedPanel ? "System area" : "Top bar"
         },
         {
-            name: "Dock"
+            name: Config.unifiedPanel ? "Panel" : "Dock"
         },
         {
             name: "Behaviour"
@@ -341,6 +341,7 @@ Window {
                         }
                         Row_ {
                             label: "Corner radius"
+                            visible: !Config.unifiedPanel
                             key: "cornerRadius"
                             Num {
                                 key: "cornerRadius"
@@ -368,6 +369,7 @@ Window {
                         }
                         Row_ {
                             label: "Top bar"
+                            visible: !Config.unifiedPanel
                             key: "barHazeStrength"
                             Num {
                                 key: "barHazeStrength"
@@ -388,6 +390,7 @@ Window {
                     spacing: 18
                     Section {
                         title: "Size"
+                        visible: !Config.unifiedPanel
                         Row_ {
                             label: "Width"
                             hint: "Centred on the screen"
@@ -426,6 +429,7 @@ Window {
                     }
                     Section {
                         title: "Tray"
+                        visible: !Config.unifiedPanel
                         Row_ {
                             label: "Native tray"
                             hint: "App icons and their menus drawn by the shell. Off = the hosted Plasma tray"
@@ -438,6 +442,7 @@ Window {
                     }
                     Section {
                         title: "Calendar"
+                        visible: !Config.unifiedPanel
                         Row_ {
                             label: "Native calendar"
                             hint: "The popup behind the clock. Off = the hosted Plasma clock applet"
@@ -540,8 +545,10 @@ Window {
                     }
                     Section {
                         title: "Notifications"
+                        visible: !Config.unifiedPanel
                         Row_ {
                             label: "Native notifications"
+                            visible: !Config.unifiedPanel
                             hint: "Cards and history drawn by the shell. Off = the hosted Plasma applet"
                             key: "nativeNotifications"
                             Toggle {
@@ -641,6 +648,7 @@ Window {
                         }
                         Row_ {
                             label: "Native quick settings"
+                            visible: !Config.unifiedPanel
                             hint: "Our own panel. Off = the hosted Plasma applet"
                             key: "nativeControl"
                             Toggle {
@@ -781,6 +789,7 @@ Window {
                         title: "Windows"
                         Row_ {
                             label: "Bar and windows"
+                            visible: !Config.unifiedPanel
                             hint: "Never touch it reserves space; hide = slide away under a window; below = windows go under the bar. The looks per state (touched, maximised, full-screen) are in edit mode › Bar"
                             key: "barVisibility"
                             Row {
@@ -803,7 +812,7 @@ Window {
                             }
                         }
                         Row_ {
-                            label: "Dock and windows"
+                            label: Config.unifiedPanel ? "Panel and windows" : "Dock and windows"
                             key: "dockVisibility"
                             Row {
                                 spacing: 6

@@ -683,7 +683,10 @@ void Shell::markReady(const QString &what)
     // the login splash waits for plasmashell's "desktop" stage; without plasmashell (withoutPlasmashell) the shell says it
     // once bar and dock have drawn, or ksplash sits there until its own timeout. Harmless when no splash is running.
     static bool splashTold = false;
-    if (!splashTold && m_ready.contains(QStringLiteral("top")) && m_ready.contains(QStringLiteral("bottom")) && loadConfig().value(QStringLiteral("withoutPlasmashell"), false).toBool()) {
+    const QVariantMap cfg = loadConfig();
+    const bool unified = cfg.value(QStringLiteral("panelLayout"), QStringLiteral("unified")).toString() != QLatin1String("split");
+    const bool panelsReady = m_ready.contains(QStringLiteral("bottom")) && (unified || m_ready.contains(QStringLiteral("top")));
+    if (!splashTold && panelsReady && cfg.value(QStringLiteral("withoutPlasmashell"), false).toBool()) {
         splashTold = true;
         QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.kde.KSplash"), QStringLiteral("/KSplash"), QStringLiteral("org.kde.KSplash"), QStringLiteral("setStage")) << QStringLiteral("desktop"));
         qInfo("sirca-shell: told ksplash the desktop is up");
@@ -703,11 +706,20 @@ void Shell::selfTest()
     const QVariantMap screens = cfg.value(QStringLiteral("screens")).toMap();
     auto wanted = [&](const QString &key) { bool any = false, primaryListed = false;
         for (auto it = screens.begin(); it != screens.end(); ++it) { const QVariantMap c = it.value().toMap(); const bool isPrimary = it.key() == primaryScreenName();
-            if (isPrimary) primaryListed = true; if (c.value(key, isPrimary).toBool()) any = true; }
+            if (isPrimary) primaryListed = true;
+            const bool fallback = key == QLatin1String("panel")
+                ? c.value(QStringLiteral("bar"), isPrimary).toBool() || c.value(QStringLiteral("dock"), isPrimary).toBool()
+                : isPrimary;
+            if (c.value(key, fallback).toBool()) any = true; }
         return any || !primaryListed; };
     const bool wantBar = wanted(QStringLiteral("bar")), wantDock = wanted(QStringLiteral("dock"));
-    if (wantBar) check(m_ready.contains(QStringLiteral("top")), QStringLiteral("bar"), QStringLiteral("no first frame: is the layer shell available? is another shell holding the top edge?"));
-    if (wantDock) check(m_ready.contains(QStringLiteral("bottom")), QStringLiteral("dock"), QStringLiteral("no first frame"));
+    const bool unified = cfg.value(QStringLiteral("panelLayout"), QStringLiteral("unified")).toString() != QLatin1String("split");
+    if (unified) {
+        if (wanted(QStringLiteral("panel"))) check(m_ready.contains(QStringLiteral("bottom")), QStringLiteral("panel"), QStringLiteral("no first frame"));
+    } else {
+        if (wantBar) check(m_ready.contains(QStringLiteral("top")), QStringLiteral("bar"), QStringLiteral("no first frame: is the layer shell available? is another shell holding the top edge?"));
+        if (wantDock) check(m_ready.contains(QStringLiteral("bottom")), QStringLiteral("dock"), QStringLiteral("no first frame"));
+    }
     check(QDBusConnection::sessionBus().interface()->isServiceRegistered(QStringLiteral("onur.SircaShell")), QStringLiteral("D-Bus name"), QStringLiteral("onur.SircaShell is not ours: a second instance?"));
     // global shortcuts: ours must be known to kglobalaccel (the Search key is registered unconditionally)
     QString comp = QCoreApplication::applicationName(); comp.replace(QLatin1Char('-'), QLatin1Char('_'));

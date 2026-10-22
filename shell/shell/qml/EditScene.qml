@@ -184,12 +184,13 @@ Window {
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons } }
 
     readonly property var unplaced: { const all = Object.keys(Config.barWidgetNames); return all.filter(n => Config.barLeft.indexOf(n) < 0 && Config.barCenter.indexOf(n) < 0 && Config.barRight.indexOf(n) < 0) }
-    Strip { id: barStrip; anchors.horizontalCenter: parent.horizontalCenter; y: es.barHole.y + es.barHole.height + 26 - (1 - es.show) * 14
+    Strip { id: barStrip; visible: !Config.unifiedPanel; anchors.horizontalCenter: parent.horizontalCenter; y: es.barHole.y + es.barHole.height + 26 - (1 - es.show) * 14
         title: "Top bar"; hint: "Drag a widget to move it  ·  × takes it off  ·  drag the ends to resize"; tabs: es.barTabs; shelf: es.unplaced
         onShelfTapped: name => { const left = ["desktop", "workspaces", "tray", "title"].indexOf(name) >= 0, centre = ["clock", "date"].indexOf(name) >= 0
             const key = left ? "barLeft" : centre ? "barCenter" : "barRight"; const l = Config[key].slice(); if (left || centre) l.push(name); else l.unshift(name); es.put(key, l, true) } }
+    readonly property var panelTabs: Config.unifiedPanel ? es.dockTabs.concat(es.barTabs.filter(t => t.name === "Clock")) : es.dockTabs
     Strip { id: dockStrip; anchors.horizontalCenter: parent.horizontalCenter; y: es.dockHole.y - height - 26 + (1 - es.show) * 14
-        title: "Dock"; hint: "Drag icons to reorder  ·  × unpins  ·  right-click an app to pin it"; tabs: es.dockTabs }
+        title: Config.unifiedPanel ? "Panel" : "Dock"; hint: "Drag icons to reorder  ·  × unpins  ·  right-click an app to pin it"; tabs: es.panelTabs }
 
     // ---- Screens: which screen shows what. Only with more than one screen. The primary screen (Plasma's, or the one made
     // primary here) has the bar and the dock unless switched off; the others start with the wallpaper only.
@@ -200,7 +201,7 @@ Window {
         onHeightChanged: regions.restart(); onYChanged: regions.restart()
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
         Text { x: 26; y: 17; text: "Screens"; color: "white"; font.pixelSize: 15; font.weight: Font.DemiBold }
-        Text { x: 26; y: 39; text: "Each screen shows its wallpaper. Choose which ones also get the bar and the dock, and which one is the primary (popups and shortcuts open there)."; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 11 }
+        Text { x: 26; y: 39; text: Config.unifiedPanel ? "Choose screens for the panel. Popups and shortcuts use the primary screen." : "Each screen shows its wallpaper. Choose which ones also get the bar and the dock, and which one is the primary (popups and shortcuts open there)."; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 11 }
         Column { id: sbody; x: 26; y: 66; width: parent.width - 52; spacing: 8
             Repeater { model: Qt.application.screens
                 Row { id: sr; required property var modelData; spacing: 18; height: 32
@@ -210,12 +211,12 @@ Window {
                     function setChoice(key, on) { const all = Object.assign({}, Config.get("screens", {}) || {}); const mine = Object.assign({}, all[sname] || {}); mine[key] = on; all[sname] = mine; Shell.saveConfigKey("screens", all) }
                     Text { width: 300; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; color: "white"; font.pixelSize: 13
                         text: sr.sname + "  ·  " + sr.modelData.width + " × " + sr.modelData.height + (sr.isPrimary ? "  ·  primary" : "") }
-                    Row { spacing: 8; anchors.verticalCenter: parent.verticalCenter
+                    Row { spacing: 8; anchors.verticalCenter: parent.verticalCenter; visible: !Config.unifiedPanel
                         Text { text: "Bar"; color: Qt.rgba(1, 1, 1, 0.75); font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                         GlassSwitch { checked: sr.ch.bar !== undefined ? !!sr.ch.bar : sr.isPrimary; onToggled: on => sr.setChoice("bar", on) } }
                     Row { spacing: 8; anchors.verticalCenter: parent.verticalCenter
-                        Text { text: "Dock"; color: Qt.rgba(1, 1, 1, 0.75); font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
-                        GlassSwitch { checked: sr.ch.dock !== undefined ? !!sr.ch.dock : sr.isPrimary; onToggled: on => sr.setChoice("dock", on) } }
+                        Text { text: Config.unifiedPanel ? "Panel" : "Dock"; color: Qt.rgba(1, 1, 1, 0.75); font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                        GlassSwitch { checked: Config.unifiedPanel ? (sr.ch.panel !== undefined ? !!sr.ch.panel : ((sr.ch.bar !== undefined ? !!sr.ch.bar : sr.isPrimary) || (sr.ch.dock !== undefined ? !!sr.ch.dock : sr.isPrimary))) : (sr.ch.dock !== undefined ? !!sr.ch.dock : sr.isPrimary); onToggled: on => sr.setChoice(Config.unifiedPanel ? "panel" : "dock", on) } }
                     PillBtn { visible: !sr.isPrimary; label: "Make primary"; onTapped: Shell.saveConfigKey("primaryScreen", sr.sname) } } } } }
 
     Rectangle { id: pill; anchors.horizontalCenter: parent.horizontalCenter; radius: height / 2
@@ -225,8 +226,8 @@ Window {
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
         Row { id: pr; anchors.centerIn: parent; spacing: 12
             Text { text: "Editing the desktop"; color: "white"; font.pixelSize: 14; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter; rightPadding: 8 }
-            PillBtn { label: "Reset bar"; onTapped: Shell.removeConfigKeys(es.keysOf(es.barTabs, ["barLeft", "barCenter", "barRight"])) }
-            PillBtn { label: "Reset dock"; onTapped: Shell.removeConfigKeys(es.keysOf(es.dockTabs, [])) }
+            PillBtn { visible: !Config.unifiedPanel; label: "Reset bar"; onTapped: Shell.removeConfigKeys(es.keysOf(es.barTabs, ["barLeft", "barCenter", "barRight"])) }
+            PillBtn { label: Config.unifiedPanel ? "Reset panel" : "Reset dock"; onTapped: Shell.removeConfigKeys(es.keysOf(es.panelTabs, [])) }
             PillBtn { label: "More settings…"; onTapped: es.moreSettings() }
             PillBtn { label: "Done"; primary: true; onTapped: es.done() } } }
 }

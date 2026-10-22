@@ -5,11 +5,31 @@ import QtQuick.Effects
 import org.kde.taskmanager as TaskManager
 import org.kde.kirigami as Kirigami
 import SircaShell
+import Sber.Controls as Sber
 import "Glass"
 
 Surface {
     id: dock
     edge: "bottom"
+    // UnifiedPanel supplies the system area; the legacy dock keeps zero margins.
+    property bool unified: false
+    property real leadingWidth: 0
+    property real trailingWidth: 0
+    property bool systemOpen: false
+    property bool systemFocus: systemOpen
+    property real systemWidth: 360
+    property real systemHeight: 400
+    property real systemAnchorX: width / 2
+    signal systemCloseRequested()
+    property real systemGrow: systemOpen ? 1 : 0
+    Behavior on systemGrow { Spring {} }
+    readonly property bool systemUp: systemGrow > 0.002
+    readonly property bool launcherLobe: unified && launcherGrow > 0.002
+    readonly property real lobeWidth: systemUp ? systemWidth : launcherLobe ? launcherFullW + 2 * lobePad : pvW
+    readonly property real maskLobeHeight: systemUp ? systemHeight : launcherLobe ? launcherFullH + 2 * lobePad : pvH
+    readonly property rect systemRect: Qt.rect(lobeX, dockTop - lobeH, systemWidth, lobeH)
+    onSystemOpenChanged: if (systemOpen) { launcherOpen = false; previewShown = false }
+
     readonly property int gap: Config.dockGap
     readonly property int dockH: Config.dockHeight
     readonly property int headroom: 44            // room above the bar for hover magnification / the future shelf
@@ -18,7 +38,7 @@ Surface {
     strut: gap + dockH + gap
     slideMax: gap + dockH + 30
     edgeStrip: Qt.rect((width - dockW) / 2, 0, dockW, 0)
-    holdOpen: launcherOpen || previewShown || dragging || editing || dodgeExempt
+    holdOpen: launcherOpen || previewShown || systemOpen || dragging || editing || dodgeExempt
     dodge: Config.dockDodge
     blur: look.blur
     visibility: Config.dockVisibility
@@ -93,8 +113,8 @@ Surface {
 
     readonly property int contentW: pad + Config.dockCell + row.spacing + (tasksModel ? tasksModel.count : 0) * Config.dockCell + pad
     readonly property int screenW: Screen.width > 0 ? Screen.width : Config.screenWidth
-    readonly property int dockW: Config.dockWidthMode === "fill" ? screenW - 2 * Config.dockFillMargin : Math.max(contentW, 120)
-    readonly property real rowShift: Math.max(0, (dockW - contentW) / 2)      // "fill": the icons stay centred in the wider dock
+    readonly property int dockW: unified ? Math.max(1, screenW - 2 * Config.dockFillMargin) : Config.dockWidthMode === "fill" ? screenW - 2 * Config.dockFillMargin : Math.max(contentW, 120)
+    readonly property real rowShift: Math.max(0, (dockW - leadingWidth - trailingWidth - contentW) / 2)      // "fill": the icons stay centred in the wider dock
     property bool editing: false                 // edit mode: pinned icons show an unpin badge, previews and the launcher stay shut
     signal editRequested()
     property int launcherRev: 0                  // bumps when the pinned set changes (launcherPosition is a function, not a property)
@@ -110,8 +130,8 @@ Surface {
     readonly property Item hostedLauncher: kickoffLoader.item                     // only exists with nativeLauncher off
     function hostedPref(which, fallback) { const a = hostedLauncher ? hostedLauncher.appletItem : null; const f = a ? a.fullRepresentationItem : null;
         const v = (f && f.Layout) ? (which === "w" ? f.Layout.preferredWidth : f.Layout.preferredHeight) : 0; return v > 0 ? v : fallback }
-    readonly property real launcherFullW: Config.nativeLauncher ? nativeLauncher.implicitWidth : Math.min(hostedPref("w", 560), 900)
-    readonly property real launcherFullH: Config.nativeLauncher ? nativeLauncher.implicitHeight : Math.min(hostedPref("h", 600), Config.sheetHeight + 120)
+    readonly property real launcherFullW: Math.min(unified ? screenW - 2 * (rad + 14 + lobePad + Config.dockFillMargin) : 900, Config.nativeLauncher ? nativeLauncher.implicitWidth : hostedPref("w", 560))
+    readonly property real launcherFullH: Math.min(unified ? Screen.height - dockH - 2 * gap - 2 * lobePad - 48 : Config.sheetHeight + 120, Config.nativeLauncher ? nativeLauncher.implicitHeight : hostedPref("h", 600))
     property real launcherGrow: launcherOpen ? 1 : 0
     Behavior on launcherGrow { Spring {} }
 
@@ -148,7 +168,7 @@ Surface {
     Behavior on previewGrow { Spring {} }
     onPreviewGrowChanged: if (previewGrow < 0.002 && !previewShown) { previewIndex = -1; previewWindows = [] }
 
-    readonly property string panelKind: launcherGrow > 0.002 ? "launcher" : (previewGrow > 0.002 && !pvLobeMode ? "preview" : "")
+    readonly property string panelKind: unified ? "" : launcherGrow > 0.002 ? "launcher" : (previewGrow > 0.002 && !pvLobeMode ? "preview" : "")
     readonly property real stemMargin: rad + 14 + 4                                  // a panel overhangs the dock by this much per side
     readonly property real panelG: Math.max(0, panelKind === "launcher" ? launcherGrow : previewGrow)
     readonly property real panelFullW: Math.max(panelKind === "preview" ? pvW : launcherFullW + 2 * lobePad, dockW + 2 * stemMargin)
@@ -156,13 +176,13 @@ Surface {
     readonly property real panelH: panelKind === "" ? 0 : panelG * (panelKind === "preview" ? pvH : launcherFullH + 2 * lobePad)
     readonly property bool panelUp: panelH > 1
     // lobe-mode preview: centred over its icon, kept inside the dock's straight top edge
-    function cellCenter(row) { return barRect.x + rowShift + pad + Config.dockCell * (row + 1) + Config.dockCell / 2 }
-    property real lobeX: Math.max(barRect.x + rad + 14, Math.min(barRect.x + dockW - rad - 14 - pvW, cellCenter(Math.max(0, previewIndex)) - pvW / 2))
+    function cellCenter(index) { taskViewport.contentX; return row.mapToItem(dock.contentItem, Config.dockCell * (index + 1) + Config.dockCell / 2, 0).x }
+    property real lobeX: Math.max(barRect.x + rad + 14, Math.min(barRect.x + dockW - rad - 14 - lobeWidth, (systemUp ? systemAnchorX : cellCenter(launcherLobe ? -1 : Math.max(0, previewIndex))) - lobeWidth / 2))
     Behavior on lobeX { enabled: dock.previewGrow > 0.5; Spring {} }
-    readonly property real lobeH: (panelKind === "" && pvLobeMode) ? Math.max(0, previewGrow) * pvH : 0
+    readonly property real lobeH: panelKind !== "" ? 0 : systemUp ? Math.max(0, systemGrow) * systemHeight : launcherLobe ? Math.max(0, launcherGrow) * (launcherFullH + 2 * lobePad) : (unified || pvLobeMode) ? Math.max(0, previewGrow) * pvH : 0
 
-    width: Math.min(screenW, Math.max(dockW + 2 * stemMargin, launcherFullW, 900) + 2 * sidePad)   // never wider than the screen ("fill")
-    height: Math.max(headroom, Config.sheetHeight + 36) + gap + dockH + gap
+    width: unified ? screenW : Math.min(screenW, Math.max(dockW + 2 * stemMargin, launcherFullW, 900) + 2 * sidePad)   // never wider than the screen ("fill")
+    height: Math.min(Screen.height, Math.max(headroom, Config.sheetHeight + 36, systemHeight + Config.bounceRoom) + gap + dockH + gap)
     title: "Sirca Shell — dock"
     readonly property real dockTopRest: height - gap - dockH
     readonly property real dockTop: dockTopRest + slide      // the dock and whatever hangs off it slide down as one
@@ -175,7 +195,7 @@ Surface {
         reach: dock.polygon                // the fully grown outline: the shadow layers are sized once per open/close, not per frame
         flip: !dock.panelUp
         bar: dock.panelUp ? dock.panelRect : dock.barRect
-        lobes: dock.panelUp ? [{ x: dock.barRect.x, w: dock.barRect.width, h: dock.dockH }] : (dock.lobeH > 0.5 ? [{ x: dock.lobeX, w: dock.pvW, h: dock.lobeH }] : [])
+        lobes: dock.panelUp ? [{ x: dock.barRect.x, w: dock.barRect.width, h: dock.dockH }] : (dock.lobeH > 0.5 ? [{ x: dock.lobeX, w: dock.lobeWidth, h: dock.lobeH }] : [])
         radius: dock.rad
         tint: Config.glassTint(dock.tintA); rim: Qt.rgba(1, 1, 1, Config.dockRimAlpha * Config.mixn(1, 3.2)); sheen: Config.dockSheen * Config.mixn(1, 2.5); shadowStrength: Config.dockShadow   // literal-ok: the rim is white light in both modes
         fillet: Math.max(1, Math.min(14, (dock.panelUp ? dock.panelH : dock.lobeH) / 2))
@@ -185,7 +205,7 @@ Surface {
     readonly property bool lobeUp: lobeH > 1
     readonly property real maskPanelH: (panelKind === "preview" ? pvH : launcherFullH + 2 * lobePad) + Config.bounceRoom
     polygon: panelUp ? shape.polygonFor(Qt.rect((width - panelFullW) / 2, dockTopRest - maskPanelH, panelFullW, maskPanelH), [{ x: (width - dockW) / 2, w: dockW, h: dockH }], false, 14)
-                     : shape.polygonFor(Qt.rect((width - dockW) / 2, dockTopRest, dockW, dockH), lobeUp ? [{ x: lobeX, w: pvW, h: pvH + Config.bounceRoom }] : [], true, 14)
+                     : shape.polygonFor(Qt.rect((width - dockW) / 2, dockTopRest, dockW, dockH), lobeUp ? [{ x: lobeX, w: lobeWidth, h: maskLobeHeight + Config.bounceRoom }] : [], true, 14)
     // the Glass effect draws its bevel/mask from these boxes (same D-Bus path as the top bar). A box that joins another
     // reaches INTO it, so its own rounded corners never notch the junction.
     function pushShape() {
@@ -195,7 +215,7 @@ Surface {
             const up = Math.min(rad, panelH * 0.5);
             boxes = [panelRect.x, panelRect.y, panelRect.width, panelRect.height, barRect.x, barRect.y - up, barRect.width, barRect.height + up];
         } else if (lobeH > 1) {
-            boxes = boxes.concat([lobeX, dockTop - lobeH, pvW, lobeH + Math.min(rad, dockH - 15)]);
+            boxes = boxes.concat([lobeX, dockTop - lobeH, lobeWidth, lobeH + Math.min(rad, dockH - 15)]);
         }
         Shell.dbusSendTyped("org.kde.KWin", "/Glass", "org.kde.KWin.Glass", "setLobes", "siivdd", ["sirca-shell", dock.width, dock.height, boxes, rad, (panelUp || lobeH > 1) ? shape.fillet * 1.17 : 1]);
     }
@@ -219,7 +239,7 @@ Surface {
     }
     // hovering a thumbnail shows that window (KWin's highlight-window effect fades the others out)
     function peek(uuid) { Shell.dbusSendTyped("org.kde.KWin.HighlightWindow", "/org/kde/KWin/HighlightWindow", "org.kde.KWin.HighlightWindow", "highlightWindows", "S", [uuid ? [uuid] : []]) }
-    onPreviewShownChanged: { if (!previewShown) peek(""); refreshAppStreams() }
+    onPreviewShownChanged: { if (previewShown) systemCloseRequested(); if (!previewShown) peek(""); refreshAppStreams() }
     function refreshPreview() { if (previewShown && previewIndex >= 0 && lobeMode === "windows") openPreview(previewIndex) }
     // right-click: the same lobe, holding actions instead of thumbnails
     function openMenu(row) {
@@ -273,6 +293,7 @@ Surface {
     // click: launcher entry → start it; one window → focus, or minimise when already focused; several → cycle through them
     readonly property bool debug: Qt.application.arguments.indexOf("--debug") >= 0
     function activateCell(row) {
+        systemCloseRequested()
         if (debug) console.log("activateCell", row);
         const m = tasksModel; if (!m) return;
         const R_ = TaskManager.AbstractTasksModel; const idx = m.makeModelIndex(row);
@@ -312,12 +333,12 @@ Surface {
         else { openTimer.stop(); closeTimer.restart(); }
     }
     onLauncherOpenChanged: {
-        if (launcherOpen) warm = true
+        if (launcherOpen) { warm = true; systemCloseRequested() }
         if (launcherOpen) previewShown = false;
     }
     // the launcher and a right-click menu take the keyboard and close when they lose it (Surface.popupFocus)
-    popupFocus: launcherOpen || (previewShown && lobeMode === "menu")
-    onFocusLost: { launcherOpen = false; previewShown = false }
+    popupFocus: launcherOpen || (previewShown && lobeMode === "menu") || systemFocus
+    onFocusLost: { launcherOpen = false; previewShown = false; systemCloseRequested() }
     Connections { target: Shell; function onLauncherToggleRequested() { dock.launcherOpen = !dock.launcherOpen } }
     onWidthChanged: pushShape()
     onHeightChanged: pushShape()
@@ -354,7 +375,7 @@ Surface {
                 required property var model
                 source: model.decoration
                 iconSize: Config.dockIcon
-                x: barRect.x + dock.pad + Config.dockCell * (index + 1) + Config.dockCell / 2 - width / 2 - dock.hazeRect.x
+                x: dock.cellCenter(index) - width / 2 - dock.hazeRect.x
                 y: barRect.y + dockH / 2 - height / 2 + 4 - dock.hazeRect.y
                 strength: Config.hazeStrength * (model.IsActive ? 1.35 : (dock.hoverIndex === index ? 1.2 : 1.0)) * (model.IsLauncher ? 0.7 : 1.0)
             }
@@ -375,156 +396,192 @@ Surface {
     Rectangle { visible: dock.editing; x: barRect.x - 4; y: barRect.y - 4; width: barRect.width + 8; height: barRect.height + 8; radius: dock.rad + 4; color: "transparent"; border.width: 2; border.color: Config.accent; opacity: 0.9 }
     TapHandler { acceptedButtons: Qt.RightButton; enabled: !dock.editing
         onTapped: (ev) => { const p = ev.position; if (p.x < barRect.x || p.x > barRect.x + barRect.width || p.y < barRect.y || p.y > barRect.y + barRect.height) return
-            const inRow = p.x >= row.x && p.x <= row.x + row.width; if (!inRow) dock.editRequested() } }
-    Row {
-        id: row
-        x: barRect.x + dock.rowShift + dock.pad; y: barRect.y; height: dockH
-        spacing: 0
-        // launcher glyph
-        Item { width: Config.dockCell; height: dockH
-            readonly property real mag: dock.magFor(-1)
-            Spotlight { visible: Config.dockSpotlight; anchors.fill: parent; anchors.topMargin: 2; anchors.bottomMargin: 1; strength: dock.hoverIndex === -1 && !dock.launcherOpen ? 0.16 : 0 }
-            // same box as the app icons, so the glyph reads at their size; glows while the launcher is open
-            GlowIcon { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom
-                anchors.bottomMargin: (dockH - Config.dockIcon) / 2
-                // Rendered once at the magnified size and zoomed with `scale`: animating `size` re-rasterised the glyph and
-                // re-created both glow blurs on every frame, which stuttered the panel when it was opened mid-hover.
-                size: Math.round(Config.dockIcon * Config.dockMagnify); source: Config.launcherIcon; calm: true; hovered: dock.hoverIndex === -1; active: dock.launcherOpen
-                transformOrigin: Item.Bottom
-                scale: parent.mag / Config.dockMagnify
-                Behavior on scale { Spring {} } }
-            HoverHandler { onHoveredChanged: dock.hoverIndex = hovered ? -1 : (dock.hoverIndex === -1 ? -2 : dock.hoverIndex) }
-            TapHandler { onTapped: if (!dock.editing) dock.launcherOpen = !dock.launcherOpen }
-        }
-        Repeater {
-            model: dock.tasksModel
-            delegate: Item {
-                id: cell
-                required property int index
-                required property var model
-                width: Config.dockCell; height: dockH
-                readonly property real mag: dock.magFor(index)
-                readonly property bool hovered: dock.hoverIndex === index
-                readonly property int windows: model.IsLauncher ? 0 : (model.IsGroupParent ? Math.max(model.ChildCount, 2) : 1)
-                property int activeChild: -1
-                function refreshActive() {
-                    if (!model.IsGroupParent) { activeChild = model.IsActive ? 0 : -1; return; }
-                    let f = -1;
-                    for (let i = 0; i < model.ChildCount; ++i)
-                        if (dock.tasksModel.data(dock.tasksModel.makeModelIndex(index, i), TaskManager.AbstractTasksModel.IsActive)) { f = i; break; }
-                    activeChild = f;
-                }
-                Timer { id: settle; interval: 120; onTriggered: cell.refreshActive() }
-                Connections { target: dock.tasksModel; function onActiveTaskChanged() { cell.refreshActive(); settle.restart(); } }
-                onWindowsChanged: { settle.restart(); geoLater.restart(); if (dock.previewIndex === index) dock.refreshPreview() }
-                Component.onCompleted: { refreshActive(); geoLater.restart() }
-                // Tell KWin where this window's icon is: the minimise / restore animation (squash) flies to and from that
-                // rectangle. Without it windows just vanish. Uses the dock's resting position, also while it is dodging.
-                function publishGeometry() {
-                    if (!dock.tasksModel || model.IsLauncher) return;
-                    const gx = dock.x + dock.barRect.x + dock.pad + Config.dockCell * (index + 1) + (Config.dockCell - Config.dockIcon) / 2;
-                    const gy = dock.y + dock.dockTopRest + (dock.dockH - Config.dockIcon) / 2;
-                    dock.tasksModel.requestPublishDelegateGeometry(dock.tasksModel.makeModelIndex(index), Qt.rect(Math.round(gx), Math.round(gy), Config.dockIcon, Config.dockIcon), cell);
-                }
-                Timer { id: geoLater; interval: 300; onTriggered: cell.publishGeometry() }
-                onIndexChanged: geoLater.restart()
-                Connections { target: dock; function onDockWChanged() { geoLater.restart() } function onXChanged() { geoLater.restart() } }
-
-                // launch feedback: two hops on launch, a gentle loop while the app is still starting
-                property real hop: 0
-                SequentialAnimation { id: hopAnim
-                    NumberAnimation { target: cell; property: "hop"; to: 16; duration: 170; easing.type: Easing.OutQuad }
-                    NumberAnimation { target: cell; property: "hop"; to: 0; duration: 210; easing.type: Easing.InQuad }
-                    NumberAnimation { target: cell; property: "hop"; to: 7; duration: 130; easing.type: Easing.OutQuad }
-                    NumberAnimation { target: cell; property: "hop"; to: 0; duration: 160; easing.type: Easing.InQuad } }
-                Connections { target: dock; function onLaunched(row) { if (row === cell.index && Config.dockHop) hopAnim.restart() } }
-                readonly property bool starting: model.IsStartup === true
-                onStartingChanged: if (starting && Config.dockHop) hopAnim.restart()
-                Timer { running: cell.starting && Config.dockHop; interval: 900; repeat: true; onTriggered: hopAnim.restart() }
-                readonly property var badge: { const id = String(model.AppId || "").replace(/\.desktop$/, ""); return dock.badges[id] || null }
-                // a window asks for attention: the icon shakes ONCE (whole pixels: the dock is a wide surface), then the pills
-                // stay orange until it is looked at. Not while a game has the screen: nobody would see it, and the shell is quiet.
-                property real wiggleX: 0
-                readonly property bool attention: model.IsDemandingAttention === true
-                onAttentionChanged: if (attention && !dock.quiet) wiggleAnim.restart()
-                SequentialAnimation { id: wiggleAnim
-                    NumberAnimation { target: cell; property: "wiggleX"; to: -7; duration: 60; easing.type: Easing.OutQuad }
-                    NumberAnimation { target: cell; property: "wiggleX"; to: 7; duration: 90 }
-                    NumberAnimation { target: cell; property: "wiggleX"; to: -5; duration: 80 }
-                    NumberAnimation { target: cell; property: "wiggleX"; to: 4; duration: 70 }
-                    NumberAnimation { target: cell; property: "wiggleX"; to: 0; duration: 80; easing.type: Easing.OutQuad } }
-                // drop a file or a link on the icon: opens it with this app. Wayland sends no hover while something is
-                // being dragged, so the drop zone itself lights the cell (hoverIndex) and puts it back on leaving.
-                DropArea { id: dropZone; anchors.fill: parent; enabled: !dock.editing && !drag.active
-                    function urlsOf(d) { if (d.hasUrls) return d.urls; const t = d.hasText ? String(d.text).trim() : ""; return /^[a-z][a-z0-9+.-]*:\/\//i.test(t) ? [Qt.url(t)] : [] }
-                    onEntered: d => { if (!urlsOf(d).length) { d.accepted = false; return } dock.hoverIndex = cell.index }
-                    onExited: if (dock.hoverIndex === cell.index) dock.hoverIndex = -2
-                    onDropped: d => { const u = urlsOf(d); if (!u.length) return; d.accept(Qt.CopyAction); dock.hoverIndex = -2; dock.openUrls(cell.index, u) } }
-                // the wheel over an app with several windows walks through them; whole notches only, and one step per 160 ms
-                // so a free-spinning wheel does not race through the group
-                WheelHandler { target: null; enabled: cell.windows > 1 && !dock.editing; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                    property real acc: 0
-                    onWheel: ev => { if (wheelCool.running) return; acc += ev.angleDelta.y; if (Math.abs(acc) < 100) return; const dir = acc > 0 ? -1 : 1; acc = 0; wheelCool.restart(); dock.cycleWindows(cell.index, dir) } }
-                Timer { id: wheelCool; interval: 160 }
-
-                // drag to reorder: the icon follows the pointer; passing half a cell swaps places in the model
-                property real dragX: 0
-                property int dragShift: 0
-                z: drag.active ? 10 : 0
-                DragHandler { id: drag; target: null; xAxis.enabled: true; yAxis.enabled: false; dragThreshold: 8
-                    onActiveChanged: {
-                        dock.dragging = active;
-                        if (active) { dock.previewShown = false; openTimer.stop(); cell.dragShift = 0; }
-                        else { cell.dragX = 0; dock.tasksModel.syncLaunchers(); dock.saveLaunchers(); }
-                    }
-                    onTranslationChanged: {
-                        if (!active) return;
-                        const w = Config.dockCell; let x = translation.x - cell.dragShift * w;
-                        const n = dock.tasksModel.count;
-                        if (x > w / 2 && cell.index < n - 1) { dock.tasksModel.move(cell.index, cell.index + 1); cell.dragShift += 1; x -= w; }
-                        else if (x < -w / 2 && cell.index > 0) { dock.tasksModel.move(cell.index, cell.index - 1); cell.dragShift -= 1; x += w; }
-                        cell.dragX = x;
-                    } }
-                Behavior on dragX { enabled: !drag.active; Spring {} }
-
-                Spotlight { visible: Config.dockSpotlight; anchors.fill: parent; anchors.topMargin: 2; anchors.bottomMargin: 1; strength: model.IsActive ? 0.36 : (cell.hovered || drag.active ? 0.16 : 0) }
-                Item { id: icon; anchors.horizontalCenter: parent.horizontalCenter; anchors.horizontalCenterOffset: cell.dragX + Math.round(cell.wiggleX); anchors.bottom: parent.bottom; anchors.bottomMargin: (dockH - Config.dockIcon) / 2 + cell.hop
-                    width: Config.dockIcon * (drag.active ? Config.dockMagnify : cell.mag); height: width
-                    Behavior on width { Spring {} }
-                    // The picture itself is rendered once, at the magnified size, and only scaled into this box. Animating the
-                    // icon's own size re-rasterised it on the GUI thread every frame, which made a popup that opened during the
-                    // hover zoom (the launcher, clicked fast) stutter.
-                    Kirigami.Icon { readonly property int full: Math.round(Config.dockIcon * Config.dockMagnify)
-                        width: full; height: full; source: model.decoration; roundToIconSize: false
-                        transformOrigin: Item.TopLeft; scale: icon.width / full } }
-                // unread badge / progress reported by the app
-                Rectangle { visible: Config.dockBadges && !!(cell.badge && cell.badge["count-visible"] && cell.badge["count"] > 0); anchors.right: icon.right; anchors.top: icon.top; anchors.rightMargin: -4; anchors.topMargin: -2
-                    height: 17; width: Math.max(17, badgeText.implicitWidth + 9); radius: 8.5; color: "#e5484d"; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.35)
-                    Text { id: badgeText; anchors.centerIn: parent; text: cell.badge ? (cell.badge["count"] > 99 ? "99+" : String(cell.badge["count"] || "")) : ""; color: "white"; font.pixelSize: 10; font.weight: Font.Bold } }   // literal-ok: text on a red badge
-                // progress (a copy job, a download): a thin bar along the icon's bottom edge, above the window pills
-                Rectangle { visible: Config.dockBadges && !!(cell.badge && cell.badge["progress-visible"]); anchors.horizontalCenter: icon.horizontalCenter; anchors.bottom: icon.bottom; anchors.bottomMargin: 1; width: Math.round(icon.width * 0.8); height: 3; radius: 1.5; color: Qt.rgba(0, 0, 0, 0.55)
-                    Rectangle { height: parent.height; radius: 1.5; color: "white"; width: Math.round(parent.width * Math.min(1, Math.max(0, (cell.badge && cell.badge["progress"]) || 0)))   // literal-ok: white on the dark track, both modes
-                        Behavior on width { NumberAnimation { duration: Config.normal } } } }
-                // edit mode: a pinned app can be taken off the dock right here
-                Rectangle { id: unpin; visible: dock.editing && cell.pinnedUrl !== ""; z: 5; anchors.right: icon.right; anchors.top: icon.top; anchors.rightMargin: -6; anchors.topMargin: -6
-                    width: 19; height: 19; radius: 9.5; color: Qt.rgba(229/255, 72/255, 77/255, uh.hovered ? 1 : 0.92); border.width: 1; border.color: "white"
-                    Text { anchors.centerIn: parent; text: "×"; color: "white"; font.pixelSize: 13; font.weight: Font.Bold }   // literal-ok: on a red badge
-                    HoverHandler { id: uh; cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: { dock.tasksModel.requestRemoveLauncher(cell.pinnedUrl); dock.saveLaunchers() } } }
-                readonly property string pinnedUrl: { dock.launcherRev; const u = model.LauncherUrlWithoutIcon; return (u && u.toString() !== "" && dock.tasksModel.launcherPosition(u) >= 0) ? u.toString() : "" }
-                Pills { visible: Config.dockIndicators; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 4
-                    count: cell.windows; activeIndex: cell.activeChild; groupActive: model.IsActive; minimized: model.IsMinimized; attention: model.IsDemandingAttention }
-                HoverHandler { onHoveredChanged: dock.hoverIndex = hovered ? cell.index : (dock.hoverIndex === cell.index ? -2 : dock.hoverIndex) }
-                TapHandler { onTapped: dock.activateCell(cell.index) }
-                TapHandler { acceptedButtons: Qt.RightButton; onTapped: dock.openMenu(cell.index) }
-                TapHandler { acceptedButtons: Qt.MiddleButton; onTapped: { dock.tasksModel.requestNewInstance(dock.tasksModel.makeModelIndex(cell.index)); dock.launched(cell.index) } }
+            if (dock.unified && (p.x < barRect.x + leadingWidth + pad || p.x > barRect.x + dockW - trailingWidth - pad)) return
+            const rp = row.mapFromItem(dock.contentItem, p.x, p.y); const inRow = rp.x >= 0 && rp.x <= row.width; if (!inRow) dock.editRequested() } }
+    Flickable {
+        id: taskViewport
+        x: barRect.x + dock.leadingWidth + dock.pad
+        y: barRect.y - dock.headroom
+        width: Math.max(Config.dockCell, dock.dockW - dock.leadingWidth - dock.trailingWidth - 2 * dock.pad)
+        height: dock.dockH + dock.headroom
+        contentWidth: row.implicitWidth + dock.rowShift
+        contentHeight: height
+        clip: dock.unified
+        interactive: dock.unified && contentWidth > width && !dock.dragging
+        boundsBehavior: Flickable.StopAtBounds
+        flickableDirection: Flickable.HorizontalFlick
+        WheelHandler {
+            enabled: taskViewport.interactive
+            target: null
+            onWheel: event => {
+                const delta = event.angleDelta.x || event.angleDelta.y
+                taskViewport.contentX = Math.max(0, Math.min(taskViewport.contentWidth - taskViewport.width, taskViewport.contentX - delta / 2))
+                event.accepted = true
             }
         }
-    }
+        Row {
+            id: row
+            x: dock.rowShift; y: dock.headroom; height: dockH
+            spacing: 0
+            // launcher glyph
+            Item { width: Config.dockCell; height: dockH
+                readonly property real mag: dock.magFor(-1)
+                Spotlight { visible: Config.dockSpotlight; anchors.fill: parent; anchors.topMargin: 2; anchors.bottomMargin: 1; strength: dock.hoverIndex === -1 && !dock.launcherOpen ? 0.16 : 0 }
+                // same box as the app icons, so the glyph reads at their size; glows while the launcher is open
+                Sber.Button {
+                    visible: dock.unified
+                    anchors.fill: parent
+                    backgroundType: Sber.Widget.Clear
+                    Accessible.name: qsTr("Applications")
+                    enabled: !dock.editing
+                    contentItem: Kirigami.Icon { source: "start-here-kde-symbolic"; isMask: true; color: Config.ink; implicitWidth: Config.dockIcon; implicitHeight: Config.dockIcon }
+                    onClicked: dock.launcherOpen = !dock.launcherOpen
+                }
+                GlowIcon { visible: !dock.unified; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom
+                    anchors.bottomMargin: (dockH - Config.dockIcon) / 2
+                    // Rendered once at the magnified size and zoomed with `scale`: animating `size` re-rasterised the glyph and
+                    // re-created both glow blurs on every frame, which stuttered the panel when it was opened mid-hover.
+                    size: Math.round(Config.dockIcon * Config.dockMagnify); source: Config.launcherIcon; calm: true; hovered: dock.hoverIndex === -1; active: dock.launcherOpen
+                    transformOrigin: Item.Bottom
+                    scale: parent.mag / Config.dockMagnify
+                    Behavior on scale { Spring {} } }
+                HoverHandler { onHoveredChanged: dock.hoverIndex = hovered ? -1 : (dock.hoverIndex === -1 ? -2 : dock.hoverIndex) }
+                TapHandler { enabled: !dock.unified; onTapped: if (!dock.editing) dock.launcherOpen = !dock.launcherOpen }
+            }
+            Repeater {
+                model: dock.tasksModel
+                delegate: Item {
+                    id: cell
+                    required property int index
+                    required property var model
+                    width: Config.dockCell; height: dockH
+                    readonly property real mag: dock.magFor(index)
+                    readonly property bool hovered: dock.hoverIndex === index
+                    readonly property int windows: model.IsLauncher ? 0 : (model.IsGroupParent ? Math.max(model.ChildCount, 2) : 1)
+                    property int activeChild: -1
+                    function refreshActive() {
+                        if (!model.IsGroupParent) { activeChild = model.IsActive ? 0 : -1; return; }
+                        let f = -1;
+                        for (let i = 0; i < model.ChildCount; ++i)
+                            if (dock.tasksModel.data(dock.tasksModel.makeModelIndex(index, i), TaskManager.AbstractTasksModel.IsActive)) { f = i; break; }
+                        activeChild = f;
+                    }
+                    Timer { id: settle; interval: 120; onTriggered: cell.refreshActive() }
+                    Connections { target: dock.tasksModel; function onActiveTaskChanged() { cell.refreshActive(); settle.restart(); } }
+                    onWindowsChanged: { settle.restart(); geoLater.restart(); if (dock.previewIndex === index) dock.refreshPreview() }
+                    Component.onCompleted: { refreshActive(); geoLater.restart() }
+                    // Tell KWin where this window's icon is: the minimise / restore animation (squash) flies to and from that
+                    // rectangle. Without it windows just vanish. Uses the dock's resting position, also while it is dodging.
+                    function publishGeometry() {
+                        if (!dock.tasksModel || model.IsLauncher) return;
+                        const gx = dock.x + dock.cellCenter(index) - Config.dockIcon / 2;
+                        const gy = dock.y + dock.dockTopRest + (dock.dockH - Config.dockIcon) / 2;
+                        dock.tasksModel.requestPublishDelegateGeometry(dock.tasksModel.makeModelIndex(index), Qt.rect(Math.round(gx), Math.round(gy), Config.dockIcon, Config.dockIcon), cell);
+                    }
+                    Timer { id: geoLater; interval: 300; onTriggered: cell.publishGeometry() }
+                    onIndexChanged: geoLater.restart()
+                    Connections { target: taskViewport; function onContentXChanged() { geoLater.restart() } }
+                    Connections { target: dock; function onDockWChanged() { geoLater.restart() } function onXChanged() { geoLater.restart() } }
+
+                    // launch feedback: two hops on launch, a gentle loop while the app is still starting
+                    property real hop: 0
+                    SequentialAnimation { id: hopAnim
+                        NumberAnimation { target: cell; property: "hop"; to: 16; duration: 170; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: cell; property: "hop"; to: 0; duration: 210; easing.type: Easing.InQuad }
+                        NumberAnimation { target: cell; property: "hop"; to: 7; duration: 130; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: cell; property: "hop"; to: 0; duration: 160; easing.type: Easing.InQuad } }
+                    Connections { target: dock; function onLaunched(row) { if (row === cell.index && Config.dockHop) hopAnim.restart() } }
+                    readonly property bool starting: model.IsStartup === true
+                    onStartingChanged: if (starting && Config.dockHop) hopAnim.restart()
+                    Timer { running: cell.starting && Config.dockHop; interval: 900; repeat: true; onTriggered: hopAnim.restart() }
+                    readonly property var badge: { const id = String(model.AppId || "").replace(/\.desktop$/, ""); return dock.badges[id] || null }
+                    // a window asks for attention: the icon shakes ONCE (whole pixels: the dock is a wide surface), then the pills
+                    // stay orange until it is looked at. Not while a game has the screen: nobody would see it, and the shell is quiet.
+                    property real wiggleX: 0
+                    readonly property bool attention: model.IsDemandingAttention === true
+                    onAttentionChanged: if (attention && !dock.quiet) wiggleAnim.restart()
+                    SequentialAnimation { id: wiggleAnim
+                        NumberAnimation { target: cell; property: "wiggleX"; to: -7; duration: 60; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: cell; property: "wiggleX"; to: 7; duration: 90 }
+                        NumberAnimation { target: cell; property: "wiggleX"; to: -5; duration: 80 }
+                        NumberAnimation { target: cell; property: "wiggleX"; to: 4; duration: 70 }
+                        NumberAnimation { target: cell; property: "wiggleX"; to: 0; duration: 80; easing.type: Easing.OutQuad } }
+                    // drop a file or a link on the icon: opens it with this app. Wayland sends no hover while something is
+                    // being dragged, so the drop zone itself lights the cell (hoverIndex) and puts it back on leaving.
+                    DropArea { id: dropZone; anchors.fill: parent; enabled: !dock.editing && !drag.active
+                        function urlsOf(d) { if (d.hasUrls) return d.urls; const t = d.hasText ? String(d.text).trim() : ""; return /^[a-z][a-z0-9+.-]*:\/\//i.test(t) ? [Qt.url(t)] : [] }
+                        onEntered: d => { if (!urlsOf(d).length) { d.accepted = false; return } dock.hoverIndex = cell.index }
+                        onExited: if (dock.hoverIndex === cell.index) dock.hoverIndex = -2
+                        onDropped: d => { const u = urlsOf(d); if (!u.length) return; d.accept(Qt.CopyAction); dock.hoverIndex = -2; dock.openUrls(cell.index, u) } }
+                    // the wheel over an app with several windows walks through them; whole notches only, and one step per 160 ms
+                    // so a free-spinning wheel does not race through the group
+                    WheelHandler { target: null; enabled: cell.windows > 1 && !dock.editing; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        property real acc: 0
+                        onWheel: ev => { if (wheelCool.running) return; acc += ev.angleDelta.y; if (Math.abs(acc) < 100) return; const dir = acc > 0 ? -1 : 1; acc = 0; wheelCool.restart(); dock.cycleWindows(cell.index, dir) } }
+                    Timer { id: wheelCool; interval: 160 }
+
+                    // drag to reorder: the icon follows the pointer; passing half a cell swaps places in the model
+                    property real dragX: 0
+                    property int dragShift: 0
+                    z: drag.active ? 10 : 0
+                    DragHandler { id: drag; target: null; xAxis.enabled: true; yAxis.enabled: false; dragThreshold: 8
+                        onActiveChanged: {
+                            dock.dragging = active;
+                            if (active) { dock.previewShown = false; openTimer.stop(); cell.dragShift = 0; }
+                            else { cell.dragX = 0; dock.tasksModel.syncLaunchers(); dock.saveLaunchers(); }
+                        }
+                        onTranslationChanged: {
+                            if (!active) return;
+                            const w = Config.dockCell; let x = translation.x - cell.dragShift * w;
+                            const n = dock.tasksModel.count;
+                            if (x > w / 2 && cell.index < n - 1) { dock.tasksModel.move(cell.index, cell.index + 1); cell.dragShift += 1; x -= w; }
+                            else if (x < -w / 2 && cell.index > 0) { dock.tasksModel.move(cell.index, cell.index - 1); cell.dragShift -= 1; x += w; }
+                            cell.dragX = x;
+                        } }
+                    Behavior on dragX { enabled: !drag.active; Spring {} }
+
+                    Spotlight { visible: Config.dockSpotlight; anchors.fill: parent; anchors.topMargin: 2; anchors.bottomMargin: 1; strength: model.IsActive ? 0.36 : (cell.hovered || drag.active ? 0.16 : 0) }
+                    Item { id: icon; anchors.horizontalCenter: parent.horizontalCenter; anchors.horizontalCenterOffset: cell.dragX + Math.round(cell.wiggleX); anchors.bottom: parent.bottom; anchors.bottomMargin: (dockH - Config.dockIcon) / 2 + cell.hop
+                        width: Config.dockIcon * (drag.active ? Config.dockMagnify : cell.mag); height: width
+                        Behavior on width { Spring {} }
+                        // The picture itself is rendered once, at the magnified size, and only scaled into this box. Animating the
+                        // icon's own size re-rasterised it on the GUI thread every frame, which made a popup that opened during the
+                        // hover zoom (the launcher, clicked fast) stutter.
+                        Kirigami.Icon { readonly property int full: Math.round(Config.dockIcon * Config.dockMagnify)
+                            width: full; height: full; source: model.decoration; roundToIconSize: false
+                            transformOrigin: Item.TopLeft; scale: icon.width / full } }
+                    // unread badge / progress reported by the app
+                    Rectangle { visible: Config.dockBadges && !!(cell.badge && cell.badge["count-visible"] && cell.badge["count"] > 0); anchors.right: icon.right; anchors.top: icon.top; anchors.rightMargin: -4; anchors.topMargin: -2
+                        height: 17; width: Math.max(17, badgeText.implicitWidth + 9); radius: 8.5; color: "#e5484d"; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.35)
+                        Text { id: badgeText; anchors.centerIn: parent; text: cell.badge ? (cell.badge["count"] > 99 ? "99+" : String(cell.badge["count"] || "")) : ""; color: "white"; font.pixelSize: 10; font.weight: Font.Bold } }   // literal-ok: text on a red badge
+                    // progress (a copy job, a download): a thin bar along the icon's bottom edge, above the window pills
+                    Rectangle { visible: Config.dockBadges && !!(cell.badge && cell.badge["progress-visible"]); anchors.horizontalCenter: icon.horizontalCenter; anchors.bottom: icon.bottom; anchors.bottomMargin: 1; width: Math.round(icon.width * 0.8); height: 3; radius: 1.5; color: Qt.rgba(0, 0, 0, 0.55)
+                        Rectangle { height: parent.height; radius: 1.5; color: "white"; width: Math.round(parent.width * Math.min(1, Math.max(0, (cell.badge && cell.badge["progress"]) || 0)))   // literal-ok: white on the dark track, both modes
+                            Behavior on width { NumberAnimation { duration: Config.normal } } } }
+                    // edit mode: a pinned app can be taken off the dock right here
+                    Rectangle { id: unpin; visible: dock.editing && cell.pinnedUrl !== ""; z: 5; anchors.right: icon.right; anchors.top: icon.top; anchors.rightMargin: -6; anchors.topMargin: -6
+                        width: 19; height: 19; radius: 9.5; color: Qt.rgba(229/255, 72/255, 77/255, uh.hovered ? 1 : 0.92); border.width: 1; border.color: "white"
+                        Text { anchors.centerIn: parent; text: "×"; color: "white"; font.pixelSize: 13; font.weight: Font.Bold }   // literal-ok: on a red badge
+                        HoverHandler { id: uh; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: { dock.tasksModel.requestRemoveLauncher(cell.pinnedUrl); dock.saveLaunchers() } } }
+                    readonly property string pinnedUrl: { dock.launcherRev; const u = model.LauncherUrlWithoutIcon; return (u && u.toString() !== "" && dock.tasksModel.launcherPosition(u) >= 0) ? u.toString() : "" }
+                    Pills { visible: Config.dockIndicators; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 4
+                        count: cell.windows; activeIndex: cell.activeChild; groupActive: model.IsActive; minimized: model.IsMinimized; attention: model.IsDemandingAttention }
+                    HoverHandler { onHoveredChanged: dock.hoverIndex = hovered ? cell.index : (dock.hoverIndex === cell.index ? -2 : dock.hoverIndex) }
+                    TapHandler { onTapped: dock.activateCell(cell.index) }
+                    TapHandler { acceptedButtons: Qt.RightButton; onTapped: dock.openMenu(cell.index) }
+                    TapHandler { acceptedButtons: Qt.MiddleButton; onTapped: { dock.tasksModel.requestNewInstance(dock.tasksModel.makeModelIndex(cell.index)); dock.launched(cell.index) } }
+                }
+            }
+        }
+
+    } // taskViewport
 
     // launcher content, clipped to the panel while it grows: our own Launcher, or the hosted Kickoff as a fallback
-    Item { x: (dock.width - dock.launcherFullW) / 2; y: dock.dockTop - dock.panelH; width: dock.launcherFullW; height: dock.panelH; clip: true
-        visible: dock.panelKind === "launcher" && dock.panelUp; opacity: Math.min(1, dock.panelH / 140)
+    Item { x: dock.unified ? dock.lobeX + dock.lobePad : (dock.width - dock.launcherFullW) / 2
+        y: dock.dockTop - (dock.unified ? dock.lobeH : dock.panelH)
+        width: dock.launcherFullW; height: dock.unified ? dock.lobeH : dock.panelH; clip: true
+        visible: dock.launcherLobe || (dock.panelKind === "launcher" && dock.panelUp); opacity: Math.min(1, height / 140)
         // built shortly after start (or at the first open, whichever comes first): reading every installed app and building
         // the grid was ~50 ms of the start-up path
         Loader { id: nativeLauncher; active: Config.nativeLauncher && dock.warm; y: dock.lobePad; width: dock.launcherFullW; height: dock.launcherFullH
@@ -535,9 +592,9 @@ Surface {
                 onExpandedChanged: if (!expanded && dock.launcherOpen) dock.launcherOpen = false } }   // Kickoff closes itself after launching
     }
     // window previews of the hovered app
-    Item { id: pvBox; clip: true; visible: dock.previewGrow > 0.002 && dock.panelKind !== "launcher"
-        readonly property real h: dock.pvLobeMode ? dock.lobeH : dock.panelH
-        x: dock.pvLobeMode ? dock.lobeX : (dock.width - dock.pvW) / 2; y: dock.dockTop - h; width: dock.pvW; height: h; opacity: Math.min(1, h / 90)
+    Item { id: pvBox; clip: true; visible: dock.previewGrow > 0.002 && dock.panelKind !== "launcher" && !dock.systemUp
+        readonly property real h: (dock.unified || dock.pvLobeMode) ? dock.lobeH : dock.panelH
+        x: (dock.unified || dock.pvLobeMode) ? dock.lobeX : (dock.width - dock.pvW) / 2; y: dock.dockTop - h; width: dock.pvW; height: h; opacity: Math.min(1, h / 90)
         HoverHandler { id: pvHover; onHoveredChanged: if (hovered) closeTimer.stop(); else if (dock.hoverIndex < 0) closeTimer.restart() }
         Column { x: 8; y: 8; width: parent.width - 16; visible: dock.lobeMode === "menu"
             Repeater { model: dock.lobeMode === "menu" ? dock.menuItems : []
@@ -572,7 +629,7 @@ Surface {
                 onCommitted: v => { if (dock.audio) dock.audio.setVolumePct(v, false) } }
             Text { id: apct; anchors.right: parent.right; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter; width: 44; horizontalAlignment: Text.AlignRight
                 text: audioRow.muted ? "muted" : audioRow.pct + "%"; color: Config.inkDim; font.pixelSize: 12; font.features: { "tnum": 1 } } } }
-    Shortcut { sequence: "Escape"; onActivated: { dock.launcherOpen = false; dock.previewShown = false } }
+    Shortcut { sequence: "Escape"; onActivated: { dock.launcherOpen = false; dock.previewShown = false; dock.systemCloseRequested() } }
     function argAfter(flag) { const a = Qt.application.arguments; const i = a.indexOf(flag); return i >= 0 && i + 1 < a.length ? parseInt(a[i + 1]) : -1 }
     Timer { running: dock.argAfter("--preview") >= 0; interval: 4000; onTriggered: dock.openPreview(dock.argAfter("--preview")) }      // capture/self-test hooks
     Timer { running: dock.argAfter("--menu") >= 0; interval: 4000; onTriggered: dock.openMenu(dock.argAfter("--menu")) }

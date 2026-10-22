@@ -52,6 +52,7 @@ qt_add_qml_module(sirca-shell
         qml/ScreenSet.qml
         qml/TopBar.qml
         qml/Dock.qml
+        qml/UnifiedPanel.qml
         qml/MediaIsland.qml
         qml/MediaSource.qml
         qml/LevelMeter.qml

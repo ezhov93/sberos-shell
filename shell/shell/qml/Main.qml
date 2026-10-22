@@ -104,7 +104,7 @@ QtObject {
     function setEditing(on) { if (on === editing) return; if (on) closePopups(); editing = on; const s = win("editScene"); if (on) s.open(); else s.close_() }
     property var _cEdit: Component { EditScene {
         screen: main.primarySet ? main.primarySet.screen : null
-        barHole: main.topBar ? Qt.rect(main.topBar.x + main.topBar.barRect.x - 30, 0, main.topBar.barRect.width + 60, main.topBar.barRect.y + main.topBar.barRect.height + 10) : Qt.rect(0, 0, 0, 0)
+        barHole: main.topBar && main.topBar !== main.dock ? Qt.rect(main.topBar.x + main.topBar.barRect.x - 30, 0, main.topBar.barRect.width + 60, main.topBar.barRect.y + main.topBar.barRect.height + 10) : Qt.rect(0, 0, 0, 0)
         dockHole: main.dock ? Qt.rect(main.dock.x + main.dock.barRect.x - 12, main.dock.y + main.dock.barRect.y - 12, main.dock.barRect.width + 24, main.dock.barRect.height + 24) : Qt.rect(0, 0, 0, 0)
         onDone: main.setEditing(false); onMoreSettings: { main.setEditing(false); main.win("settings").openIt() } } }
     property var _cTiles: Component { Tiles { onOpened: main.closePopups() } }
@@ -143,8 +143,8 @@ QtObject {
     // (no click catcher any more: popups close on focus loss, see Surface.popupFocus. Catcher.qml is unused.)
     // a press on one of our surfaces closes the OTHER surface's popups (that one keeps the keyboard focus, because the
     // pressed surface does not take it, so focus loss alone would not notice)
-    property var _cross: Connections { target: main.dock; function onPressedAnywhere() { if (main.topBar && main.topBar.openLobe !== "") main.topBar.openLobe = "" } }
-    property var _cross2: Connections { target: main.topBar; function onPressedAnywhere() { const d = main.dock; if (!d) return; if (d.launcherOpen) d.launcherOpen = false; if (d.previewShown && d.lobeMode === "menu") d.previewShown = false } }
+    property var _cross: Connections { target: main.dock !== main.topBar ? main.dock : null; function onPressedAnywhere() { if (main.topBar && main.topBar.openLobe !== "") main.topBar.openLobe = "" } }
+    property var _cross2: Connections { target: main.dock !== main.topBar ? main.topBar : null; function onPressedAnywhere() { const d = main.dock; if (!d) return; if (d.launcherOpen) d.launcherOpen = false; if (d.previewShown && d.lobeMode === "menu") d.previewShown = false } }
 
     // ---- window watcher for dodging: every visible window on this desktop, ungrouped, with its geometry
     property int rev: 0

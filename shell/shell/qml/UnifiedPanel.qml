@@ -350,6 +350,7 @@ Dock {
     Row {
         id: essential
         enabled: !panel.editing
+        width: implicitWidth
         x: panel.essentialRect.x + panel.systemZoneWidth - width - 8
         y: panel.barRect.y
         height: panel.dockH

@@ -15,11 +15,15 @@ Dock {
     readonly property real zoneGap: 8
     readonly property real oskaWidth: Math.min(448, screenW * 0.25)
     readonly property real systemZoneWidth: 260
+    readonly property real indicatorsAvailableWidth:
+        Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap)
+    readonly property real indicatorsWidth:
+        Math.min(indicatorsAvailableWidth, status.implicitWidth + 16)
     readonly property rect sberRect: Qt.rect(barRect.x, barRect.y, dockH, dockH)
     readonly property rect oskaRect: Qt.rect((width - oskaWidth) / 2, barRect.y, oskaWidth, dockH)
     readonly property rect essentialRect: Qt.rect(barRect.x + dockW - systemZoneWidth, barRect.y, systemZoneWidth, dockH)
-    readonly property rect indicatorsRect: Qt.rect(oskaRect.x + oskaRect.width + zoneGap, barRect.y,
-        Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap), dockH)
+    readonly property rect indicatorsRect: Qt.rect(essentialRect.x - zoneGap - indicatorsWidth, barRect.y,
+        indicatorsWidth, dockH)
     readonly property rect applicationsRect: Qt.rect(sberRect.x + sberRect.width + zoneGap, barRect.y,
         Math.max(Config.dockCell + 2 * pad, Math.min(contentW, oskaRect.x - sberRect.x - sberRect.width - 2 * zoneGap)), dockH)
     panelZones: [sberRect, applicationsRect, oskaRect, indicatorsRect, essentialRect]
@@ -308,7 +312,7 @@ Dock {
                 allowed: panel.placed("mic")
             }
             Flickable {
-                width: Math.min(nativeTray.implicitWidth, Math.max(64, panel.screenW * 0.14))
+                width: Math.min(nativeTray.implicitWidth, Math.max(64, panel.screenW * 0.10))
                 height: panel.dockH
                 contentWidth: nativeTray.implicitWidth
                 contentHeight: height

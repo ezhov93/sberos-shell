@@ -6,7 +6,7 @@
 
 | Задача | Работа |
 | --- | --- |
-| [DOCS-AGENT-WORKFLOW](DOCS-AGENT-WORKFLOW.md) | Описать оценку, рамки и названия задач для агента |
+| [DOCS-AGENT-WORKFLOW](DOCS-AGENT-WORKFLOW.md) | Описать экономную работу с контекстом и командами |
 | [PANEL-000](PANEL-000.md) | Согласовать адаптацию требований Smart Panel |
 | [PANEL-001](PANEL-001.md) | Собрать пятизонную компоновку |
 | [PANEL-002](PANEL-002.md) | Реализовать меню Сбер |

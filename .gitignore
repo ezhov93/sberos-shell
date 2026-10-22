@@ -1,0 +1,20 @@
+# Local credentials and assistant runtime state
+/.aws/
+/.codex/
+/.agents/
+
+# Generated build outputs
+build/
+_build/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Editor and temporary files
+*.user
+*.autosave
+*~

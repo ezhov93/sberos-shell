@@ -1,0 +1,12 @@
+[submodule "sberos-app-icons"]
+	path = sberos-app-icons
+	url = ../sberos-app-icons.git
+	branch = develop
+[submodule "sberos-theme"]
+	path = sberos-theme
+	url = ../sberos-theme.git
+	branch = develop
+[submodule "sberos-qml-components"]
+	path = sberos-qml-components
+	url = ../sberos-qml-components.git
+	branch = develop

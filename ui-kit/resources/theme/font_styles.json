@@ -1,0 +1,308 @@
+{
+    "displayL": {
+        "fontFamilyRef": "fontFamily.display",
+        "fontWeight": 300,
+        "fontStyle": "normal",
+        "textSize": 128,
+        "lineHeight": 128,
+        "letterSpacing": 0,
+        "fontFamily": "display"
+    },
+    "displayLB": {
+        "fontFamilyRef": "fontFamily.display",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 128,
+        "lineHeight": 128,
+        "letterSpacing": 0,
+        "fontFamily": "display"
+    },
+    "displayM": {
+        "fontFamilyRef": "fontFamily.display",
+        "fontWeight": 300,
+        "fontStyle": "normal",
+        "textSize": 88,
+        "lineHeight": 92,
+        "letterSpacing": 0,
+        "fontFamily": "display"
+    },
+    "displayMB": {
+        "fontFamilyRef": "fontFamily.display",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 88,
+        "lineHeight": 92,
+        "letterSpacing": 0,
+        "fontFamily": "display"
+    },
+    "displayS": {
+        "fontFamilyRef": "fontFamily.display",
+        "fontWeight": 300,
+        "fontStyle": "normal",
+        "textSize": 64,
+        "lineHeight": 68,
+        "letterSpacing": 0,
+        "fontFamily": "display"
+    },
+    "displaySB": {
+        "fontFamilyRef": "fontFamily.display",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 64,
+        "lineHeight": 68,
+        "letterSpacing": 0,
+        "fontFamily": "display"
+    },
+    "headerH1": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 48,
+        "lineHeight": 54,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH1B": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 48,
+        "lineHeight": 54,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH2": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 32,
+        "lineHeight": 38,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH2B": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 32,
+        "lineHeight": 38,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH3": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 24,
+        "lineHeight": 30,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH3B": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 24,
+        "lineHeight": 30,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH4": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 20,
+        "lineHeight": 26,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH4B": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 20,
+        "lineHeight": 26,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH5": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 18,
+        "lineHeight": 24,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "headerH5B": {
+        "fontFamilyRef": "fontFamily.header",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 18,
+        "lineHeight": 24,
+        "letterSpacing": 0,
+        "fontFamily": "header"
+    },
+    "bodyL": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 18,
+        "lineHeight": 22,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyLB": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 18,
+        "lineHeight": 22,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyM": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 16,
+        "lineHeight": 20,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyMB": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 16,
+        "lineHeight": 20,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyS": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 14,
+        "lineHeight": 18,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodySB": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 14,
+        "lineHeight": 18,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyXs": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 12,
+        "lineHeight": 14,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyXsB": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 12,
+        "lineHeight": 14,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyXxs": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 10,
+        "lineHeight": 12,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "bodyXxsB": {
+        "fontFamilyRef": "fontFamily.body",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 10,
+        "lineHeight": 12,
+        "letterSpacing": -0.02,
+        "fontFamily": "body"
+    },
+    "textL": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 24,
+        "lineHeight": 32,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textLB": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 24,
+        "lineHeight": 32,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textM": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 18,
+        "lineHeight": 26,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textMB": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 18,
+        "lineHeight": 26,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textS": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 14,
+        "lineHeight": 20,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textSB": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 14,
+        "lineHeight": 20,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textXs": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "textSize": 12,
+        "lineHeight": 16,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    },
+    "textXsB": {
+        "fontFamilyRef": "fontFamily.text",
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "textSize": 12,
+        "lineHeight": 16,
+        "letterSpacing": -0.02,
+        "fontFamily": "text"
+    }
+}

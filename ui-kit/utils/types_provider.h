@@ -1,0 +1,102 @@
+#pragma once
+
+#include <QObject>
+#include <QtQml/qqml.h>
+
+
+class TypesProvider : public QObject {
+  Q_OBJECT
+  QML_SINGLETON
+  QML_ELEMENT
+
+public:
+  enum class MetaType {
+    Void = QMetaType::Void,
+    Bool = QMetaType::Bool,
+    Int = QMetaType::Int,
+    UInt = QMetaType::UInt,
+    Double = QMetaType::Double,
+    QChar = QMetaType::QChar,
+    QString = QMetaType::QString,
+    QByteArray = QMetaType::QByteArray,
+    Nullptr = QMetaType::Nullptr,
+    VoidStar = QMetaType::VoidStar,
+    Long = QMetaType::Long,
+    LongLong = QMetaType::LongLong,
+    Short = QMetaType::Short,
+    Char = QMetaType::Char,
+    Char16 = QMetaType::Char16,
+    Char32 = QMetaType::Char32,
+    ULong = QMetaType::ULong,
+    ULongLong = QMetaType::ULongLong,
+    UShort = QMetaType::UShort,
+    SChar = QMetaType::SChar,
+    UChar = QMetaType::UChar,
+    Float = QMetaType::Float,
+    Float16 = QMetaType::Float16,
+    QObjectStar = QMetaType::QObjectStar,
+    QCursor = QMetaType::QCursor,
+    QDate = QMetaType::QDate,
+    QSize = QMetaType::QSize,
+    QTime = QMetaType::QTime,
+    QVariantList = QMetaType::QVariantList,
+    QPolygon = QMetaType::QPolygon,
+    QPolygonF = QMetaType::QPolygonF,
+    QColor = QMetaType::QColor,
+    QColorSpace = QMetaType::QColorSpace,
+    QSizeF = QMetaType::QSizeF,
+    QRectF = QMetaType::QRectF,
+    QLine = QMetaType::QLine,
+    QTextLength = QMetaType::QTextLength,
+    QStringList = QMetaType::QStringList,
+    QVariantMap = QMetaType::QVariantMap,
+    QVariantHash = QMetaType::QVariantHash,
+    QVariantPair = QMetaType::QVariantPair,
+    QIcon = QMetaType::QIcon,
+    QPen = QMetaType::QPen,
+    QLineF = QMetaType::QLineF,
+    QTextFormat = QMetaType::QTextFormat,
+    QRect = QMetaType::QRect,
+    QPoint = QMetaType::QPoint,
+    QUrl = QMetaType::QUrl,
+    QRegularExpression = QMetaType::QRegularExpression,
+    QDateTime = QMetaType::QDateTime,
+    QPointF = QMetaType::QPointF,
+    QPalette = QMetaType::QPalette,
+    QFont = QMetaType::QFont,
+    QBrush = QMetaType::QBrush,
+    QRegion = QMetaType::QRegion,
+    QBitArray = QMetaType::QBitArray,
+    QImage = QMetaType::QImage,
+    QKeySequence = QMetaType::QKeySequence,
+    QSizePolicy = QMetaType::QSizePolicy,
+    QPixmap = QMetaType::QPixmap,
+    QLocale = QMetaType::QLocale,
+    QBitmap = QMetaType::QBitmap,
+    QTransform = QMetaType::QTransform,
+    QMatrix4x4 = QMetaType::QMatrix4x4,
+    QVector2D = QMetaType::QVector2D,
+    QVector3D = QMetaType::QVector3D,
+    QVector4D = QMetaType::QVector4D,
+    QQuaternion = QMetaType::QQuaternion,
+    QEasingCurve = QMetaType::QEasingCurve,
+    QJsonValue = QMetaType::QJsonValue,
+    QJsonObject = QMetaType::QJsonObject,
+    QJsonArray = QMetaType::QJsonArray,
+    QJsonDocument = QMetaType::QJsonDocument,
+    QCborValue = QMetaType::QCborValue,
+    QCborArray = QMetaType::QCborArray,
+    QCborMap = QMetaType::QCborMap,
+    QCborSimpleType = QMetaType::QCborSimpleType,
+    QModelIndex = QMetaType::QModelIndex,
+    QPersistentModelIndex = QMetaType::QPersistentModelIndex,
+    QUuid = QMetaType::QUuid,
+    QByteArrayList = QMetaType::QByteArrayList,
+    QVariant = QMetaType::QVariant,
+    User = QMetaType::User,
+    UnknownType = QMetaType::UnknownType
+  };
+  Q_ENUM(MetaType)
+
+  explicit TypesProvider(QObject* parent = nullptr);
+};

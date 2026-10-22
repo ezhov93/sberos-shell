@@ -1,0 +1,16 @@
+/lib-flamingo/*
+*/__pycache__
+*.pyc
+*.user*
+*.autosave*
+/_build
+/build
+/_output 
+/plasma
+
+*PluginConfig.cmake
+*PluginConfigVersion.cmake
+
+# Agentic
+GIGACODE.md
+.gigacode/

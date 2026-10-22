@@ -1,0 +1,14 @@
+@PACKAGE_INIT@
+set(BINARIES_INSTALL_DIR "@BINARIES_INSTALL_DIR@")
+set(INCLUDES_INSTALL_DIR "@INCLUDES_INSTALL_DIR@")
+
+include(CMakeFindDependencyMacro)
+find_dependency(Qt6Core)
+find_dependency(Qt6Qml)
+
+add_library(SberUtilsPlugin SHARED IMPORTED)
+set_target_properties(SberUtilsPlugin PROPERTIES
+  IMPORTED_LOCATION ${BINARIES_INSTALL_DIR}/Sber/Utils/libSberUtilsPlugin.so
+  INTERFACE_INCLUDE_DIRECTORIES ${INCLUDES_INSTALL_DIR}
+)
+message("-- Found Sber.Utils")

@@ -1,0 +1,19 @@
+Source: sberos-components
+Section: misc
+Priority: optional
+Maintainer: Sberos Team <sberos_dev@sberbank.ru>
+Uploaders: sberos team <sberos_dev@sberbank.ru>
+Standards-Version: 4.6.2
+Build-Depends: debhelper-compat (= 13)
+Rules-Requires-Root: no
+XCBS-Sberos-Owner: Core
+XCBS-Sberos-Developed: True
+
+Package: sberos-components
+Section: libs
+Architecture: all
+Depends: sberos-qml-components (>= 1.003.000),
+ sberos-theme (>= 1.001.000+sberos1),
+ sberos-app-icons (>= 1.001.000+sberos1)
+Description: Metapackage providing SberOS components data files:
+ qml components, theme and applicaton icons

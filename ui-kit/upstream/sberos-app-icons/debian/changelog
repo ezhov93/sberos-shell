@@ -1,0 +1,24 @@
+sberos-app-icons (1.002.000+sberos1) unstable; urgency=medium
+
+  * App header icons
+
+ -- sberos team <sberos_dev@sberbank.ru>  Tue, 26 May 2026 12:29:44 +0500
+
+sberos-app-icons (1.001.002+sberos1) sberosdzo-v3.6.1; urgency=medium
+
+  * Fixed copyright
+
+ -- sberos team <sberos_dev@sberbank.ru>  Wed, 24 Dec 2025 10:24:03 +0300
+
+sberos-app-icons (1.001.001+sberos1) unstable; urgency=medium
+
+  * Update install script
+
+ -- sberos team <sberos_dev@sberbank.ru>  Thu, 20 Mar 2025 16:24:03 +0300
+
+sberos-app-icons (1.001.000+sberos1) unstable; urgency=medium
+
+  * new version 1.001.000
+
+ -- sberos team <sberos_dev@sberbank.ru>  Wed, 12 Mar 2025 16:16:02 +0300
+

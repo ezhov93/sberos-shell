@@ -1,0 +1,28 @@
+[Icon Theme]
+Name=SberApps
+Comment=Icons for sber-components
+Hidden=true
+
+# Directory list
+Directories=16,24,36
+
+[16]
+Context=Applications
+Size=16
+MinSize=10
+MaxSize=20
+Type=Scalable
+
+[24]
+Context=Applications
+Size=24
+MinSize=20
+MaxSize=30
+Type=Scalable
+
+[36]
+Context=Applications
+Size=36
+MinSize=30
+MaxSize=512
+Type=Scalable

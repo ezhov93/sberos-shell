@@ -1,0 +1,21 @@
+@PACKAGE_INIT@
+set(BINARIES_INSTALL_DIR "@BINARIES_INSTALL_DIR@")
+set(INCLUDES_INSTALL_DIR "@INCLUDES_INSTALL_DIR@")
+
+include(CMakeFindDependencyMacro)
+find_dependency(Qt6Core)
+find_dependency(Qt6Gui)
+find_dependency(Qt6Widgets)
+find_dependency(Qt6Qml)
+find_dependency(Qt6Quick)
+find_dependency(Qt6Svg)
+find_dependency(Qt6Xml)
+
+add_library(SberThemePlugin SHARED IMPORTED)
+set_target_properties(SberThemePlugin PROPERTIES
+  IMPORTED_LOCATION ${BINARIES_INSTALL_DIR}/Sber/Theme/libSberThemePlugin.so
+  INTERFACE_INCLUDE_DIRECTORIES ${INCLUDES_INSTALL_DIR}
+  LINK_DIRECTORIES "${BINARIES_INSTALL_DIR}/Sber/Core"
+)
+
+message("-- Found Sber.Theme")

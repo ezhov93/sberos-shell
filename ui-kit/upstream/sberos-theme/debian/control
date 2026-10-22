@@ -1,0 +1,15 @@
+Source: sberos-theme
+Section: gnome
+Priority: optional
+Maintainer: Sberos Team <sberos_dev@sberbank.ru>
+Uploaders: sberos team <sberos_dev@sberbank.ru>
+Build-Depends: debhelper-compat (=13)
+Standards-Version: 4.6.2
+XCBS-Sberos-Owner: Core
+XCBS-Sberos-Developed: True
+
+Package: sberos-theme
+Section: gnome
+Architecture: all
+Depends: gnome-shell
+Description: Sber custom design system

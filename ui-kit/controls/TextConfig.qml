@@ -1,0 +1,97 @@
+import QtQuick
+
+import Sber.Controls
+import Sber.Core
+import Sber.Theme
+
+
+QtObject {
+    property int status: Widget.None
+    property int type: -1
+    property int backgroundType: Widget.Solid
+    property int lineHeight: Core.Settings.LineHeight
+    property bool bold: false
+    property bool secondary: false
+    property bool smaller: false
+
+    property font font:
+        smaller ? lineHeight <= Theme.Sizes.LineHeight.S ? bold ? Theme.Fonts.BodyXxsB : Theme.Fonts.BodyXxs :
+                  lineHeight <= Theme.Sizes.LineHeight.M ? bold ? Theme.Fonts.BodyXsB : Theme.Fonts.BodyXs :
+                                                           bold ? Theme.Fonts.BodySB : Theme.Fonts.BodyS :
+        secondary ? Theme.Fonts.BodyXs :
+            lineHeight <= Theme.Sizes.LineHeight.Xxs ? bold ? Theme.Fonts.BodyXxsB : Theme.Fonts.BodyXxs :
+            lineHeight <= Theme.Sizes.LineHeight.Xs  ? bold ? Theme.Fonts.BodyXsB : Theme.Fonts.BodyXs :
+            lineHeight <= Theme.Sizes.LineHeight.S   ? bold ? Theme.Fonts.BodySB : Theme.Fonts.BodyS :
+            lineHeight <= Theme.Sizes.LineHeight.M   ? bold ? Theme.Fonts.BodyMB : Theme.Fonts.BodyM :
+                                                       bold ? Theme.Fonts.BodyLB : Theme.Fonts.BodyL
+    property color defaultColor:
+        secondary                    ? Theme.Palette.Text.Default.Secondary :
+        type == -1                   ? Theme.Palette.Text.Default.Primary :
+        backgroundType == Widget.Solid ?
+            status == Widget.Success ? Theme.Palette.Text.OnDark.Primary :
+            status == Widget.Warning ? Theme.Palette.Text.OnDark.Primary :
+            status == Widget.Error   ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.Default   ? Theme.Palette.Text.Inverse.Primary :
+            type == Widget.Accient   ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.Secondary ? Theme.Palette.Text.Default.Primary :
+            type == Widget.Black     ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.White     ? Theme.Palette.Text.OnLight.Primary :
+                                       Theme.Palette.Text.Inverse.Primary :
+
+            status == Widget.Success ? Theme.Palette.Text.Default.Positive :
+            status == Widget.Warning ? Theme.Palette.Text.Default.Warning :
+            status == Widget.Error   ? Theme.Palette.Text.Default.Negative :
+            type == Widget.Default   ? Theme.Palette.Text.Default.Primary :
+            type == Widget.Accient   ? Theme.Palette.Text.Default.Accent :
+            type == Widget.Secondary ? Theme.Palette.Text.Default.Secondary :
+            type == Widget.Black     ? Theme.Palette.Text.OnLight.Primary :
+            type == Widget.White     ? Theme.Palette.Text.Default.Primary :
+                                       Theme.Palette.Text.Default.Primary
+    property color hoverColor:
+        secondary                    ? Theme.Palette.Text.Default.SecondaryHover :
+        type == -1                   ? Theme.Palette.Text.Default.PrimaryHover :
+        backgroundType == Widget.Solid ?
+            status == Widget.Success ? Theme.Palette.Text.OnDark.Primary :
+            status == Widget.Warning ? Theme.Palette.Text.OnDark.Primary :
+            status == Widget.Error   ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.Default   ? Theme.Palette.Text.Inverse.Primary :
+            type == Widget.Accient   ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.Secondary ? Theme.Palette.Text.Default.Primary :
+            type == Widget.Black     ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.White     ? Theme.Palette.Text.OnLight.Primary :
+                                       Theme.Palette.Text.Inverse.Primary :
+
+            status == Widget.Success ? Theme.Palette.Text.Default.PositiveHover :
+            status == Widget.Warning ? Theme.Palette.Text.Default.WarningHover :
+            status == Widget.Error   ? Theme.Palette.Text.Default.NegativeHover :
+            type == Widget.Default   ? Theme.Palette.Text.Default.PrimaryHover :
+            type == Widget.Accient   ? Theme.Palette.Text.Default.AccentHover :
+            type == Widget.Secondary ? Theme.Palette.Text.Default.SecondaryHover :
+            type == Widget.Black     ? Theme.Palette.Text.OnLight.PrimaryHover :
+            type == Widget.White     ? Theme.Palette.Text.Default.PrimaryHover :
+                                       Theme.Palette.Text.Default.PrimaryHover
+
+    property color activeColor:
+        secondary                    ? Theme.Palette.Text.Default.SecondaryActive :
+        type == -1                   ? Theme.Palette.Text.Default.PrimaryActive :
+        backgroundType == Widget.Solid ?
+            status == Widget.Success ? Theme.Palette.Text.OnDark.Primary :
+            status == Widget.Warning ? Theme.Palette.Text.OnDark.Primary :
+            status == Widget.Error   ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.Default   ? Theme.Palette.Text.Inverse.Primary :
+            type == Widget.Accient   ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.Secondary ? Theme.Palette.Text.Default.Primary :
+            type == Widget.Black     ? Theme.Palette.Text.OnDark.Primary :
+            type == Widget.White     ? Theme.Palette.Text.OnLight.Primary :
+                                       Theme.Palette.Text.Inverse.Primary :
+
+            status == Widget.Success ? Theme.Palette.Text.Default.PositiveActive :
+            status == Widget.Warning ? Theme.Palette.Text.Default.WarningActive :
+            status == Widget.Error   ? Theme.Palette.Text.Default.NegativeActive :
+            type == Widget.Default   ? Theme.Palette.Text.Default.PrimaryActive :
+            type == Widget.Accient   ? Theme.Palette.Text.Default.AccentActive :
+            type == Widget.Secondary ? Theme.Palette.Text.Default.SecondaryActive :
+            type == Widget.Black     ? Theme.Palette.Text.OnLight.PrimaryActive :
+            type == Widget.White     ? Theme.Palette.Text.Default.PrimaryActive :
+                                       Theme.Palette.Text.Default.PrimaryActive
+}

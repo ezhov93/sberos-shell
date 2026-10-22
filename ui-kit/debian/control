@@ -1,0 +1,43 @@
+Source: sberos-qml-components
+Section: libs
+Priority: optional
+Maintainer: sberos team <sberos_dev@sberbank.ru>
+Build-Depends:
+	debhelper-compat (= 13),
+	cmake,
+    clang,
+    libglib2.0-dev,
+    pkg-config,
+	qt6-l10n-tools,
+	qt6-base-dev,
+	qt6-declarative-dev,
+	qt6-svg-dev,
+    qt6-scxml-dev,
+	qt6-tools-dev,
+    libgtest-dev,
+    libgmock-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+XCBS-Sberos-Owner: Core
+XCBS-Sberos-Developed: True
+
+Package: sberos-qml-components
+Section: libs
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends},
+	qml-qt6,
+	qt6-qmllint-plugins,
+	qml6-module-qt5compat-graphicaleffects,
+	qml6-module-qtqml-models,
+	qml6-module-qtqml-workerscript,
+	qml6-module-qtquick-controls,
+	qml6-module-qtquick-dialogs,
+	qml6-module-qtquick-layouts,
+	qml6-module-qtquick-shapes,
+	qml6-module-qtquick-templates,
+	qml6-module-qtquick-window,
+	qml6-module-qtquick,
+	sber-fonts,
+	qml6-module-qtquick-effects
+Description: Sber custom design system
+

@@ -51,22 +51,21 @@ TestCase {
         compare(Shell.config.dockHeight, 64)
     }
     function test_sliderPointerKeyboardAndExternalUpdate() {
-        const slider = find(o => o.objectName === "setting-tintAlpha")
+        const slider = find(o => o.objectName === "setting-dockIcon")
         verify(slider)
         const y = slider.height / 2
         mousePress(slider, 100, y)
         mouseMove(slider, 155, y, 20)
         mouseRelease(slider, 155, y)
-        verify(Shell.config.tintAlpha >= 0 && Shell.config.tintAlpha <= 0.6)
-        const rounded = Math.round(Shell.config.tintAlpha * 100) / 100
-        fuzzyCompare(Shell.config.tintAlpha, rounded, 0.00001)
-        Shell.saveConfigKey("tintAlpha", 0.2)
-        tryCompare(slider, "value", 0.2)
+        verify(Shell.config.dockIcon >= 32 && Shell.config.dockIcon <= 64)
+        compare(Shell.config.dockIcon, Math.round(Shell.config.dockIcon))
+        Shell.saveConfigKey("dockIcon", 48)
+        tryCompare(slider, "value", 48)
         slider.forceActiveFocus()
         keyClick(Qt.Key_Right)
-        tryVerify(() => Shell.config.tintAlpha > 0.2)
-        Shell.saveConfigKey("tintAlpha", 0.1)
-        tryCompare(slider, "value", 0.1)
+        tryVerify(() => Shell.config.dockIcon > 48)
+        Shell.saveConfigKey("dockIcon", 44)
+        tryCompare(slider, "value", 44)
     }
     function test_weatherAndWallpaper() {
         settings.openIt(1)

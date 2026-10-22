@@ -1,7 +1,7 @@
 #!/bin/bash
 # Restart Sirca Shell ONLY if the user has it switched on (enabled). Never starts a switched-off shell.
 # Before restarting, compile-check every QML file of the new build and of the shell's applets: a build that cannot load
-# would take the bar and dock down (systemd then falls back to the Plasma panels). A failed check leaves the RUNNING
+# would take the panel down (systemd then falls back to the Plasma panels). A failed check leaves the RUNNING
 # shell untouched. Skip the check with --force.
 # A source checkout: compile first. The QML is inside the binary, so a reload without a build silently runs the OLD code
 # (2026-09-20: two changes "reloaded" three times and never ran). A failed build leaves the running shell alone.
@@ -11,7 +11,7 @@ if [ -f "$src/CMakeLists.txt" ] && [ -f "$src/build/CMakeCache.txt" ]; then
     echo "built: $(date -r "$src/build/bin/sirca-shell" +%T)"
 fi
 if [ "${1:-}" != "--force" ]; then
-    applets=(); for a in onur.glasstray onur.glassnotifications onur.glasscontrol onur.kickoffglow; do d="$HOME/.local/share/plasma/plasmoids/$a"; [ -d "$d" ] && applets+=("$d"); done
+    applets=(); for a in onur.glasstray onur.glassnotifications onur.glasscontrol; do d="$HOME/.local/share/plasma/plasmoids/$a"; [ -d "$d" ] && applets+=("$d"); done
     out="$(QT_QPA_PLATFORM=offscreen timeout 90 "$(command -v sirca-shell || echo "$HOME/.local/bin/sirca-shell")" --check "${applets[@]}" 2>/dev/null)"; rc=$?
     if [ $rc -ne 0 ]; then echo "$out" | grep -E "^ERROR|--check:" ; echo "sirca-shell-reload: the new build does NOT load (rc=$rc); the running shell was left alone"; exit 1; fi
     echo "$out" | tail -n1

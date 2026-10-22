@@ -131,13 +131,10 @@ Surface {
     // preview  : the hovered app's windows; a LOBE over the icon when it fits inside the dock, else a panel too
     property bool launcherOpen: false
     readonly property int lobePad: Config.lobePad
-    property bool warm: false                                                     // heavy popup content exists (see nativeLauncher)
+    property bool warm: false                                                     // launcher content is created after the shell's first frame
     Timer { interval: 1200; running: true; onTriggered: dock.warm = true }
-    readonly property Item hostedLauncher: kickoffLoader.item                     // only exists with nativeLauncher off
-    function hostedPref(which, fallback) { const a = hostedLauncher ? hostedLauncher.appletItem : null; const f = a ? a.fullRepresentationItem : null;
-        const v = (f && f.Layout) ? (which === "w" ? f.Layout.preferredWidth : f.Layout.preferredHeight) : 0; return v > 0 ? v : fallback }
-    readonly property real launcherFullW: Math.min(unified ? screenW - 2 * (rad + 14 + lobePad + Config.dockFillMargin) : 900, Config.nativeLauncher ? nativeLauncher.implicitWidth : hostedPref("w", 560))
-    readonly property real launcherFullH: Math.min(unified ? Screen.height - dockH - 2 * gap - 2 * lobePad - 48 : Config.sheetHeight + 120, Config.nativeLauncher ? nativeLauncher.implicitHeight : hostedPref("h", 600))
+    readonly property real launcherFullW: Math.min(unified ? screenW - 2 * (rad + 14 + lobePad + Config.dockFillMargin) : 900, launcherLoader.implicitWidth)
+    readonly property real launcherFullH: Math.min(unified ? Screen.height - dockH - 2 * gap - 2 * lobePad - 48 : Config.sheetHeight + 120, launcherLoader.implicitHeight)
     property real launcherGrow: launcherOpen ? 1 : 0
     Behavior on launcherGrow { Spring {} }
 
@@ -603,19 +600,15 @@ Surface {
 
     } // taskViewport
 
-    // launcher content, clipped to the panel while it grows: our own Launcher, or the hosted Kickoff as a fallback
+    // The shell's launcher, clipped to the panel while it grows.
     Item { x: dock.unified ? dock.lobeX + dock.lobePad : (dock.width - dock.launcherFullW) / 2
         y: dock.dockTop - (dock.unified ? dock.lobeH : dock.panelH)
         width: dock.launcherFullW; height: dock.unified ? dock.lobeH : dock.panelH; clip: true
         visible: dock.launcherLobe || (dock.panelKind === "launcher" && dock.panelUp); opacity: Math.min(1, height / 140)
         // built shortly after start (or at the first open, whichever comes first): reading every installed app and building
         // the grid was ~50 ms of the start-up path
-        Loader { id: nativeLauncher; active: Config.nativeLauncher && dock.warm; y: dock.lobePad; width: dock.launcherFullW; height: dock.launcherFullH
-            sourceComponent: Launcher { open: dock.launcherOpen && Config.nativeLauncher; onDone: dock.launcherOpen = false } }
-        Loader { id: kickoffLoader; active: !Config.nativeLauncher; y: dock.lobePad; width: dock.launcherFullW; height: dock.launcherFullH
-            sourceComponent: AppletHost { plugin: "onur.kickoffglow"; zone: "lobe"
-                expanded: dock.launcherOpen
-                onExpandedChanged: if (!expanded && dock.launcherOpen) dock.launcherOpen = false } }   // Kickoff closes itself after launching
+        Loader { id: launcherLoader; active: dock.warm; y: dock.lobePad; width: dock.launcherFullW; height: dock.launcherFullH
+            sourceComponent: Launcher { open: dock.launcherOpen; onDone: dock.launcherOpen = false } }
     }
     // window previews of the hovered app
     Item { id: pvBox; clip: true; visible: dock.previewGrow > 0.002 && dock.panelKind !== "launcher" && !dock.systemUp

@@ -66,20 +66,12 @@ QtObject {
     readonly property int normal: 220
     readonly property int slow: 320
 
-    // top bar
-    // which widgets, where, in which order. Names: desktop workspaces tray title clock date system media bell gear
+    // Legacy widget groups are reused by the unified panel's indicators area.
     readonly property var barLeft: get("barLeft", ["desktop", "workspaces", "tray", "title"])
-    // weather (Open-Meteo, network): "weather": true/false decides; with no key, placing the bar widget counts as the opt-in
+    // Weather remains opt-in and can also be enabled by a configured panel indicator.
     readonly property bool weatherOn: user && user.weather !== undefined ? user.weather === true : (barLeft.indexOf("weather") >= 0 || barCenter.indexOf("weather") >= 0 || barRight.indexOf("weather") >= 0)
     readonly property var barCenter: get("barCenter", ["clock"])
     readonly property var barRight: get("barRight", ["media", "bell", "gear"])
-    // …plus "user:<name>" for every folder in ~/.config/<app>/widgets (UserWidgets, watched: a new widget appears in the edit shelf at once)
-    readonly property var barWidgetNames: { const m = { desktop: "Show desktop", workspaces: "Workspaces", tray: "Tray", title: "Window title", clock: "Clock", date: "Date",
-                                                        system: "CPU / memory", media: "Now playing", bell: "Notifications", gear: "Quick settings", weather: "Weather",
-                                                        battery: "Battery", mic: "Microphone", privacy: "Privacy", keyboard: "Keyboard layout",
-                                                        "tile:volume": "Volume", "tile:network": "Network", "tile:bluetooth": "Bluetooth", "tile:dnd": "Do Not Disturb", "tile:nightlight": "Night Light",
-                                                        "tile:power": "Power profile", "tile:caffeine": "Caffeine", "tile:mic": "Microphone (tile)" }
-        const u = UserWidgets.names; for (let i = 0; i < u.length; ++i) m["user:" + u[i]] = UserWidgets.label(u[i]); return m }   // (a QStringList is not iterable with for…of)
     readonly property int titleMaxWidth: get("titleMaxWidth", 420)
     readonly property bool titleIcon: get("titleIcon", true)
     readonly property bool clock24h: get("clock24h", false)
@@ -156,8 +148,7 @@ QtObject {
     Component.onCompleted: Shell.setWithoutPlasmashell(withoutPlasmashell)
     readonly property bool quietWhenBusy: get("quietWhenBusy", true)      // no notification popups while a game / full-screen window has focus
     readonly property string quickSettingsStyle: get("quickSettingsStyle", "glass")   // "glass" = QuickSettings.qml (our design), "classic" = the ported Glass Control pages
-    // launcher: our own (AppsModel) or, as a fallback, the hosted Kickoff fork
-    readonly property bool nativeLauncher: get("nativeLauncher", true)
+    // Sirca's own AppsModel-backed launcher.
     readonly property var favorites: get("favorites", ["firefox.desktop", "org.kde.dolphin.desktop", "org.kde.konsole.desktop", "systemsettings.desktop", "org.kde.discover.desktop"])
     readonly property real dockMagnify: get("dockMagnify", 1.22)
     readonly property var launchers: get("launchers", [

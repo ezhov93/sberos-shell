@@ -40,20 +40,13 @@ Window {
             { k: "dateFormat", t: "choice", label: "Date format", options: [["ddd d MMM", "Sat 19 Sep"], ["d MMMM", "19 September"], ["dd.MM.yyyy", "19.09.2026"], ["yyyy-MM-dd", "2026-09-19"], ["M/d", "9/19"]] } ] })
     readonly property var dockTabs: [
         { name: "Size", items: [
-            { k: "dockWidthMode", t: "choice", label: "Width", options: [["fit", "Fit icons"], ["fill", "Fill screen"]] },
-            { k: "dockFillMargin", t: "num", label: "Side margin", from: 0, to: 120, step: 1, unit: " px", when: "dockWidthMode=fill" },
+            { k: "dockFillMargin", t: "num", label: "Side margin", from: 0, to: 120, step: 1, unit: " px" },
             { k: "dockIcon", t: "num", label: "Icon size", from: 28, to: 72, step: 1, unit: " px" },
             { k: "dockCell", t: "num", label: "Icon spacing", from: 40, to: 96, step: 1, unit: " px" },
             { k: "dockHeight", t: "num", label: "Height", from: 40, to: 96, step: 1, unit: " px" },
-            { k: "dockRadius", t: "num", label: "Corners", from: 0, to: 40, step: 1, unit: " px" },
             { k: "dockGap", t: "num", label: "Gap to the edge", from: 0, to: 40, step: 1, unit: " px" } ] },
-        { name: "Glass", items: [
-            { k: "dockBlur", t: "bool", label: "Blur behind" },
-            { k: "dockTintAlpha", t: "num", label: "Tint", from: 0, to: 0.95, step: 0.01, pct: true },
-            { k: "dockRimAlpha", t: "num", label: "Edge line", from: 0, to: 0.5, step: 0.01, pct: true },
-            { k: "dockSheen", t: "num", label: "Top sheen", from: 0, to: 0.3, step: 0.005, pct: true },
-            { k: "dockShadow", t: "num", label: "Shadow", from: 0, to: 1, step: 0.01, pct: true },
-            { k: "hazeStrength", t: "num", label: "Colour haze", from: 0, to: 1, step: 0.01, pct: true } ] },
+        { name: "Media", items: [
+            { k: "hazeStrength", t: "num", label: "Artwork glow", from: 0, to: 1, step: 0.01, pct: true } ] },
         { name: "Icons", items: [
             { k: "dockMagnify", t: "num", label: "Hover zoom", from: 1, to: 1.8, step: 0.01, mult: true },
             { k: "dockSpotlight", t: "bool", label: "Hover light" },
@@ -64,18 +57,8 @@ Window {
         { name: "Behaviour", items: [
             { k: "dockVisibility", t: "choice", label: "Windows", options: [["always", "Never touch it"], ["dodge", "Hide under them"], ["below", "Go below it"]] },
             { k: "dockPreviews", t: "bool", label: "Window previews" },
-            { k: "dockPreviewDelay", t: "num", label: "Preview delay", from: 0, to: 1500, step: 20, unit: " ms", when: "dockPreviews=true" } ] },
-        { name: "Touched", items: [
-            { k: "dockTouchedOpacity", t: "num", label: "Opacity when a window touches it", from: 0.1, to: 1, step: 0.01, pct: true },
-            { k: "dockTouchedBlur", t: "bool", label: "Blur" } ] },
-        { name: "Maximised", items: [
-            { k: "dockMaximizedMode", t: "choice", label: "A maximised window on this screen", options: [["touched", "Same as touched"], ["custom", "Its own look"]] },
-            { k: "dockMaximizedOpacity", t: "num", label: "Opacity", from: 0.1, to: 1, step: 0.01, pct: true, when: "dockMaximizedMode=custom" },
-            { k: "dockMaximizedBlur", t: "bool", label: "Blur", when: "dockMaximizedMode=custom" } ] },
-        { name: "Full-screen", items: [
-            { k: "dockFullscreenMode", t: "choice", label: "A full-screen window", options: [["hide", "Hide the dock"], ["keep", "Keep it on top"]] },
-            { k: "dockFullscreenOpacity", t: "num", label: "Opacity", from: 0.1, to: 1, step: 0.01, pct: true, when: "dockFullscreenMode=keep" },
-            { k: "dockFullscreenBlur", t: "bool", label: "Blur", when: "dockFullscreenMode=keep" } ] } ]
+            { k: "dockPreviewDelay", t: "num", label: "Preview delay", from: 0, to: 1500, step: 20, unit: " ms", when: "dockPreviews=true" },
+            { k: "dockFullscreenMode", t: "choice", label: "Full-screen windows", options: [["hide", "Hide the panel"], ["keep", "Keep it visible"]] } ] } ]
     function keysOf(tabs, extra) { const out = extra.slice(); for (const t of tabs) for (const i of t.items) if (["cornerRadius", "levelMeter", "quietWhenBusy"].indexOf(i.k) < 0) out.push(i.k); return out }
     function met(when) { if (!when) return true; const p = when.split("="); return String(Config[p[0]]) === p[1] }
     function text(item, v) { return item.pct ? Math.round(v * 100) + " %" : item.mult ? Number(v).toFixed(2) + "×" : Math.round(v) + (item.unit || "") }
@@ -105,8 +88,7 @@ Window {
 
     // ---- a strip: title, tabs and the tab's options
     component Strip: Rectangle { id: strip
-        property string title; property string hint; property var tabs: []; property int tab: 0; property var shelf: []
-        signal shelfTapped(string name)
+        property string title; property string hint; property var tabs: []; property int tab: 0
         radius: 26; color: Qt.rgba(0.07, 0.08, 0.11, 0.55); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.20)
         width: Math.min(es.width - 80, 1180); height: body.y + body.height + 18
         opacity: es.show; onHeightChanged: regions.restart(); onYChanged: regions.restart()
@@ -122,17 +104,10 @@ Window {
         Column { id: body; x: 26; y: 66; width: parent.width - 52; spacing: 10
             Flow { width: parent.width; spacing: 30
                 Repeater { model: strip.tabs.length ? strip.tabs[strip.tab].items : []; Option {} } }
-            // (a Flow, not a Row: with the tile widgets the shelf grew past the strip's edge, 2026-09-23)
-            Flow { visible: strip.shelf.length > 0; width: parent.width; spacing: 8
-                Text { text: "Add"; color: Qt.rgba(1, 1, 1, 0.6); font.pixelSize: 12; height: 27; verticalAlignment: Text.AlignVCenter }
-                Repeater { model: strip.shelf
-                    Rectangle { id: sc; required property string modelData; height: 27; width: sct.implicitWidth + 40; radius: 13.5; color: Qt.rgba(1, 1, 1, sch.hovered ? 0.12 : 0.04); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.35)
-                        Text { id: sct; x: 12; anchors.verticalCenter: parent.verticalCenter; text: Config.barWidgetNames[sc.modelData] || sc.modelData; color: "white"; font.pixelSize: 12 }
-                        Rectangle { anchors.right: parent.right; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter; width: 16; height: 16; radius: 8; color: es.accent
-                            Text { anchors.centerIn: parent; text: "+"; color: "white"; font.pixelSize: 12; font.weight: Font.Bold } }
-                        HoverHandler { id: sch; cursorShape: Qt.PointingHandCursor } TapHandler { onTapped: strip.shelfTapped(sc.modelData) } } } } } }
+        }
+    }
 
-    Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.36 * es.show) }        // the dim (the bar and dock windows draw above it)
+    Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.36 * es.show) }        // the dim (the panel windows draw above it)
     Item { id: keys; anchors.fill: parent; focus: true; Keys.onPressed: e => { if (e.key === Qt.Key_Escape) { es.done(); e.accepted = true } }
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons } }
 

@@ -299,48 +299,10 @@ Window {
                     width: parent.width
                     spacing: 18
                     Section {
-                        title: "Glass"
+                        title: "Popups"
                         Row_ {
-                            label: "Tint"
-                            hint: "How much the glass is tinted"
-                            key: "tintAlpha"
-                            Num {
-                                key: "tintAlpha"
-                                from: 0
-                                to: 0.6
-                                step: 0.01
-                                decimals: 2
-                                value: Config.get("tintAlpha", 0.15)
-                            }
-                        }        // the STORED value: Config.tint is already adjusted for the mode
-                        Row_ {
-                            label: "Rim"
-                            hint: "Brightness of the glass edge"
-                            key: "rimAlpha"
-                            Num {
-                                key: "rimAlpha"
-                                from: 0
-                                to: 0.3
-                                step: 0.01
-                                decimals: 2
-                                value: Config.get("rimAlpha", 0.09)
-                            }
-                        }
-                        Row_ {
-                            label: "Sheen"
-                            hint: "Light from above"
-                            key: "sheenAlpha"
-                            Num {
-                                key: "sheenAlpha"
-                                from: 0
-                                to: 0.2
-                                step: 0.01
-                                decimals: 2
-                                value: Config.get("sheenAlpha", 0.06)
-                            }
-                        }
-                        Row_ {
-                            label: "Corner radius"
+                            label: "Popup corners"
+                            hint: "Roundness of popup windows"
                             key: "cornerRadius"
                             Num {
                                 key: "cornerRadius"
@@ -353,7 +315,7 @@ Window {
                     }
                 }
 
-                // Top bar
+                // System area
                 Column {
                     visible: win.page === 1
                     width: parent.width
@@ -362,7 +324,7 @@ Window {
                         title: "Weather"
                         Row_ {
                             label: "Weather"
-                            hint: "Open-Meteo, every 30 min, no account. Placing the bar widget switches it on too"
+                            hint: "Open-Meteo forecast for the clock popup and panel weather indicator"
                             key: "weather"
                             Toggle {
                                 checked: Config.weatherOn
@@ -452,7 +414,7 @@ Window {
                         title: "Tile widgets"
                         Row_ {
                             label: "Click"
-                            hint: "Quick-settings tiles placed in the bar (edit mode › Add): a click toggles the tile, or opens its page. Middle click always opens; scroll on Volume changes it, middle click on Volume jumps to the next output"
+                            hint: "Panel quick-settings indicators: choose whether a click opens the tile page or toggles it"
                             key: "barTileClick"
                             Flow {
                                 id: clickFlow
@@ -608,17 +570,6 @@ Window {
                             }
                         }
                         Row_ {
-                            label: "Corner radius"
-                            key: "dockRadius"
-                            Num {
-                                key: "dockRadius"
-                                from: 8
-                                to: 30
-                                value: Config.dockRadius
-                                unit: " px"
-                            }
-                        }
-                        Row_ {
                             label: "Gap to the screen edge"
                             key: "dockGap"
                             Num {
@@ -627,18 +578,6 @@ Window {
                                 to: 24
                                 value: Config.dockGap
                                 unit: " px"
-                            }
-                        }
-                    }
-                    Section {
-                        title: "Launcher"
-                        Row_ {
-                            label: "Native launcher"
-                            hint: "Our own app grid. Off = the hosted Plasma Kickoff"
-                            key: "nativeLauncher"
-                            Toggle {
-                                checked: Config.nativeLauncher
-                                onToggled: win.setKey("nativeLauncher", checked, true)
                             }
                         }
                     }

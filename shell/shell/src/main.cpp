@@ -95,8 +95,7 @@ int main(int argc, char **argv)
         test.load(QUrl::fromLocalFile(app.arguments().at(i + 1)));
         return test.rootObjects().isEmpty() ? 1 : app.exec();
     }
-    // (no ShellCorona::self() here any more: the Plasma hosting layer starts only when an AppletHost is created, i.e. when
-    // one of the "native … off" fallback switches is used)
+    // The unified shell uses native QML surfaces and does not start Plasma's applet hosting layer.
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral(SBER_QML_IMPORT_PATH));
     // i18n() for the native quick settings pages (they came from a Plasma applet, where Plasma provides it)

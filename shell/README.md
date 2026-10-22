@@ -61,7 +61,7 @@ runtime path are documented in [shell/README.md](shell/README.md#sberos-adaptati
 The upstream installation instructions below do not build that workspace dependency.
 
 The Smart Panel source requirements describe a GNOME extension. Their mapping
-to this Qt/KWin prototype, requirement statuses and outstanding decisions are
+to this Qt/KWin prototype, requirement statuses and agreed scope are
 tracked in [PANEL-000](../docs/tasks/PANEL-000.md) and the
 [adaptation table](../docs/rules/panel-adaptation.md). The current unified default
 does not constitute a production rollout or a migration from the GNOME panel.
@@ -125,3 +125,7 @@ folder keeps their notices:
 - Icons: **Papirus** (GPL-3) by the Papirus Development Team. Not bundled; the installer fetches it if you do not have it, and the folder colours follow the colour theme.
 
 Thank you to all of them.
+
+The agreed Smart Panel scope keeps our Qt/QML/UI Kit stack and KWin/Wayland;
+no GNOME extension is planned. Corporate settings are outside MVP. The Sber menu
+settings entry opens the shell settings rather than KDE systemsettings.

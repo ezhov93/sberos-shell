@@ -233,3 +233,7 @@ GPL-3.0-or-later, see `LICENSE`.
 - The glass itself is drawn by a fork of **kwin-effects-glass** by 4v3ngR.
 - The emoji list (`qml/data/emoji.json`) is built from Unicode's `emoji-test.txt` (© Unicode, Inc., Unicode License v3) by `scripts/gen-emoji.py`.
 - Built on Qt, KDE Frameworks, libplasma and LayerShellQt.
+
+The agreed Smart Panel scope keeps our Qt/QML/UI Kit stack and KWin/Wayland;
+no GNOME extension is planned. Corporate settings are outside MVP. The Sber menu
+settings entry opens the shell settings rather than KDE systemsettings.

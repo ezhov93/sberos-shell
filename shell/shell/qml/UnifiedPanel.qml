@@ -79,7 +79,7 @@ Dock {
     restingKeyboardMode: cards.replyingCount > 0 ? "ondemand" : "none"
     systemWidth: openLobe === "search" || showingCards ? oskaWidth
         : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
-    systemGap: openLobe === "search" && oskaNotificationVisible ? 0 : openLobe === "search" ? 16 : 0
+    systemGap: openLobe === "search" ? 16 : openLobe === "notif" || showingCards ? 8 : 0
     systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * lobePad)
     systemAnchorX: openLobe === "search" || showingCards
         ? searchField.mapToItem(panel.contentItem, searchField.width / 2, 0).x : popupAnchor
@@ -245,7 +245,7 @@ Dock {
             anchors.verticalCenter: parent.verticalCenter
             symbol: "notifications-symbolic"
             description: qsTr("Notifications")
-            onClicked: panel.openAt("notif", this)
+            onClicked: panel.toggle("notif")
         }
         TextInput {
             id: searchField
@@ -563,10 +563,7 @@ Dock {
                     anchors.verticalCenter: parent.verticalCenter
                     Text {
                         width: parent.width
-                        text: panel.oskaNotification
-                            ? panel.oskaNotification.summary + (panel.oskaNotification.body !== ""
-                                && panel.oskaNotification.body !== panel.oskaNotification.summary
-                                ? " · " + panel.oskaNotification.body : "") : ""
+                        text: panel.oskaNotification ? panel.oskaNotification.summary : ""
                         color: Theme.Palette.Text.Default.Primary
                         font: Theme.Fonts.BodyM
                         elide: Text.ElideRight

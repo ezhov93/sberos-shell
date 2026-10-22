@@ -79,7 +79,7 @@ Item {
             width: parent.width - 40 - 20 - 20
             height: parent.height
             verticalAlignment: Text.AlignVCenter
-            text: card.summary + (card.body !== "" && card.body !== card.summary ? " · " + card.body : "")
+            text: card.summary
             color: Config.ink
             font.pixelSize: 14
             font.weight: Font.Medium

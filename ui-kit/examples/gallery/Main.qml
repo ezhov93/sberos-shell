@@ -73,24 +73,7 @@ QQC.ApplicationWindow {
         ListElement { name: "YearView" } ListElement { name: "ThemeSettings" }
     }
 
-    ListModel {
-        id: openedTabs
-        ListElement { name: "Button" }
-    }
-
     function openComponent(name) {
-        var tabIndex = -1
-        for (var i = 0; i < openedTabs.count; ++i) {
-            if (openedTabs.get(i).name === name) {
-                tabIndex = i
-                break
-            }
-        }
-        if (tabIndex < 0) {
-            openedTabs.append({name: name})
-            tabIndex = openedTabs.count - 1
-        }
-        tabs.currentIndex = tabIndex
         activeComponent = name
     }
 
@@ -127,36 +110,10 @@ QQC.ApplicationWindow {
                 }
             }
 
-            Sber.TabBar {
-                id: tabs
-                Layout.fillWidth: true
-                arrowsVisible: true
-                Repeater {
-                    model: openedTabs
-                    delegate: Sber.TabButton {
-                        required property string name
-                        text: name
-                    }
-                }
-                onCurrentIndexChanged: {
-                    if (currentIndex >= 0 && currentIndex < openedTabs.count)
-                        window.activeComponent = openedTabs.get(currentIndex).name
-                }
-            }
-
-            StackLayout {
+            ComponentDetail {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: tabs.currentIndex
-                Repeater {
-                    model: openedTabs
-                    delegate: ComponentDetail {
-                        required property string name
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        componentName: name
-                    }
-                }
+                componentName: window.activeComponent
             }
         }
 
@@ -191,6 +148,7 @@ QQC.ApplicationWindow {
                     spacing: 2
                     delegate: Sber.ItemDelegate {
                         required property string name
+                        required property int index
                         width: ListView.view.width
                         height: name.toLowerCase().includes(filterField.text.toLowerCase()) ? 40 : 0
                         visible: height > 0

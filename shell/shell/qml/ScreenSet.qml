@@ -33,6 +33,7 @@ QtObject {
     readonly property bool wantPanel: choice.panel !== undefined ? !!choice.panel : wantBar || wantDock
     property var panel: null
     property var _layout: Connections { target: Config; function onUnifiedPanelChanged() { set.sync() } }
+    property var sberCatcher: SberMenuCatcher { host: set.host; panel: set.panel; targetScreen: set.screen }
     property var splitBar: null
     property var splitDock: null
     readonly property var bar: Config.unifiedPanel ? panel : splitBar
@@ -50,9 +51,12 @@ QtObject {
     readonly property var _cPanel: Component { UnifiedPanel {
         screen: set.screen; userHidden: !set.wantPanel
         recorder: set.host.recorder; editing: set.host.editing
+        externalMenuOpen: !!set.panel && set.host.activeSberPanel === set.panel
         showingDesktop: set.host.showingDesktop
         activeTitle: set.host.activeTitle; activeApp: set.host.activeApp; activeIcon: set.host.activeIcon
         onEditRequested: set.host.setEditing(true)
+        onSberRequested: set.host.toggleSber(set.panel, false)
+        onPressedAnywhere: set.host.lastActiveScreenName = set.name
         onSearchRequested: set.host.win("search").toggle()
         onShowDesktopRequested: set.host.toggleShowDesktop()
         onLauncherOpenChanged: if (launcherOpen) set.host.closeLobes()

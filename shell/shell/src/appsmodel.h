@@ -27,6 +27,8 @@ public:
     int count() const { return m_rows.size(); }
     QStringList categories() const { return m_categories; }
     Q_INVOKABLE bool launch(const QString &storageId);
+    Q_INVOKABLE QVariantList applicationActions(const QString &storageId) const;
+    Q_INVOKABLE bool launchAction(const QString &storageId, const QString &actionName);
     Q_INVOKABLE QVariantMap info(const QString &storageId) const;       // {name, icon, storageId} or {} (for pinned apps)
     Q_INVOKABLE QString storageIdAt(int row) const;
 Q_SIGNALS:

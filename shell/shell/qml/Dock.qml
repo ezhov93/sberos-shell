@@ -20,6 +20,7 @@ Surface {
     property real taskAreaX: barRect.x + leadingWidth + pad
     property real taskAreaWidth: Math.max(Config.dockCell, dockW - leadingWidth - trailingWidth - 2 * pad)
     readonly property rect taskAreaRect: Qt.rect(taskAreaX, barRect.y, taskAreaWidth, dockH)
+    property bool externalMenuOpen: false
     property bool systemOpen: false
     property bool systemFocus: systemOpen
     property real systemWidth: 360
@@ -43,7 +44,7 @@ Surface {
     strut: gap + dockH + gap
     slideMax: gap + dockH + 30
     edgeStrip: Qt.rect((width - dockW) / 2, 0, dockW, 0)
-    holdOpen: launcherOpen || previewShown || systemOpen || dragging || editing || dodgeExempt
+    holdOpen: externalMenuOpen || launcherOpen || previewShown || systemOpen || dragging || editing || dodgeExempt
     dodge: Config.dockDodge
     blur: !unified && look.blur
     visibility: Config.dockVisibility
@@ -348,7 +349,7 @@ Surface {
     // the launcher and a right-click menu take the keyboard and close when they lose it (Surface.popupFocus)
     popupFocus: launcherOpen || (previewShown && lobeMode === "menu") || systemFocus
     onFocusLost: { launcherOpen = false; previewShown = false; systemCloseRequested() }
-    Connections { target: Shell; function onLauncherToggleRequested() { dock.launcherOpen = !dock.launcherOpen } }
+    Connections { target: dock.unified ? null : Shell; function onLauncherToggleRequested() { dock.launcherOpen = !dock.launcherOpen } }
     onWidthChanged: pushShape()
     onHeightChanged: pushShape()
     onVisibleChanged: if (visible) { pushShape(); pushAgain.start() }

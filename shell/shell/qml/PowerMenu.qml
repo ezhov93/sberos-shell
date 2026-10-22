@@ -14,6 +14,7 @@ Window {
     visible: false
     width: Screen.width; height: Screen.height
     signal opened()
+    signal actionInvoked(string actionId)
     readonly property var actions: [
         { id: "lock", label: "Lock", icon: "system-lock-screen-symbolic", confirm: false, key: Qt.Key_L },
         { id: "sleep", label: "Sleep", icon: "system-suspend-symbolic", confirm: false, key: Qt.Key_S },
@@ -33,6 +34,7 @@ Window {
     property real show: 0
     Behavior on show { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
+    function cancelPending() { armed = ""; countdown.stop() }
     function toggle() { visible ? close_() : open() }
     function open() {
         if (!setupDone) { Shell.setupSearch(sw); setupDone = true }
@@ -48,7 +50,7 @@ Window {
     // dryRun: the self-test and D-Bus preview must never end the session
     property bool dryRun: false
     function run(id) {
-        armed = ""; countdown.stop(); close_()
+        armed = ""; countdown.stop(); close_(); actionInvoked(id)
         if (dryRun) { console.log("power menu (dry run):", id); return }
         if (id === "lock") Shell.dbusSend("org.freedesktop.ScreenSaver", "/ScreenSaver", "org.freedesktop.ScreenSaver", "Lock")
         else if (id === "sleep") Shell.runDetached("systemctl", ["suspend"])

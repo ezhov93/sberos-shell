@@ -13,10 +13,44 @@ QtObject {
     function rescanScreens() { const have = Qt.application.screens.map(s => s.name)
         for (let i = screenList.count - 1; i >= 0; --i) if (have.indexOf(screenList.get(i).screenName) < 0) screenList.remove(i)
         for (const n of have) { let seen = false; for (let i = 0; i < screenList.count; ++i) if (screenList.get(i).screenName === n) { seen = true; break } if (!seen) screenList.append({ screenName: n }) } }
-    property var _scr: Connections { target: Qt.application; function onScreensChanged() { main.rescanScreens() } }
+    property var _scr: Connections { target: Qt.application; function onScreensChanged() { if (main._made && main._made.sberMenu) main._made.sberMenu.closeAll(); main.rescanScreens() } }
     property var sets: Instantiator { model: screenList; delegate: ScreenSet { required screenName; host: main }
         onObjectAdded: (i, o) => main.rescan(); onObjectRemoved: (i, o) => main.rescan() }
     property var primarySet: null
+    property string lastActiveScreenName: ""
+    property var activeSberPanel: null
+    property var activeSberScreen: null
+    function panelScreen(panel) {
+        for (let i = 0; i < sets.count; ++i) {
+            const set = sets.objectAt(i);
+            if (set && set.panel === panel) return set.screen;
+        }
+        return panel ? panel.screen : null;
+    }
+    function sberPanel() {
+        for (let i = 0; i < sets.count; ++i) {
+            const s = sets.objectAt(i);
+            if (s && s.name === lastActiveScreenName && s.panel && !s.panel.userHidden) return s.panel;
+        }
+        return primarySet && primarySet.panel && !primarySet.panel.userHidden ? primarySet.panel : null;
+    }
+    function toggleSber(panel, keyboard) {
+        const menu = win("sberMenu");
+        const targetScreen = panelScreen(panel);
+        if (menu.visible) {
+            if (keyboard) { menu.closeAll(); return; }
+            if (menu.child !== "") { menu.closeChild(); return; }
+            if (panel && menu.screen && targetScreen && menu.screen.name === targetScreen.name) { menu.closeAll(); return; }
+            menu.closeAll();
+        }
+        if (!panel) return;
+        closePopups();
+        lastActiveScreenName = targetScreen.name;
+        activeSberScreen = targetScreen;
+        activeSberPanel = panel;
+        menu.openAt(targetScreen, Qt.rect(panel.x + panel.sberRect.x, panel.y + panel.sberRect.y,
+            panel.sberRect.width, panel.sberRect.height));
+    }
     function rescan() { let p = null; for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.primary) { p = o; break } } if (!p && sets.count) p = sets.objectAt(0); primarySet = p }
     property var _ps: Connections { target: Shell; function onPrimaryScreenChanged() { main.rescan() } }
     readonly property var topBar: primarySet ? primarySet.bar : null
@@ -45,14 +79,21 @@ QtObject {
     // large windows' worth of QML in the start-up path). warm builds them one by one once the shell has settled, so the
     // first Alt+Tab or Meta+Space does not pay for it either.
     property var _made: ({})
-    readonly property var _lazy: ({ clipboardPanel: _cClipboardPanel, powerMenu: _cPowerMenu, welcome: _cWelcome, capture: _cCapture, settings: _cSettings, switcher: _cSwitcher, search: _cSearch, tiles: _cTiles, editScene: _cEdit, desktopMenu: _cDesktopMenu, cheatSheet: _cCheatSheet })
+    readonly property var _lazy: ({ sberMenu: _cSberMenu, clipboardPanel: _cClipboardPanel, powerMenu: _cPowerMenu, welcome: _cWelcome, capture: _cCapture, settings: _cSettings, switcher: _cSwitcher, search: _cSearch, tiles: _cTiles, editScene: _cEdit, desktopMenu: _cDesktopMenu, cheatSheet: _cCheatSheet })
     function win(name) { let w = _made[name]; if (!w) { const t = Date.now(); w = _lazy[name].createObject(main); _made[name] = w; if (!w) console.warn("could not build", name, _lazy[name].errorString()); else console.log("start-up: built", name, "in", Date.now() - t, "ms") } return w }
-    function closePopups() { main.closeLobes(); for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.dock) { o.dock.launcherOpen = false; o.dock.previewShown = false } } }
+    function closePopups() { if (_made.sberMenu) _made.sberMenu.closeAll(); main.closeLobes(); for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.dock) { o.dock.launcherOpen = false; o.dock.previewShown = false } } }
     // (closePopups must NOT close the desktop menu: the menu calls it from its own opened(), so it closed itself the moment
     // it opened: "no menu appears on right click", 2026-09-22. A press on the desktop closes it explicitly instead.)
     function closeDesktopMenu() { const dm = _made["desktopMenu"]; if (dm && dm.visible) dm.close_() }
     property var _warm: Timer { interval: 2500; running: true; repeat: true; property var todo: ["switcher", "search", "clipboardPanel", "tiles", "powerMenu", "capture", "settings"]
         onTriggered: { interval = 200; const n = todo.shift(); if (n) main.win(n); if (todo.length === 0) stop() } }
+    property var _cSberMenu: Component { SberMenu {
+        onClosed: { main.activeSberPanel = null; main.activeSberScreen = null; }
+        onSettingsRequested: main.win("settings").openIt()
+    } }
+    property var _sberLayout: Connections { target: Config; function onUnifiedPanelChanged() {
+        if (main._made.sberMenu) main._made.sberMenu.closeAll();
+    } }
     property var _cClipboardPanel: Component { ClipboardPanel { entries: main.clipboard; onOpened: main.closePopups() } }
     property var _cPowerMenu: Component { PowerMenu { onOpened: main.closePopups() } }
     property var _cWelcome: Component { Welcome { onOpened: main.closePopups() } }
@@ -110,11 +151,12 @@ QtObject {
     property var _cTiles: Component { Tiles { onOpened: main.closePopups() } }
     property var _cCheatSheet: Component { CheatSheet { onOpened: main.closePopups() } }
     property var _cSearch: Component { Search { onOpened: main.closePopups() } }
-    property var _sw: Connections { target: Shell; function onSwitcherRequested(reverse) { main.closeLobes(); main.closeLauncher(); main.win("switcher").step(reverse) } }
+    property var _sw: Connections { target: Shell; function onSwitcherRequested(reverse) { main.closePopups(); main.win("switcher").step(reverse) } }
 
     // ---- the shell's own global shortcuts (window operations are already done in C++; these are the shell-side ones)
     property var _keys: Connections { target: Shell
         // (main.topBar / main.dock are null until the primary set has built them, and while the primary screen is away)
+        function onLauncherToggleRequested() { if (Config.unifiedPanel) main.toggleSber(main.sberPanel(), true); }
         function onLobeToggleRequested(name) { const b = main.topBar; if (!b) return; if (name === "media") { if (!b.mediaAvailable) return; if (b.openLobe !== "media") b.placeMedia() } b.toggle(name) }
         function onTrayMenuRequested(i) { if (main.topBar) main.topBar.openTrayMenuAt(i) }
         function onSettingsRequested() { main.win("settings").openIt() }
@@ -210,6 +252,8 @@ QtObject {
         if (m && !showingDesktop) for (let i = 0; i < m.count; ++i) { const idx = m.makeModelIndex(i); if (m.data(idx, R_.IsActive)) { a = idx; break; } }
         if (dbg) console.log("refreshActive", a ? m.data(a, 0) : "-", m ? m.count : -1, showingDesktop);
         if (!a) { activeTitle = ""; activeApp = ""; activeIcon = undefined; return; }
+        const geometry = m.data(a, R_.Geometry);
+        if (geometry && geometry.width > 0) lastActiveScreenName = screenAt(geometry.x + geometry.width / 2, geometry.y + geometry.height / 2).name;
         activeTitle = m.data(a, 0) || ""; activeApp = m.data(a, R_.AppName) || ""; activeIcon = m.data(a, 1);
     }
     // a safety net only: the model's dataChanged / activeTaskChanged drive refreshActive, this catches a title that changed

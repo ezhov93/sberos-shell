@@ -1,5 +1,7 @@
 #include "appsmodel.h"
 #include <KService>
+#include <KServiceAction>
+#include <KIO/ApplicationLauncherJob>
 #include <KSycoca>
 #include <QCollator>
 #include <QProcess>
@@ -101,5 +103,31 @@ bool AppsModel::launch(const QString &storageId)
     for (const App &a : m_apps) if (a.storageId == storageId)
         // kioclient runs KIO's ApplicationLauncherJob: startup feedback, its own systemd scope, desktop-file field codes handled
         return QProcess::startDetached(QStringLiteral("kioclient"), {QStringLiteral("exec"), a.path});
+    return false;
+}
+
+QVariantList AppsModel::applicationActions(const QString &storageId) const
+{
+    QVariantList out;
+    const auto service = KService::serviceByStorageId(storageId);
+    if (!service) return out;
+    for (const auto &action : service->actions()) {
+        if (!action.isSeparator() && !action.exec().isEmpty())
+            out.append(QVariantMap{{QStringLiteral("name"), action.name()}, {QStringLiteral("text"), action.text()}, {QStringLiteral("icon"), action.icon()}});
+    }
+    return out;
+}
+
+bool AppsModel::launchAction(const QString &storageId, const QString &actionName)
+{
+    const auto service = KService::serviceByStorageId(storageId);
+    if (!service) return false;
+    for (const auto &action : service->actions()) {
+        if (action.name() == actionName && !action.isSeparator() && !action.exec().isEmpty()) {
+            auto *job = new KIO::ApplicationLauncherJob(action);
+            job->start();
+            return true;
+        }
+    }
     return false;
 }

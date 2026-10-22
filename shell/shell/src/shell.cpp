@@ -3,6 +3,7 @@
 #include "shellcorona.h"
 #include "osdservice.h"
 #include <KGlobalAccel>
+#include <KService>
 #include <QAction>
 #include <QDBusArgument>
 #include <QJsonArray>
@@ -443,6 +444,18 @@ void Shell::setShowingDesktop(bool showing)
     // connects. Ask, then check shortly after and ask once more if nothing changed.
     KWindowSystem::setShowingDesktop(showing);
     QTimer::singleShot(300, this, [showing] { if (KWindowSystem::showingDesktop() != showing) KWindowSystem::setShowingDesktop(showing); });
+}
+
+QString Shell::terminalDesktopId() const
+{
+    const QString terminal = QFileInfo(defaultTerminal()).fileName();
+    for (const auto &service : KService::allServices()) {
+        if (!service || !service->isApplication()) continue;
+        const auto command = QProcess::splitCommand(service->exec());
+        if (!command.isEmpty() && QFileInfo(command.first()).fileName() == terminal)
+            return service->storageId();
+    }
+    return {};
 }
 
 QString Shell::defaultTerminal() const

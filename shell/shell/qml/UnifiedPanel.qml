@@ -34,6 +34,7 @@ Dock {
     property string activeApp: ""
     property var activeIcon
     signal showDesktopRequested
+    signal sberRequested
     signal searchRequested
     property string openLobe: ""
     property string requestedPage: "main"
@@ -158,8 +159,8 @@ Dock {
                 color: Theme.Palette.Text.Default.Primary
             }
         }
-        description: qsTr("Shell settings")
-        onClicked: Shell.openSettings()
+        description: qsTr("Sber menu")
+        onClicked: panel.sberRequested()
     }
     Item {
         id: oska

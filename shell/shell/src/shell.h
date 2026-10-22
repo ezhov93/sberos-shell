@@ -40,6 +40,7 @@ public:
     Q_INVOKABLE void setupCatcher(QQuickWindow *window);
     // wallpaper: a full-screen surface on the BACKGROUND layer, no input, no keyboard
     Q_INVOKABLE void setupWallpaper(QQuickWindow *window, bool takesInput = false);   // takesInput: it is THE desktop (right click menu), not a picture under Plasma's
+    Q_INVOKABLE QString terminalDesktopId() const;
     Q_INVOKABLE QString defaultTerminal() const;                 // KDE's configured terminal (kdeglobals), else the first one found
     Q_INVOKABLE QString plasmaWallpaper() const;                 // the image Plasma shows now (first-run default for ours)
     Q_INVOKABLE QStringList wallpaperFiles(const QString &folder) const;   // pictures in a folder, one level of sub-folders

@@ -13,7 +13,11 @@ This adapted shell defaults to one bottom `UnifiedPanel` with five separate opaq
 blocks: Sber/settings, applications, a centred Oska entry area, indicators, and
 quick settings/calendar. Oska stays at the screen centre as neighbouring content
 changes. Its search and notification buttons currently use the existing views;
-the full Oska and Sber menu are separate tasks. Show-desktop, workspaces and other
+the full Oska is a separate task. The Sber button opens a four-entry menu with
+shell settings, the configured terminal, power/session and collapse. Right-click
+the terminal for desktop actions and pinning. Esc/outside clicks close one child
+level; the existing global launcher action closes all levels or opens the menu
+on the last active screen in unified mode. A development launch does not own Super. Show-desktop, workspaces and other
 existing widgets remain in the indicators area for now. The task model, pinning and app previews are reused from
 Dock. New block and popup backgrounds use UI Kit colours without blur; split mode retains
 the original appearance. System popups open upward inside the same layer-shell surface. Long task
@@ -36,7 +40,8 @@ The [Smart Panel adaptation table](../../docs/rules/panel-adaptation.md) separat
 GNOME source requirements from the current Qt/KWin prototype. Production rollout
 and GNOME pin migration are not provided by switching `unified`/`split`.
 
-[PANEL-001 checks](tests/panel/PANEL-001.md) cover the current 1920 px matrix.
+[PANEL-001 checks](tests/panel/PANEL-001.md) cover the current 1920 px matrix;
+[Sber menu checks](tests/panel/PANEL-002.md) cover keyboard, context, power dry-run and screen routing.
 
 ## What is in it
 
@@ -74,7 +79,7 @@ Ubuntu / Debian names:
 ```
 sudo apt install build-essential cmake extra-cmake-modules qt6-base-dev qt6-declarative-dev \
   liblayershellqtinterface-dev libplasma-dev kwayland-dev libkf6windowsystem-dev libkf6package-dev \
-  libkf6config-dev libkf6i18n-dev libkf6globalaccel-dev libkf6service-dev libkf6guiaddons-dev
+  libkf6config-dev libkf6i18n-dev libkf6globalaccel-dev libkf6service-dev libkf6guiaddons-dev libkf6kio-dev
 ```
 
 Runtime QML modules (normally present on a Plasma desktop): `plasma-workspace`, `plasma-nm`, `plasma-pa`, `powerdevil`,
@@ -85,7 +90,7 @@ Fedora (tested in a Fedora 44 sandbox, Plasma 6.7.5):
 ```
 sudo dnf install cmake gcc-c++ extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-devel layer-shell-qt-devel \
   libplasma-devel kf6-kwayland-devel kf6-kwindowsystem-devel kf6-kpackage-devel kf6-kconfig-devel kf6-ki18n-devel \
-  kf6-kglobalaccel-devel kf6-kservice-devel kf6-kguiaddons-devel
+  kf6-kglobalaccel-devel kf6-kservice-devel kf6-kguiaddons-devel kf6-kio-devel
 ```
 
 Runtime on Fedora: `plasma-milou` (the search; the shell exits without it), `plasma-nm plasma-pa powerdevil kpipewire kf6-bluez-qt qt6-qt5compat`.
@@ -95,7 +100,7 @@ and for the KWin effect: `kwin-devel kdecoration-devel kf6-kcmutils-devel libepo
 For the Qt style and decoration: `kf6-frameworkintegration-devel kf6-kcolorscheme-devel kf6-kiconthemes-devel
 kf6-kirigami-devel qt6-qtdeclarative-devel`.
 
-On Arch the equivalents are `extra-cmake-modules qt6-base qt6-declarative layer-shell-qt libplasma kwayland
+On Arch the equivalents are `extra-cmake-modules qt6-base qt6-declarative layer-shell-qt kio libplasma kwayland
 kwindowsystem kpackage kconfig ki18n kglobalaccel kservice kguiaddons` plus `plasma-workspace plasma-nm plasma-pa
 powerdevil milou kpipewire bluez-qt qt6-5compat` (untested).
 

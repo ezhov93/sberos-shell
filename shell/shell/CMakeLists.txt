@@ -18,7 +18,7 @@ endif()
 add_compile_definitions(GLASS_BUILD_COMMIT="${GLASS_BUILD_COMMIT}" GLASS_VERSION="${PROJECT_VERSION}")
 find_package(LayerShellQt REQUIRED)
 find_package(KF6WindowSystem REQUIRED)
-find_package(KF6 REQUIRED COMPONENTS Package Config I18n GlobalAccel Service GuiAddons)
+find_package(KF6 REQUIRED COMPONENTS Package Config I18n GlobalAccel Service GuiAddons KIO)
 find_package(Plasma REQUIRED)
 find_package(PlasmaQuick REQUIRED)
 find_package(KWayland REQUIRED)          # fake input: pass the click that dismissed a popup on to the window under it
@@ -53,6 +53,8 @@ qt_add_qml_module(sirca-shell
         qml/TopBar.qml
         qml/Dock.qml
         qml/UnifiedPanel.qml
+        qml/SberMenu.qml
+        qml/SberMenuCatcher.qml
         qml/MediaIsland.qml
         qml/MediaSource.qml
         qml/LevelMeter.qml
@@ -135,7 +137,7 @@ qt_add_qml_module(sirca-shell
 )
 target_compile_definitions(sirca-shell PRIVATE SBER_QML_IMPORT_PATH="${SBER_QML_IMPORT_PATH}")
 target_include_directories(sirca-shell PRIVATE src)
-target_link_libraries(sirca-shell PRIVATE Qt6::Network Qt6::Concurrent Qt6::Quick Qt6::QuickControls2 Qt6::DBus Qt6::Widgets LayerShellQt::Interface KF6::WindowSystem KF6::GlobalAccel KF6::Package KF6::ConfigCore KF6::I18n Plasma::Plasma Plasma::PlasmaQuick Plasma::KWaylandClient KF6::Service KF6::GuiAddons)
+target_link_libraries(sirca-shell PRIVATE Qt6::Network Qt6::Concurrent Qt6::Quick Qt6::QuickControls2 Qt6::DBus Qt6::Widgets LayerShellQt::Interface KF6::WindowSystem KF6::GlobalAccel KF6::Package KF6::ConfigCore KF6::I18n Plasma::Plasma Plasma::PlasmaQuick Plasma::KWaylandClient KF6::Service KF6::GuiAddons KF6::KIOGui)
 if(PipeWire_FOUND)
     target_link_libraries(sirca-shell PRIVATE PkgConfig::PipeWire)
     target_compile_definitions(sirca-shell PRIVATE HAVE_PIPEWIRE)

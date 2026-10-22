@@ -8,6 +8,8 @@ import "Glass"
 Item {
     id: mic
     property bool allowed: true
+    property bool flat: false
+    property color foreground: Config.fgSolid
     property var audio: null
     readonly property bool shown: allowed && !!audio && audio.recording > 0
     readonly property bool muted: !!audio && audio.micMuted
@@ -16,8 +18,8 @@ Item {
     readonly property string tip: { if (!audio) return ""; const n = audio.recorderNames || []; const who = n.length ? n.join(", ") : (audio.recording + (audio.recording === 1 ? " app" : " apps"))
         return (muted ? "Microphone muted · " : "Microphone in use · ") + who }
     Rectangle { visible: Config.barHoverPills; anchors.fill: parent; radius: height / 2; color: Config.fg(hh.hovered ? 0.07 : 0); Behavior on color { ColorAnimation { duration: Config.quick } } }
-    GlowIcon { anchors.centerIn: parent; size: Math.round(16 * Config.barIconScale); source: mic.muted ? "mic-off-symbolic" : "mic-on-symbolic"; hovered: hh.hovered
-        color: mic.muted ? Config.attention : Config.fgSolid; active: false }
+    GlowIcon { flat: mic.flat; anchors.centerIn: parent; size: Math.round(16 * Config.barIconScale); source: mic.muted ? "mic-off-symbolic" : "mic-on-symbolic"; hovered: hh.hovered
+        color: mic.muted ? Config.attention : mic.foreground; active: false }
     // a live microphone gets the privacy dot, muted it does not
     Rectangle { visible: !mic.muted; x: parent.width - 9; y: 3; width: 7; height: 7; radius: 3.5; color: Config.attention; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.4) }
     HoverHandler { id: hh; cursorShape: Qt.PointingHandCursor }

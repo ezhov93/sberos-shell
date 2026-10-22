@@ -10,6 +10,8 @@ Window {
     property int strut: 0
     property var lobes: []
     property var polygon: []
+    property var inputRegions: null
+    onInputRegionsChanged: applyShape()
 
     // ---- dodge windows (same idea as a Plasma panel set to "Dodge Windows"): no reserved space; when a window covers
     // the bar's strip of the screen (a maximised app, a 3440x1440 game centred on the ultrawide) the bar slides off its
@@ -106,7 +108,12 @@ Window {
     visible: false
 
     function applyShape() {
-        if (polygon && polygon.length >= 6) Shell.setShapePolygon(surface, hiddenFully ? [] : polygon, maskExtra(), blur);
+        if (inputRegions !== null) {
+            const extra = hiddenFully ? maskExtra() : [], regions = hiddenFully ? [] : inputRegions.slice();
+            for (let i = 0; i + 3 < extra.length; i += 4)
+                regions.push({ x: extra[i], y: extra[i + 1], w: extra[i + 2], h: extra[i + 3], r: 0 });
+            Shell.setShape(surface, regions, blur);
+        } else if (polygon && polygon.length >= 6) Shell.setShapePolygon(surface, hiddenFully ? [] : polygon, maskExtra(), blur);
         else if (lobes && lobes.length) Shell.setShape(surface, lobes);
         surface.requestUpdate();   // blur/mask are double-buffered Wayland state: they apply on the next surface commit
     }

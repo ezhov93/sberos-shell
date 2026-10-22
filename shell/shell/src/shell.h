@@ -81,8 +81,8 @@ public:
     Q_INVOKABLE void setKeyboardExclusive(QQuickWindow *window, bool exclusive);
     // "none": clicks never move keyboard focus to us (the dock: the clicked app must still be the active one)
     Q_INVOKABLE void setKeyboardMode(QQuickWindow *window, const QString &mode);
-    // rects: list of {x, y, w, h, r} in window coordinates; their union becomes the blur region and the input mask.
-    Q_INVOKABLE void setShape(QQuickWindow *window, const QVariantList &rects);
+    // rects: list of {x, y, w, h, r}; their union is the input mask. blur=false disables blur without losing the mask.
+    Q_INVOKABLE void setShape(QQuickWindow *window, const QVariantList &rects, bool blur = true);
     // points: flat list [x0,y0,x1,y1,…] of one closed polygon (window coordinates) → blur region + input mask.
     // maskExtra: flat [x,y,w,h,…] rects added to the INPUT mask only (the screen-edge strip that reveals a dodging bar).
     // An empty polygon turns blur off; the mask is then just the extras.

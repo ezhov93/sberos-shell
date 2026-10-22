@@ -9,6 +9,7 @@ import "Glass"
 Item {
     id: priv
     property bool allowed: true
+    property bool flat: false
     property var audio: null
     signal clicked()
     PrivacyMonitor { id: mon; active: priv.allowed }
@@ -27,9 +28,9 @@ Item {
     Rectangle { anchors.fill: parent; radius: height / 2; color: Qt.rgba(Config.attention.r, Config.attention.g, Config.attention.b, hh.hovered ? 0.24 : 0.14); border.width: 1; border.color: Qt.rgba(Config.attention.r, Config.attention.g, Config.attention.b, 0.45)
         Behavior on color { ColorAnimation { duration: Config.quick } } }
     Row { id: row; anchors.centerIn: parent; spacing: 6
-        GlowIcon { visible: priv.micOn; anchors.verticalCenter: parent.verticalCenter; size: 13; source: "mic-on-symbolic"; color: Config.attention; hovered: hh.hovered }
-        GlowIcon { visible: priv.camOn; anchors.verticalCenter: parent.verticalCenter; size: 13; source: "camera-web-symbolic"; color: Config.attention; hovered: hh.hovered }
-        GlowIcon { visible: priv.screenOn; anchors.verticalCenter: parent.verticalCenter; size: 13; source: "monitor-symbolic"; color: Config.attention; hovered: hh.hovered } }
+        GlowIcon { flat: priv.flat; visible: priv.micOn; anchors.verticalCenter: parent.verticalCenter; size: 13; source: "mic-on-symbolic"; color: Config.attention; hovered: hh.hovered }
+        GlowIcon { flat: priv.flat; visible: priv.camOn; anchors.verticalCenter: parent.verticalCenter; size: 13; source: "camera-web-symbolic"; color: Config.attention; hovered: hh.hovered }
+        GlowIcon { flat: priv.flat; visible: priv.screenOn; anchors.verticalCenter: parent.verticalCenter; size: 13; source: "monitor-symbolic"; color: Config.attention; hovered: hh.hovered } }
     HoverHandler { id: hh; cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: priv.clicked() }
     Timer { id: tipDelay; interval: 600; running: hh.hovered }

@@ -9,10 +9,14 @@ the window manager. Popups are not separate windows: they grow out of the bar an
 
 ## SberOS unified panel
 
-This adapted shell defaults to one bottom `UnifiedPanel`: search and show-desktop
-on the left, launcher/tasks in the middle, tray, clock, notifications and quick
-settings on the right. The task model, pinning and app previews are reused from
-Dock. System popups open upward inside the same layer-shell surface. Long task
+This adapted shell defaults to one bottom `UnifiedPanel` with five separate opaque
+blocks: Sber/settings, applications, a centred Oska entry area, indicators, and
+quick settings/calendar. Oska stays at the screen centre as neighbouring content
+changes. Its search and notification buttons currently use the existing views;
+the full Oska and Sber menu are separate tasks. Show-desktop, workspaces and other
+existing widgets remain in the indicators area for now. The task model, pinning and app previews are reused from
+Dock. New block and popup backgrounds use UI Kit colours without blur; split mode retains
+the original appearance. System popups open upward inside the same layer-shell surface. Long task
 and status areas scroll independently.
 
 `panelLayout` defaults to `unified`; set it to `split` in the existing config file
@@ -31,6 +35,8 @@ in the adapted default follows this section.
 The [Smart Panel adaptation table](../../docs/rules/panel-adaptation.md) separates
 GNOME source requirements from the current Qt/KWin prototype. Production rollout
 and GNOME pin migration are not provided by switching `unified`/`split`.
+
+[PANEL-001 checks](tests/panel/PANEL-001.md) cover the current 1920 px matrix.
 
 ## What is in it
 

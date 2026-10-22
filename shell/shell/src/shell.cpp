@@ -264,12 +264,12 @@ static QRegion regionFor(const QVariantList &rects)
     return region;
 }
 
-void Shell::setShape(QQuickWindow *window, const QVariantList &rects)
+void Shell::setShape(QQuickWindow *window, const QVariantList &rects, bool blur)
 {
     if (!window) return;
     const QRegion region = regionFor(rects);
-    KWindowEffects::enableBlurBehind(window, !region.isEmpty(), region);
-    window->setMask(region);
+    KWindowEffects::enableBlurBehind(window, blur && !region.isEmpty(), blur ? region : QRegion());
+    window->setMask(region.isEmpty() ? QRegion(0, 0, 1, 1) : region);
 }
 
 void Shell::setSceneRegions(QQuickWindow *window, const QVariantList &panels, const QVariantList &holes)

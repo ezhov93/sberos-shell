@@ -11,8 +11,22 @@ Dock {
     id: panel
     unified: true
     title: "SberOS — Panel"
-    leadingWidth: leading.implicitWidth + 12
-    trailingWidth: statusViewport.width + essential.width + 20
+    // Fixed centre and right-hand budgets keep system changes out of the task/search geometry.
+    readonly property real zoneGap: 8
+    readonly property real oskaWidth: Math.min(448, screenW * 0.25)
+    readonly property real systemZoneWidth: 260
+    readonly property rect sberRect: Qt.rect(barRect.x, barRect.y, dockH, dockH)
+    readonly property rect oskaRect: Qt.rect((width - oskaWidth) / 2, barRect.y, oskaWidth, dockH)
+    readonly property rect essentialRect: Qt.rect(barRect.x + dockW - systemZoneWidth, barRect.y, systemZoneWidth, dockH)
+    readonly property rect indicatorsRect: Qt.rect(oskaRect.x + oskaRect.width + zoneGap, barRect.y,
+        Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap), dockH)
+    readonly property rect applicationsRect: Qt.rect(sberRect.x + sberRect.width + zoneGap, barRect.y,
+        Math.max(Config.dockCell + 2 * pad, Math.min(contentW, oskaRect.x - sberRect.x - sberRect.width - 2 * zoneGap)), dockH)
+    panelZones: [sberRect, applicationsRect, oskaRect, indicatorsRect, essentialRect]
+    leadingWidth: applicationsRect.x - barRect.x
+    trailingWidth: dockW - leadingWidth - applicationsRect.width
+    taskAreaX: applicationsRect.x + pad
+    taskAreaWidth: Math.max(Config.dockCell, applicationsRect.width - 2 * pad)
     property var recorder: null
     property bool busy: fullscreenActive || gameActive
     property bool showingDesktop: false
@@ -23,7 +37,7 @@ Dock {
     signal searchRequested
     property string openLobe: ""
     property string requestedPage: "main"
-    property real popupAnchor: width - trailingWidth / 2
+    property real popupAnchor: essentialRect.x + essentialRect.width / 2
     readonly property var nativeControl: controlLoader.item
     readonly property var notifications: historyLoader.item
     readonly property bool mediaAvailable: media.hasTrack
@@ -46,12 +60,17 @@ Dock {
         if (openLobe !== "tray")
             nativeTray.openItem = null;
     }
-    function toggle(name) {
+    function toggle(name, anchor) {
+        if (anchor !== undefined)
+            popupAnchor = anchor;
+        else if (name === "clock" || name === "gear")
+            popupAnchor = essentialRect.x + essentialRect.width / 2;
+        else if (name === "notif")
+            popupAnchor = oskaRect.x + oskaRect.width / 2;
         openLobe = openLobe === name ? "" : name;
     }
     function openAt(name, item) {
-        popupAnchor = item.mapToItem(panel.contentItem, item.width / 2, 0).x;
-        toggle(name);
+        toggle(name, item.mapToItem(panel.contentItem, item.width / 2, 0).x);
     }
     function placeMedia() {
         popupAnchor = media.mapToItem(panel.contentItem, media.width / 2, 0).x;
@@ -105,14 +124,17 @@ Dock {
                 height: 20
                 source: button.symbol
                 isMask: true
-                color: Config.ink
+                color: Theme.Palette.Text.Default.Primary
             }
             Sber.Label {
                 id: label
                 anchors.centerIn: parent
                 visible: button.symbol === ""
                 text: button.text
-                color: Config.ink
+                width: Math.max(0, button.width - 12)
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                color: Theme.Palette.Text.Default.Primary
                 font: button.font
             }
         }
@@ -120,45 +142,103 @@ Dock {
         Sber.ToolTip.text: description
     }
 
-    Row {
-        id: leading
+    PanelButton {
+        objectName: "panel-sber"
+        x: panel.sberRect.x + 4
+        y: panel.sberRect.y + 4
+        width: panel.sberRect.width - 8
+        height: panel.sberRect.height - 8
         enabled: !panel.editing
-        x: panel.barRect.x + panel.pad
-        y: panel.barRect.y + (panel.dockH - height) / 2
-        height: Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S)
-        spacing: 4
+        contentItem: Item {
+            Sber.Icon {
+                anchors.centerIn: parent
+                width: 24; height: 24
+                name: "Sber"
+                size: 24
+                color: Theme.Palette.Text.Default.Primary
+            }
+        }
+        description: qsTr("Shell settings")
+        onClicked: Shell.openSettings()
+    }
+    Item {
+        id: oska
+        objectName: "panel-oska"
+        x: panel.oskaRect.x; y: panel.oskaRect.y
+        width: panel.oskaRect.width; height: panel.oskaRect.height
+        enabled: !panel.editing
         PanelButton {
-            symbol: "edit-find-symbolic"
-            description: qsTr("Search")
+            id: notificationButton
+            x: 8
+            anchors.verticalCenter: parent.verticalCenter
+            symbol: "notifications-symbolic"
+            description: qsTr("Notifications")
+            onClicked: panel.openAt("notif", this)
+        }
+        PanelButton {
+            id: searchButton
+            x: notificationButton.x + notificationButton.width + 4
+            width: Math.max(0, layoutButton.x - x - 4)
+            anchors.verticalCenter: parent.verticalCenter
+            description: qsTr("Find a document or application")
+            text: description
+            contentItem: Sber.Label {
+                text: searchButton.text
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+                color: Theme.Palette.Text.Default.Secondary
+                font: Theme.Fonts.BodySB
+            }
             onClicked: panel.searchRequested()
         }
+        KeyboardInfo { id: keyboard }
         PanelButton {
-            symbol: "user-desktop-symbolic"
-            description: qsTr("Show desktop")
-            onClicked: panel.showDesktopRequested()
-        }
-        Workspaces {
-            visible: panel.screenW >= 1100 && shown
-            allowed: panel.placed("workspaces")
+            id: layoutButton
+            anchors.right: parent.right
+            anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
+            width: 40
+            text: String(keyboard.layoutShort).toUpperCase()
+            description: keyboard.layoutName
+            onClicked: keyboard.nextLayout()
         }
     }
     Flickable {
         id: statusViewport
         enabled: !panel.editing
-        x: essential.x - width - 8
+        x: panel.indicatorsRect.x + 8
         y: panel.barRect.y
-        width: Math.max(0, Math.min(status.implicitWidth, panel.screenW * 0.36, panel.dockW - panel.leadingWidth - essential.width - 3 * panel.pad - Config.dockCell))
+        width: Math.max(0, panel.indicatorsRect.width - 16)
         height: panel.dockH
         contentWidth: status.implicitWidth
         contentHeight: height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         flickableDirection: Flickable.HorizontalFlick
+        WheelHandler {
+            target: null
+            enabled: statusViewport.contentWidth > statusViewport.width
+            onWheel: event => {
+                const delta = event.angleDelta.x || event.angleDelta.y;
+                statusViewport.contentX = Math.max(0, Math.min(statusViewport.contentWidth - statusViewport.width, statusViewport.contentX - delta / 2));
+                event.accepted = true;
+            }
+        }
         Row {
             id: status
             height: panel.dockH
             spacing: 6
+            PanelButton {
+                visible: panel.placed("desktop")
+                symbol: "user-desktop-symbolic"
+                description: qsTr("Show desktop")
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: panel.showDesktopRequested()
+            }
+            Workspaces {
+                allowed: panel.placed("workspaces")
+                anchors.verticalCenter: parent.verticalCenter
+            }
             PanelButton {
                 visible: !!panel.recorder && (panel.recorder.recording || panel.recorder.finishing)
                 text: panel.recorder ? panel.recorder.clock : ""
@@ -208,22 +288,23 @@ Dock {
                 }
             }
             BarBattery {
+                flat: true
+                foreground: Theme.Palette.Text.Default.Primary
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: panel.openPage("main")
             }
             BarPrivacy {
+                flat: true
                 anchors.verticalCenter: parent.verticalCenter
                 audio: volumeLoader.item
                 onClicked: panel.openSoundPage()
             }
             BarMic {
+                flat: true
+                foreground: Theme.Palette.Text.Default.Primary
                 anchors.verticalCenter: parent.verticalCenter
                 audio: volumeLoader.item
                 allowed: panel.placed("mic")
-            }
-            BarKeyboard {
-                anchors.verticalCenter: parent.verticalCenter
-                allowed: panel.placed("keyboard")
             }
             Flickable {
                 width: Math.min(nativeTray.implicitWidth, Math.max(64, panel.screenW * 0.14))
@@ -234,6 +315,8 @@ Dock {
                 boundsBehavior: Flickable.StopAtBounds
                 Tray {
                     id: nativeTray
+                    flat: true
+                    symbolicColor: Theme.Palette.Text.Default.Primary
                     anchors.verticalCenter: parent.verticalCenter
                     onMenuRequested: (item, centerX) => {
                         panel.warm = true;
@@ -267,18 +350,19 @@ Dock {
     Row {
         id: essential
         enabled: !panel.editing
-        x: panel.barRect.x + panel.dockW - width - panel.pad
+        x: panel.essentialRect.x + 8
         y: panel.barRect.y
         height: panel.dockH
         spacing: 6
         PanelButton {
-            symbol: "notifications-symbolic"
-            description: qsTr("Notifications")
+            symbol: "configure-symbolic"
+            description: qsTr("Quick settings")
             anchors.verticalCenter: parent.verticalCenter
-            onClicked: panel.openAt("notif", this)
+            onClicked: panel.openAt("gear", this)
         }
         PanelButton {
             id: clockButton
+            width: panel.systemZoneWidth - 16 - Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S) - 6
             property date now: new Date()
             Timer {
                 interval: Config.clockSeconds ? 1000 : 10000
@@ -296,12 +380,6 @@ Dock {
             description: qsTr("Calendar")
             anchors.verticalCenter: parent.verticalCenter
             onClicked: panel.openAt("clock", this)
-        }
-        PanelButton {
-            symbol: "configure-symbolic"
-            description: qsTr("Quick settings")
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: panel.openAt("gear", this)
         }
     }
     Loader {

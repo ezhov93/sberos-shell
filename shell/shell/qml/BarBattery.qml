@@ -8,6 +8,8 @@ import "Glass"
 Item {
     id: bat
     property bool allowed: true
+    property bool flat: false
+    property color foreground: Config.fgSolid
     signal clicked()
     BatteryInfo { id: info }
     readonly property bool shown: allowed && info.present
@@ -25,8 +27,8 @@ Item {
         return info.charging ? ("Charging" + (t !== "" ? " · " + t + " until full" : "")) : (t !== "" ? t + " left" : "On battery") }
     Rectangle { visible: Config.barHoverPills; anchors.fill: parent; radius: height / 2; color: Config.fg(hh.hovered ? 0.07 : 0); Behavior on color { ColorAnimation { duration: Config.quick } } }
     Row { id: row; anchors.centerIn: parent; spacing: 5
-        GlowIcon { anchors.verticalCenter: parent.verticalCenter; size: Math.round(16 * Config.barIconScale); source: bat.icon; hovered: hh.hovered
-            color: bat.low ? Config.attention : Config.fgSolid }     // (attention orange reads on both glasses)
+        GlowIcon { flat: bat.flat; anchors.verticalCenter: parent.verticalCenter; size: Math.round(16 * Config.barIconScale); source: bat.icon; hovered: hh.hovered
+            color: bat.low ? Config.attention : bat.foreground }     // (attention orange reads on both glasses)
         Text { anchors.verticalCenter: parent.verticalCenter; text: info.percent + "%"; color: bat.low ? Config.attention : Config.ink; font.pixelSize: 12; font.weight: Font.Medium; font.features: { "tnum": 1 } } }
     HoverHandler { id: hh }
     TapHandler { onTapped: bat.clicked() }

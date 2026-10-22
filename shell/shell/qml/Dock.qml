@@ -5,6 +5,7 @@ import QtQuick.Effects
 import org.kde.taskmanager as TaskManager
 import org.kde.kirigami as Kirigami
 import SircaShell
+import Sber.Theme
 import Sber.Controls as Sber
 import "Glass"
 
@@ -15,6 +16,10 @@ Surface {
     property bool unified: false
     property real leadingWidth: 0
     property real trailingWidth: 0
+    property var panelZones: []
+    property real taskAreaX: barRect.x + leadingWidth + pad
+    property real taskAreaWidth: Math.max(Config.dockCell, dockW - leadingWidth - trailingWidth - 2 * pad)
+    readonly property rect taskAreaRect: Qt.rect(taskAreaX, barRect.y, taskAreaWidth, dockH)
     property bool systemOpen: false
     property bool systemFocus: systemOpen
     property real systemWidth: 360
@@ -40,7 +45,7 @@ Surface {
     edgeStrip: Qt.rect((width - dockW) / 2, 0, dockW, 0)
     holdOpen: launcherOpen || previewShown || systemOpen || dragging || editing || dodgeExempt
     dodge: Config.dockDodge
-    blur: look.blur
+    blur: !unified && look.blur
     visibility: Config.dockVisibility
     keepOnFullscreen: Config.dockFullscreenMode === "keep"
     maximizedHere: anyMaximized
@@ -114,7 +119,7 @@ Surface {
     readonly property int contentW: pad + Config.dockCell + row.spacing + (tasksModel ? tasksModel.count : 0) * Config.dockCell + pad
     readonly property int screenW: Screen.width > 0 ? Screen.width : Config.screenWidth
     readonly property int dockW: unified ? Math.max(1, screenW - 2 * Config.dockFillMargin) : Config.dockWidthMode === "fill" ? screenW - 2 * Config.dockFillMargin : Math.max(contentW, 120)
-    readonly property real rowShift: Math.max(0, (dockW - leadingWidth - trailingWidth - contentW) / 2)      // "fill": the icons stay centred in the wider dock
+    readonly property real rowShift: unified ? 0 : Math.max(0, (dockW - leadingWidth - trailingWidth - contentW) / 2)      // "fill": the icons stay centred in the wider dock
     property bool editing: false                 // edit mode: pinned icons show an unpin badge, previews and the launcher stay shut
     signal editRequested()
     property int launcherRev: 0                  // bumps when the pinned set changes (launcherPosition is a function, not a property)
@@ -191,6 +196,7 @@ Surface {
 
     LobeShape {
         id: shape
+        visible: !dock.unified
         anchors.fill: parent
         reach: dock.polygon                // the fully grown outline: the shadow layers are sized once per open/close, not per frame
         flip: !dock.panelUp
@@ -204,11 +210,14 @@ Surface {
     // blur region + input mask: the fully grown outline (sent once per open/close, not per frame)
     readonly property bool lobeUp: lobeH > 1
     readonly property real maskPanelH: (panelKind === "preview" ? pvH : launcherFullH + 2 * lobePad) + Config.bounceRoom
-    polygon: panelUp ? shape.polygonFor(Qt.rect((width - panelFullW) / 2, dockTopRest - maskPanelH, panelFullW, maskPanelH), [{ x: (width - dockW) / 2, w: dockW, h: dockH }], false, 14)
+    polygon: unified ? [] : panelUp ? shape.polygonFor(Qt.rect((width - panelFullW) / 2, dockTopRest - maskPanelH, panelFullW, maskPanelH), [{ x: (width - dockW) / 2, w: dockW, h: dockH }], false, 14)
                      : shape.polygonFor(Qt.rect((width - dockW) / 2, dockTopRest, dockW, dockH), lobeUp ? [{ x: lobeX, w: lobeWidth, h: maskLobeHeight + Config.bounceRoom }] : [], true, 14)
+    inputRegions: unified ? panelZones.map(r => ({ x: r.x, y: r.y, w: r.width, h: r.height, r: Math.min(20, dockH / 2) })).concat(
+        lobeH > 1 ? [{ x: lobeX, y: dockTop - lobeH, w: lobeWidth, h: lobeH, r: 20 }] : []) : null
     // the Glass effect draws its bevel/mask from these boxes (same D-Bus path as the top bar). A box that joins another
     // reaches INTO it, so its own rounded corners never notch the junction.
     function pushShape() {
+        if (unified) return;
         if (!Config.dockBlur) { Shell.dbusSendTyped("org.kde.KWin", "/Glass", "org.kde.KWin.Glass", "clearLobes", "sii", ["sirca-shell", dock.width, dock.height]); return }
         let boxes = [barRect.x, barRect.y, barRect.width, barRect.height];
         if (panelUp) {
@@ -363,7 +372,7 @@ Surface {
     Item {
         id: hazeLayer
         x: dock.hazeRect.x; y: dock.hazeRect.y; width: dock.hazeRect.width; height: dock.hazeRect.height
-        visible: Config.hazeStrength > 0.01
+        visible: !dock.unified && Config.hazeStrength > 0.01
         layer.enabled: true
         // threshold 0.5 + spread 1.0 = smoothstep(0, 1, maskAlpha): a soft, proportional mask. (0.0 + 1.0 evaluates to
         // smoothstep(-1, 0, a) = 1 everywhere — the mask stops masking and the haze spills over the wallpaper.)
@@ -393,6 +402,22 @@ Surface {
                     GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 1) } }
                 PathSvg { path: shape.pathData } } } }
 
+    Repeater {
+        model: dock.unified ? dock.panelZones : []
+        Rectangle {
+            required property var modelData
+            x: modelData.x; y: modelData.y; width: modelData.width; height: modelData.height
+            radius: Math.min(20, height / 2)
+            color: Theme.Palette.Background.Default.Primary
+        }
+    }
+    Rectangle {
+        visible: dock.unified && dock.lobeH > 1
+        x: dock.lobeX; y: dock.dockTop - dock.lobeH
+        width: dock.lobeWidth; height: dock.lobeH
+        radius: 20
+        color: Theme.Palette.Background.Default.Primary
+    }
     Rectangle { visible: dock.editing; x: barRect.x - 4; y: barRect.y - 4; width: barRect.width + 8; height: barRect.height + 8; radius: dock.rad + 4; color: "transparent"; border.width: 2; border.color: Config.accent; opacity: 0.9 }
     TapHandler { acceptedButtons: Qt.RightButton; enabled: !dock.editing
         onTapped: (ev) => { const p = ev.position; if (p.x < barRect.x || p.x > barRect.x + barRect.width || p.y < barRect.y || p.y > barRect.y + barRect.height) return
@@ -400,9 +425,9 @@ Surface {
             const rp = row.mapFromItem(dock.contentItem, p.x, p.y); const inRow = rp.x >= 0 && rp.x <= row.width; if (!inRow) dock.editRequested() } }
     Flickable {
         id: taskViewport
-        x: barRect.x + dock.leadingWidth + dock.pad
+        x: dock.taskAreaX
         y: barRect.y - dock.headroom
-        width: Math.max(Config.dockCell, dock.dockW - dock.leadingWidth - dock.trailingWidth - 2 * dock.pad)
+        width: dock.taskAreaWidth
         height: dock.dockH + dock.headroom
         contentWidth: row.implicitWidth + dock.rowShift
         contentHeight: height
@@ -434,7 +459,7 @@ Surface {
                     backgroundType: Sber.Widget.Clear
                     Accessible.name: qsTr("Applications")
                     enabled: !dock.editing
-                    contentItem: Kirigami.Icon { source: "start-here-kde-symbolic"; isMask: true; color: Config.ink; implicitWidth: Config.dockIcon; implicitHeight: Config.dockIcon }
+                    contentItem: Kirigami.Icon { source: "view-app-grid-symbolic"; isMask: true; color: Config.ink; implicitWidth: Config.dockIcon; implicitHeight: Config.dockIcon }
                     onClicked: dock.launcherOpen = !dock.launcherOpen
                 }
                 GlowIcon { visible: !dock.unified; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom

@@ -8,6 +8,8 @@ import SircaShell
 
 Item {
     id: tray
+    property bool flat: false
+    property color symbolicColor: "white"
     signal menuRequested(var item, real centerX)
     property var openItem: null                       // the item whose menu is open (its pill stays lit)
     implicitWidth: row.implicitWidth; implicitHeight: 27
@@ -45,7 +47,7 @@ Item {
                 Kirigami.Icon { id: themed; anchors.centerIn: parent; width: 18; height: 18; visible: !cell.item.iconIsFile; source: cell.item.iconIsFile ? "" : cell.item.icon; roundToIconSize: false
                     // light mode: monochrome symbols are white like the rest of the bar's icons, over a soft dark shadow
                     readonly property bool symbolic: /-symbolic$/.test(String(cell.item.icon))
-                    isMask: symbolic && !Config.dark; color: "white"   // literal-ok: white glyphs on light glass, by design
+                    isMask: symbolic && (tray.flat || !Config.dark); color: tray.symbolicColor   // literal-ok: white glyphs on light glass, by design
                     layer.enabled: !Config.dark; layer.effect: MultiEffect { autoPaddingEnabled: true; shadowEnabled: true; shadowColor: Config.ink; shadowOpacity: 0.6; shadowBlur: 0.5; shadowVerticalOffset: 1 }
                     opacity: hh.hovered ? 1 : 0.9 }
                 Rectangle { visible: cell.item.status === "NeedsAttention"; x: parent.width - 9; y: 3; width: 7; height: 7; radius: 3.5; color: Config.attention; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.4) }

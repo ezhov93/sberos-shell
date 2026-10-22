@@ -28,6 +28,10 @@ fallbacks and the original group-placement editor remain available in split mode
 The upstream feature list below describes the original implementation; placement
 in the adapted default follows this section.
 
+The [Smart Panel adaptation table](../../docs/rules/panel-adaptation.md) separates
+GNOME source requirements from the current Qt/KWin prototype. Production rollout
+and GNOME pin migration are not provided by switching `unified`/`split`.
+
 ## What is in it
 
 - **Top bar** - show desktop, workspaces, tray (StatusNotifier host with its own menus), focused window title, clock

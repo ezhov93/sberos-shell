@@ -60,6 +60,12 @@ Build the UI Kit before building or installing this adapted shell; the build and
 runtime path are documented in [shell/README.md](shell/README.md#sberos-adaptation).
 The upstream installation instructions below do not build that workspace dependency.
 
+The Smart Panel source requirements describe a GNOME extension. Their mapping
+to this Qt/KWin prototype, requirement statuses and outstanding decisions are
+tracked in [PANEL-000](../docs/tasks/PANEL-000.md) and the
+[adaptation table](../docs/rules/panel-adaptation.md). The current unified default
+does not constitute a production rollout or a migration from the GNOME panel.
+
 ## Install
 
 ```

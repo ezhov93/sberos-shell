@@ -19,16 +19,14 @@ the terminal for desktop actions and pinning. Esc/outside clicks close one child
 level; the existing global launcher action closes all levels or opens the menu
 on the last active screen in unified mode. A development launch does not own Super. Show-desktop, workspaces and other
 existing widgets remain in the indicators area for now. The task model, pinning and app previews are reused from
-Dock. New block and popup backgrounds use UI Kit colours without blur; split mode retains
-the original appearance. System popups open upward inside the same layer-shell surface. Long task
+Dock. New block and popup backgrounds use UI Kit colours without blur. System popups open upward inside the same layer-shell surface. Long task
 and status areas scroll independently.
 
-`panelLayout` defaults to `unified`; set it to `split` in the existing config file
-to restore the original two-panel layout. No existing configuration is deleted.
-The unified panel uses `dock…` sizing/visibility/style options and fills the screen
-with `dockFillMargin` side margins. `screens.<output>.panel` enables it per screen;
-without that key, old `bar`/`dock` choices are combined. Hosted tray/calendar/control
-fallbacks and the original group-placement editor remain available in split mode.
+The old `panelLayout` key is ignored. The panel uses `dock…` sizing/visibility/style
+options and fills the screen with `dockFillMargin` side margins.
+`screens.<output>.panel` enables it per screen; when absent, old `bar`/`dock`
+choices are combined. Existing configuration is not deleted. Hosted applet
+fallbacks and the separate top-bar editor are no longer available.
 
 [ADR-0008](../../docs/adr/0008-unified-bottom-panel.md),
 [requirements](../../docs/rules/unified-panel.md), and
@@ -38,7 +36,7 @@ in the adapted default follows this section.
 
 The [Smart Panel adaptation table](../../docs/rules/panel-adaptation.md) separates
 GNOME source requirements from the current Qt/KWin prototype. Production rollout
-and GNOME pin migration are not provided by switching `unified`/`split`.
+and GNOME pin migration are outside the current panel implementation.
 
 [PANEL-001 checks](tests/panel/PANEL-001.md) cover the current 1920 px matrix;
 [Sber menu checks](tests/panel/PANEL-002.md) cover keyboard, context, power dry-run and screen routing.
@@ -169,9 +167,7 @@ empty file is the default look. A few keys:
 
 | key | meaning |
 | --- | --- |
-| `barWidthMode` | `auto` (scaled to the monitor), `fill`, `fit`, `custom` (+ `barWidth`) |
 | `barLeft` `barCenter` `barRight` | widget names per group: `desktop workspaces tray title clock date system media bell gear` |
-| `barBlur` `barTintAlpha` `barRimAlpha` `barSheen` `barShadow` `barHazeStrength` | the bar's glass (dock: `dock…`, haze: `hazeStrength`) |
 | `barDodge` `dockDodge` | slide away under windows instead of reserving space |
 | `mode` | `dark` or `light`: everything drawn on the glass flips (the Appearance tile in quick settings; with glass-desktop's `glass-mode` the whole desktop follows) |
 | `themes` `theme` | colour themes: `{name: {accent, light, dark}}` (accent + a wallpaper per mode), shown as swatches in quick settings |
@@ -231,7 +227,7 @@ known look keys with sane values, never runs anything, keeps your own wallpapers
 - `src/` - C++: layer-shell setup, shapes → blur region and input mask, global shortcuts, D-Bus, config, tray host,
   apps model, clipboard, screenshots, recording.
 - `qml/` - everything you see. `Surface.qml` is a layer-shell window whose shape is the union of its lobes;
-  `TopBar.qml`, `Dock.qml`; `EditScene.qml`; `Config.qml` holds every token and default.
+  `Dock.qml` and `UnifiedPanel.qml`; `EditScene.qml`; `Config.qml` holds every token and default.
 - `sirca-shell --check` compiles every QML file without showing anything; `sirca-shell-reload` runs it before a restart.
 
 ## Licence and credits

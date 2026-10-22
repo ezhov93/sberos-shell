@@ -45,7 +45,7 @@ Window {
     Timer { id: lostLater; interval: 80; onTriggered: if (surface.popupFocus && !surface.active) { if (surface.focusDebug) console.log("focus LOST ->", surface.title); surface.focusLost() } }
 
     property bool holdOpen: false              // set by the bar itself: a lobe is open, cards are showing, …
-    // ---- #7: visibility "always" | "dodge" | "below" (Config.barVisibility / dockVisibility) and the state the look follows
+    // ---- #7: visibility "always" | "dodge" | "below" (Config.dockVisibility) and the state the look follows
     property string visibility: "dodge"
     readonly property bool reserve: visibility === "always"
     property bool maximizedHere: false         // a maximised window on this screen (Dock scans the task model)

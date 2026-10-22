@@ -16,7 +16,7 @@ QtObject {
         onTriggered: {
             const p = test.app.dock
             if (test.step === 0) {
-                test.check(p && test.app.topBar === p && p.unified && p.edge === "bottom", "one bottom surface")
+                test.check(p && test.app.dock === p && p.unified && p.edge === "bottom", "one bottom surface")
                 if (p.tasksModel) p.tasksModel.filterByActivity = false // No activity controller in the test bus.
                 test.capture(p, "light", () => p.toggle("clock"))
             } else if (test.step === 1) {
@@ -31,17 +31,17 @@ QtObject {
                 test.check(p.launcherOpen && !p.systemOpen && p.lobeH > 10, "launcher shares the surface")
                 test.capture(p, "launcher", () => { p.launcherOpen = false; Shell.saveConfigKey("mode", "dark") })
             } else if (test.step === 4) {
-                test.capture(p, "dark", () => Shell.saveConfigKey("panelLayout", "split"))
+                test.capture(p, "dark", () => Shell.saveConfigKey("mode", "light"))
             } else if (test.step === 5) {
-                test.check(test.app.topBar !== p && p && test.app.topBar, "legacy split layout available")
-                test.capture(test.app.topBar, "before-top-dark", () => test.capture(p, "before-dock-dark", () => Shell.saveConfigKey("mode", "light")))
+                test.check(test.app.dock === p && p.unified, "legacy split preference does not create another panel")
+                Shell.saveConfigKey("panelLayout", "split")
+                test.check(test.app.dock === p, "legacy split preference is ignored")
+                test.capture(p, "legacy-split-ignored", () => test.app.closePopups())
             } else if (test.step === 6) {
-                test.capture(test.app.topBar, "before-top-light", () => test.capture(p, "before-dock-light", () => Shell.saveConfigKey("panelLayout", "unified")))
-            } else if (test.step === 7) {
-                test.check(test.app.topBar === p && p.unified, "layout restored without duplicate surfaces")
+                test.check(test.app.dock === p && p.unified, "legacy preference keeps one surface")
                 test.app.closePopups()
                 test.check(p.openLobe === "" && !p.launcherOpen, "close popups routes to unified surface")
-                console.log("PANEL PASS: single surface, popups, launcher, themes, split fallback, restoration")
+                console.log("PANEL PASS: single surface, popups, launcher, themes, legacy split preference ignored")
             } else Qt.quit()
             test.step++
         }

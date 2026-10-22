@@ -24,7 +24,7 @@ with tempfile.TemporaryDirectory(prefix='sber-panel-') as temporary:
     config.mkdir(parents=True)
     (work / 'data').mkdir()
     (config / 'config.json').write_text(json.dumps({
-        'mode': 'light', 'panelLayout': 'unified', 'dockDodge': False,
+        'mode': 'light', 'dockDodge': False,
         'dockVisibility': 'always', 'welcomed': True, 'selfTestNotify': False, 'ownWallpaper': False,
         'screens': {'panel-test-secondary': {'panel': True}} if args.menu else {},
     }))

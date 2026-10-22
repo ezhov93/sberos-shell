@@ -51,8 +51,8 @@ The bundled theme tools coordinate light or dark mode across the shell, KDE and 
 
 ## SberOS workspace adaptation
 
-The adapted shell now combines the top bar and dock into one bottom panel by
-default (`panelLayout: "split"` restores the original layout). PANEL-001 divides it
+The adapted shell combines the top bar and dock into one bottom panel. The old
+`panelLayout` setting is ignored; the two-panel layout is no longer available. PANEL-001 divides it
 into five opaque blocks with a fixed central Oska entry area, using UI Kit backgrounds.
 The Sber menu now provides shell settings, terminal context/pinning, power/session
 and collapse; full Oska behaviour remains a separate task. See

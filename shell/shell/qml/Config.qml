@@ -10,8 +10,6 @@ QtObject {
     readonly property var user: load(Shell.configRevision)
     function get(key, fallback) { return (user && user[key] !== undefined) ? user[key] : fallback }
 
-    readonly property bool unifiedPanel: get("panelLayout", "unified") !== "split"
-
     // ---- light / dark. `mode` is written by the quick-settings toggle (tools: glass-mode, which also switches the KDE colour
     // scheme, GTK, icons and the wallpaper). Everything drawn ON the glass goes through fg(): white in dark mode, near-black in
     // light mode. Things that sit on a coloured fill (badges, the record pill's dot, accent buttons) stay literally white.
@@ -69,20 +67,6 @@ QtObject {
     readonly property int slow: 320
 
     // top bar
-    // Default bar width follows ITS monitor: 46.4 % of its width (= 2374 px on the 5120-wide screen this was designed on),
-    // but never narrower than what the bar's content needs (1400 px) and never wider than the screen minus a margin.
-    // Each bar passes its own Screen.width to barWidthAutoFor (a second screen is rarely the same size); barWidthAuto is
-    // the primary screen's value, for the settings pages. A width set by the user (edit mode / settings) wins.
-    readonly property int screenWidth: Qt.application.screens.length > 0 ? Qt.application.screens[0].width : 1920
-    function barWidthAutoFor(w) { return Math.round(Math.max(Math.min(1400, w - 48), Math.min(w - 48, w * 0.46367))) }
-    readonly property int barWidthAuto: barWidthAutoFor(screenWidth)
-    readonly property int barWidth: get("barWidth", barWidthAuto)
-    // "auto" = scaled to the monitor (above), "fill" = the whole screen width minus barFillMargin on each side,
-    // "fit" = as wide as its widgets need, "custom" = barWidth from the config
-    readonly property string barWidthMode: get("barWidthMode", user && user["barWidth"] !== undefined ? "custom" : "auto")
-    readonly property int barFillMargin: get("barFillMargin", 8)
-    readonly property int barPad: get("barPad", 20)                  // air between the bar's ends and its first / last widget
-    readonly property int barSpacing: get("barSpacing", 16)          // air between two widgets
     // which widgets, where, in which order. Names: desktop workspaces tray title clock date system media bell gear
     readonly property var barLeft: get("barLeft", ["desktop", "workspaces", "tray", "title"])
     // weather (Open-Meteo, network): "weather": true/false decides; with no key, placing the bar widget counts as the opt-in
@@ -105,42 +89,15 @@ QtObject {
     readonly property string dateFormat: get("dateFormat", "ddd d MMM")
     readonly property bool barHoverPills: get("barHoverPills", true)   // the soft pill behind a widget under the pointer
     readonly property real barIconScale: get("barIconScale", 1.0)
-    // look, per surface (each falls back to the shared value from Appearance)
-    readonly property bool barBlur: get("barBlur", true)
-    readonly property real barTintAlpha: get("barTintAlpha", 0.62)        // dark mode: the bar wears the THEME's app glass (24,25,27 at 62 %), like title bars and sidebars
-    readonly property color barTint: mix(Qt.rgba(24/255, 25/255, 27/255, barTintAlpha), Qt.rgba(0.975, 0.98, 0.99, Math.min(0.94, get("barTintAlphaLight", 0.15) + barMilk)))
-    readonly property real barMilk: get("barMilk", 0.36)                 // light mode: the bar was 75 % white, which on a light wallpaper reads as a solid strip, not glass
-    readonly property real barRimAlpha: get("barRimAlpha", get("rimAlpha", 0.09))
-    readonly property real barSheen: get("barSheen", get("sheenAlpha", 0.06))
-    readonly property real barShadow: get("barShadow", 0.55)
     readonly property bool dockBlur: get("dockBlur", true)
     readonly property real dockTintAlpha: get("dockTintAlpha", get("tintAlpha", 0.15))
     readonly property real dockRimAlpha: get("dockRimAlpha", get("rimAlpha", 0.09))
     readonly property real dockSheen: get("dockSheen", get("sheenAlpha", 0.06))
     readonly property real dockShadow: get("dockShadow", 0.55)
-    // ---- visibility (#7): "always" reserves space (windows never touch the surface), "dodge" slides it away under a
-    // window (the old default), "below" keeps it in place with windows going under it. The old barDodge / dodge booleans map.
-    readonly property string barVisibility: { const v = get("barVisibility", ""); if (v === "always" || v === "dodge" || v === "below") return v; return get("barDodge", get("dodge", true)) ? "dodge" : "always" }
+    // ---- visibility (#7): "always" reserves space, "dodge" slides under windows, "below" lets windows go under it.
     readonly property string dockVisibility: { const v = get("dockVisibility", ""); if (v === "always" || v === "dodge" || v === "below") return v; return get("dockDodge", get("dodge", true)) ? "dodge" : "always" }
-    readonly property bool barDodge: barVisibility === "dodge"
     readonly property bool dockDodge: dockVisibility === "dodge"
-    // ---- the look per state: "touched" (a window lies over the surface's strip), "maximized" (a maximised window on its
-    // screen; "touched" = same settings), "fullscreen" (a full-screen window has focus; "hide" = the old behaviour, "keep"
-    // = the surface stays, raised above the window). Every state has its own opacity, blur, (bar) width and corners.
-    readonly property real barTouchedOpacity: get("barTouchedOpacity", 0.92)
-    readonly property bool barTouchedBlur: get("barTouchedBlur", true)
-    readonly property string barTouchedWidth: get("barTouchedWidth", "keep")          // "keep" | "fill"
-    readonly property string barTouchedCorners: get("barTouchedCorners", "round")     // "round" | "square"
-    readonly property string barMaximizedMode: get("barMaximizedMode", "touched")     // "touched" | "custom"
-    readonly property real barMaximizedOpacity: get("barMaximizedOpacity", 0.92)
-    readonly property bool barMaximizedBlur: get("barMaximizedBlur", true)
-    readonly property string barMaximizedWidth: get("barMaximizedWidth", "keep")
-    readonly property string barMaximizedCorners: get("barMaximizedCorners", "round")
-    readonly property string barFullscreenMode: get("barFullscreenMode", "hide")      // "hide" | "keep"
-    readonly property real barFullscreenOpacity: get("barFullscreenOpacity", 1.0)
-    readonly property bool barFullscreenBlur: get("barFullscreenBlur", false)
-    readonly property string barFullscreenWidth: get("barFullscreenWidth", "fill")
-    readonly property string barFullscreenCorners: get("barFullscreenCorners", "square")
+    // ---- the look per state: touched, maximized and fullscreen.
     readonly property real dockTouchedOpacity: get("dockTouchedOpacity", get("dockTintAlphaTouched", 0.85))
     readonly property bool dockTouchedBlur: get("dockTouchedBlur", true)
     readonly property string dockMaximizedMode: get("dockMaximizedMode", "touched")
@@ -150,15 +107,14 @@ QtObject {
     readonly property real dockFullscreenOpacity: get("dockFullscreenOpacity", 1.0)
     readonly property bool dockFullscreenBlur: get("dockFullscreenBlur", false)
     // the resolved look of a surface in a state: { opacity, blur, width, corners }; opacity < 0 = the normal one
-    function lookFor(prefix, state) {
-        const norm = { opacity: -1, blur: prefix === "bar" ? barBlur : dockBlur, width: "keep", corners: "round" }
-        if (state === "maximized" && (prefix === "bar" ? barMaximizedMode : dockMaximizedMode) === "touched") state = "touched"
-        if (state === "touched") return prefix === "bar" ? { opacity: barTouchedOpacity, blur: barTouchedBlur, width: barTouchedWidth, corners: barTouchedCorners } : { opacity: dockTouchedOpacity, blur: dockTouchedBlur, width: "keep", corners: "round" }
-        if (state === "maximized") return prefix === "bar" ? { opacity: barMaximizedOpacity, blur: barMaximizedBlur, width: barMaximizedWidth, corners: barMaximizedCorners } : { opacity: dockMaximizedOpacity, blur: dockMaximizedBlur, width: "keep", corners: "round" }
-        if (state === "fullscreen") return prefix === "bar" ? { opacity: barFullscreenOpacity, blur: barFullscreenBlur, width: barFullscreenWidth, corners: barFullscreenCorners } : { opacity: dockFullscreenOpacity, blur: dockFullscreenBlur, width: "keep", corners: "round" }
-        return norm }
-    // the bar's tint at another alpha (a state look): the same dark / light bases as barTint
-    function barTintAt(a) { return a < 0 ? barTint : mix(Qt.rgba(24/255, 25/255, 27/255, a), Qt.rgba(0.975, 0.98, 0.99, Math.min(0.97, a))) }
+    function lookFor(state) {
+        const norm = { opacity: -1, blur: dockBlur, width: "keep", corners: "round" }
+        if (state === "maximized" && dockMaximizedMode === "touched") state = "touched"
+        if (state === "touched") return { opacity: dockTouchedOpacity, blur: dockTouchedBlur, width: "keep", corners: "round" }
+        if (state === "maximized") return { opacity: dockMaximizedOpacity, blur: dockMaximizedBlur, width: "keep", corners: "round" }
+        if (state === "fullscreen") return { opacity: dockFullscreenOpacity, blur: dockFullscreenBlur, width: "keep", corners: "round" }
+        return norm
+    }
     readonly property int barHeight: get("barHeight", 37)
     readonly property int barGap: get("barGap", 8)
     readonly property int sheetWidth: get("sheetWidth", 440)
@@ -199,11 +155,7 @@ QtObject {
     onWithoutPlasmashellChanged: Shell.setWithoutPlasmashell(withoutPlasmashell)
     Component.onCompleted: Shell.setWithoutPlasmashell(withoutPlasmashell)
     readonly property bool quietWhenBusy: get("quietWhenBusy", true)      // no notification popups while a game / full-screen window has focus
-    readonly property bool nativeCalendar: get("nativeCalendar", true)     // the popup behind the clock: ours, or the hosted digital clock applet
-    readonly property bool nativeNotifications: get("nativeNotifications", true)   // cards + history: ours (NotificationManager), or the hosted applet
-    readonly property bool nativeTray: get("nativeTray", true)           // tray icons + menus: ours (TrayHost), or the hosted Plasma tray
     readonly property string quickSettingsStyle: get("quickSettingsStyle", "glass")   // "glass" = QuickSettings.qml (our design), "classic" = the ported Glass Control pages
-    readonly property bool nativeControl: get("nativeControl", true)   // quick settings: qml/control, or the hosted onur.glasscontrol applet
     // launcher: our own (AppsModel) or, as a fallback, the hosted Kickoff fork
     readonly property bool nativeLauncher: get("nativeLauncher", true)
     readonly property var favorites: get("favorites", ["firefox.desktop", "org.kde.dolphin.desktop", "org.kde.konsole.desktop", "systemsettings.desktop", "org.kde.discover.desktop"])

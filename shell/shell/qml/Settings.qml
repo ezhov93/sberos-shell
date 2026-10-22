@@ -42,10 +42,10 @@ Window {
             name: "Appearance"
         },
         {
-            name: Config.unifiedPanel ? "System area" : "Top bar"
+            name: "System area"
         },
         {
-            name: Config.unifiedPanel ? "Panel" : "Dock"
+            name: "Panel"
         },
         {
             name: "Behaviour"
@@ -341,7 +341,6 @@ Window {
                         }
                         Row_ {
                             label: "Corner radius"
-                            visible: !Config.unifiedPanel
                             key: "cornerRadius"
                             Num {
                                 key: "cornerRadius"
@@ -352,35 +351,6 @@ Window {
                             }
                         }
                     }
-                    Section {
-                        title: "Colour haze"
-                        Row_ {
-                            label: "Dock"
-                            hint: "Icon colours caught in the dock's glass"
-                            key: "hazeStrength"
-                            Num {
-                                key: "hazeStrength"
-                                from: 0
-                                to: 0.7
-                                step: 0.01
-                                decimals: 2
-                                value: Config.hazeStrength
-                            }
-                        }
-                        Row_ {
-                            label: "Top bar"
-                            visible: !Config.unifiedPanel
-                            key: "barHazeStrength"
-                            Num {
-                                key: "barHazeStrength"
-                                from: 0
-                                to: 0.7
-                                step: 0.01
-                                decimals: 2
-                                value: Config.barHazeStrength
-                            }
-                        }
-                    }
                 }
 
                 // Top bar
@@ -388,71 +358,6 @@ Window {
                     visible: win.page === 1
                     width: parent.width
                     spacing: 18
-                    Section {
-                        title: "Size"
-                        visible: !Config.unifiedPanel
-                        Row_ {
-                            label: "Width"
-                            hint: "Centred on the screen"
-                            key: "barWidth"
-                            Num {
-                                key: "barWidth"
-                                from: 1200
-                                to: Math.max(1400, Screen.width - 40)
-                                step: 2
-                                value: Config.barWidth
-                                unit: " px"
-                            }
-                        }
-                        Row_ {
-                            label: "Height"
-                            key: "barHeight"
-                            Num {
-                                key: "barHeight"
-                                from: 30
-                                to: 50
-                                value: Config.barHeight
-                                unit: " px"
-                            }
-                        }
-                        Row_ {
-                            label: "Gap to the screen edge"
-                            key: "barGap"
-                            Num {
-                                key: "barGap"
-                                from: 0
-                                to: 24
-                                value: Config.barGap
-                                unit: " px"
-                            }
-                        }
-                    }
-                    Section {
-                        title: "Tray"
-                        visible: !Config.unifiedPanel
-                        Row_ {
-                            label: "Native tray"
-                            hint: "App icons and their menus drawn by the shell. Off = the hosted Plasma tray"
-                            key: "nativeTray"
-                            Toggle {
-                                checked: Config.nativeTray
-                                onToggled: win.setKey("nativeTray", checked, true)
-                            }
-                        }
-                    }
-                    Section {
-                        title: "Calendar"
-                        visible: !Config.unifiedPanel
-                        Row_ {
-                            label: "Native calendar"
-                            hint: "The popup behind the clock. Off = the hosted Plasma clock applet"
-                            key: "nativeCalendar"
-                            Toggle {
-                                checked: Config.nativeCalendar
-                                onToggled: win.setKey("nativeCalendar", checked, true)
-                            }
-                        }
-                    }
                     Section {
                         title: "Weather"
                         Row_ {
@@ -544,20 +449,6 @@ Window {
                         }
                     }
                     Section {
-                        title: "Notifications"
-                        visible: !Config.unifiedPanel
-                        Row_ {
-                            label: "Native notifications"
-                            visible: !Config.unifiedPanel
-                            hint: "Cards and history drawn by the shell. Off = the hosted Plasma applet"
-                            key: "nativeNotifications"
-                            Toggle {
-                                checked: Config.nativeNotifications
-                                onToggled: win.setKey("nativeNotifications", checked, true)
-                            }
-                        }
-                    }
-                    Section {
                         title: "Tile widgets"
                         Row_ {
                             label: "Click"
@@ -644,16 +535,6 @@ Window {
                                         }
                                     }
                                 }
-                            }
-                        }
-                        Row_ {
-                            label: "Native quick settings"
-                            visible: !Config.unifiedPanel
-                            hint: "Our own panel. Off = the hosted Plasma applet"
-                            key: "nativeControl"
-                            Toggle {
-                                checked: Config.nativeControl
-                                onToggled: win.setKey("nativeControl", checked, true)
                             }
                         }
                     }
@@ -788,31 +669,7 @@ Window {
                     Section {
                         title: "Windows"
                         Row_ {
-                            label: "Bar and windows"
-                            visible: !Config.unifiedPanel
-                            hint: "Never touch it reserves space; hide = slide away under a window; below = windows go under the bar. The looks per state (touched, maximised, full-screen) are in edit mode › Bar"
-                            key: "barVisibility"
-                            Row {
-                                spacing: 6
-                                Choice {
-                                    text: "Never touch"
-                                    on: Config.barVisibility === "always"
-                                    onTapped: win.setKey("barVisibility", "always", true)
-                                }
-                                Choice {
-                                    text: "Hide"
-                                    on: Config.barVisibility === "dodge"
-                                    onTapped: win.setKey("barVisibility", "dodge", true)
-                                }
-                                Choice {
-                                    text: "Below"
-                                    on: Config.barVisibility === "below"
-                                    onTapped: win.setKey("barVisibility", "below", true)
-                                }
-                            }
-                        }
-                        Row_ {
-                            label: Config.unifiedPanel ? "Panel and windows" : "Dock and windows"
+                            label: "Panel and windows"
                             key: "dockVisibility"
                             Row {
                                 spacing: 6

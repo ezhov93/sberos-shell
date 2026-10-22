@@ -4,8 +4,7 @@ import SircaShell
 
 QtObject {
     id: main
-    // ---- one set (wallpaper + bar + dock) per screen; main.topBar / main.dock are the PRIMARY screen's, which the rest of
-    // the shell (shortcuts, D-Bus, popups) talks to. See ScreenSet.qml.
+    // ---- one set (wallpaper + unified panel) per screen; main.dock is the primary panel used by shortcuts, D-Bus and popups.
     // The sets are keyed by output NAME, one row each in a list model that is edited in place: unplugging a middle screen
     // removes that screen's row and so that set only. (A count model gave the delegates an index: removing the middle
     // screen destroyed the LAST set and re-pointed the others at the wrong QScreen.) The set finds its QScreen by name.
@@ -53,19 +52,18 @@ QtObject {
     }
     function rescan() { let p = null; for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.primary) { p = o; break } } if (!p && sets.count) p = sets.objectAt(0); primarySet = p }
     property var _ps: Connections { target: Shell; function onPrimaryScreenChanged() { main.rescan() } }
-    readonly property var topBar: primarySet ? primarySet.bar : null
-    readonly property var dock: primarySet ? primarySet.dock : null
-    // what every bar and dock reads (the task model is global; the flags used to live on the one dock)
+    readonly property var dock: primarySet ? primarySet.panel : null
+    // shared state for the unified panel (the task model is global)
     readonly property bool fullscreenActive: dock ? dock.fullscreenActive : false
     readonly property bool gameActive: dock ? dock.gameActive : false
     readonly property bool launcherOpen: dock ? dock.launcherOpen : false        // read-only: close through closeLauncher()
-    function closeLobes() { for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.bar) o.bar.openLobe = "" } }
-    function closeLauncher() { for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.dock) o.dock.launcherOpen = false } }
+    function closeLobes() { for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.panel) o.panel.openLobe = "" } }
+    function closeLauncher() { for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.panel) o.panel.launcherOpen = false } }
     // the menu window is moved to another screen only when it has to be: re-assigning Window.screen on a mapped layer
     // surface left the menu unable to show at all (2026-09-22)
     function openDesktopMenu(screen, x, y) { const m = win("desktopMenu"); if (screen && !m.visible && m.screen !== screen && (!m.screen || m.screen.name !== screen.name)) { m.close_(); m.screen = screen; m.setupDone = false } m.openAt(x, y) }
 
-    // ---- start-up self-test (6 s in: bar, dock, shortcuts, fake input, Glass effect, notifications; a notification only
+    // ---- start-up self-test (6 s in: panel, shortcuts, fake input, Glass effect, notifications; a notification only
     // when something is missing) and the crash report for a run that systemd restarted after a failure
     property var _selfTest: Timer { interval: 6000; running: true; onTriggered: { Shell.selfTest(); Shell.crashReport() } }
     // ---- follow the sun: the one acting instance (quick settings shows a display-only copy); does nothing unless autoMode == "sun"
@@ -81,7 +79,7 @@ QtObject {
     property var _made: ({})
     readonly property var _lazy: ({ sberMenu: _cSberMenu, clipboardPanel: _cClipboardPanel, powerMenu: _cPowerMenu, welcome: _cWelcome, capture: _cCapture, settings: _cSettings, switcher: _cSwitcher, search: _cSearch, tiles: _cTiles, editScene: _cEdit, desktopMenu: _cDesktopMenu, cheatSheet: _cCheatSheet })
     function win(name) { let w = _made[name]; if (!w) { const t = Date.now(); w = _lazy[name].createObject(main); _made[name] = w; if (!w) console.warn("could not build", name, _lazy[name].errorString()); else console.log("start-up: built", name, "in", Date.now() - t, "ms") } return w }
-    function closePopups() { if (_made.sberMenu) _made.sberMenu.closeAll(); main.closeLobes(); for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.dock) { o.dock.launcherOpen = false; o.dock.previewShown = false } } }
+    function closePopups() { if (_made.sberMenu) _made.sberMenu.closeAll(); main.closeLobes(); for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.panel) { o.panel.launcherOpen = false; o.panel.previewShown = false } } }
     // (closePopups must NOT close the desktop menu: the menu calls it from its own opened(), so it closed itself the moment
     // it opened: "no menu appears on right click", 2026-09-22. A press on the desktop closes it explicitly instead.)
     function closeDesktopMenu() { const dm = _made["desktopMenu"]; if (dm && dm.visible) dm.close_() }
@@ -90,9 +88,6 @@ QtObject {
     property var _cSberMenu: Component { SberMenu {
         onClosed: { main.activeSberPanel = null; main.activeSberScreen = null; }
         onSettingsRequested: main.win("settings").openIt()
-    } }
-    property var _sberLayout: Connections { target: Config; function onUnifiedPanelChanged() {
-        if (main._made.sberMenu) main._made.sberMenu.closeAll();
     } }
     property var _cClipboardPanel: Component { ClipboardPanel { entries: main.clipboard; onOpened: main.closePopups() } }
     property var _cPowerMenu: Component { PowerMenu { onOpened: main.closePopups() } }
@@ -139,13 +134,12 @@ QtObject {
     readonly property string lockLook: Config.get("wallpaper", "") + "|" + Config.get("mode", "dark") + "|" + Config.get("accent", "")
     onLockLookChanged: lockSync.restart()
     property var _lockSync: Timer { id: lockSync; interval: 900; onTriggered: if (Shell.hasProgram("glass-lock-sync")) Shell.runDetached("glass-lock-sync", []) }
-    property var _themeLater: Timer { id: themeLater; interval: 350; onTriggered: { const q = main.topBar ? main.topBar.nativeControl : null; if (q && q.paletteOpen !== undefined) q.paletteOpen = true } }
-    // ---- edit mode (right click on the bar or the dock, or D-Bus toggleEditMode)
+    property var _themeLater: Timer { id: themeLater; interval: 350; onTriggered: { const q = main.dock ? main.dock.nativeControl : null; if (q && q.paletteOpen !== undefined) q.paletteOpen = true } }
+    // ---- edit mode (right click on the panel, or D-Bus toggleEditMode)
     property bool editing: false
     function setEditing(on) { if (on === editing) return; if (on) closePopups(); editing = on; const s = win("editScene"); if (on) s.open(); else s.close_() }
     property var _cEdit: Component { EditScene {
         screen: main.primarySet ? main.primarySet.screen : null
-        barHole: main.topBar && main.topBar !== main.dock ? Qt.rect(main.topBar.x + main.topBar.barRect.x - 30, 0, main.topBar.barRect.width + 60, main.topBar.barRect.y + main.topBar.barRect.height + 10) : Qt.rect(0, 0, 0, 0)
         dockHole: main.dock ? Qt.rect(main.dock.x + main.dock.barRect.x - 12, main.dock.y + main.dock.barRect.y - 12, main.dock.barRect.width + 24, main.dock.barRect.height + 24) : Qt.rect(0, 0, 0, 0)
         onDone: main.setEditing(false); onMoreSettings: { main.setEditing(false); main.win("settings").openIt() } } }
     property var _cTiles: Component { Tiles { onOpened: main.closePopups() } }
@@ -155,10 +149,10 @@ QtObject {
 
     // ---- the shell's own global shortcuts (window operations are already done in C++; these are the shell-side ones)
     property var _keys: Connections { target: Shell
-        // (main.topBar / main.dock are null until the primary set has built them, and while the primary screen is away)
-        function onLauncherToggleRequested() { if (Config.unifiedPanel) main.toggleSber(main.sberPanel(), true); }
-        function onLobeToggleRequested(name) { const b = main.topBar; if (!b) return; if (name === "media") { if (!b.mediaAvailable) return; if (b.openLobe !== "media") b.placeMedia() } b.toggle(name) }
-        function onTrayMenuRequested(i) { if (main.topBar) main.topBar.openTrayMenuAt(i) }
+        // (main.dock is null until the primary set has built its panel, and while the primary screen is away)
+        function onLauncherToggleRequested() { main.toggleSber(main.sberPanel(), true); }
+        function onLobeToggleRequested(name) { const b = main.dock; if (!b) return; if (name === "media") { if (!b.mediaAvailable) return; if (b.openLobe !== "media") b.placeMedia() } b.toggle(name) }
+        function onTrayMenuRequested(i) { if (main.dock) main.dock.openTrayMenuAt(i) }
         function onSettingsRequested() { main.win("settings").openIt() }
         function onSettingsPageRequested(page) { main.win("settings").openIt(page) }
         function onSearchPreviewRequested(q) { main.win("search").preview(q) }
@@ -167,12 +161,12 @@ QtObject {
             if (id === "record") { main.recorder.toggleOrAsk(() => { const c = main.win("capture"); c.dryRun = false; c.mode = "record"; c.begin(main.windowRects(), "") }); return }
             if (id === "screenshot" || id === "screenshot-2") { main.win("capture").mode = "shot"; main.win("capture").dryRun = false; main.win("capture").begin(main.windowRects(), ""); return }
             if (id === "screenshot-preview") { main.win("capture").dryRun = true; main.win("capture").begin(main.windowRects(), Config.wallpaper !== "" ? Config.wallpaper : Shell.plasmaWallpaper()); return }
-            if (id === "theme-picker") { if (main.topBar) { main.topBar.openLobe = "gear"; themeLater.restart() } return }
+            if (id === "theme-picker") { if (main.dock) { main.dock.openLobe = "gear"; themeLater.restart() } return }
             if (id === "edit") { main.setEditing(!main.editing); return }
             if (id === "tiles" || id === "tiles-preview") { const t = main.win("tiles"); t.dryRun = id === "tiles-preview"; t.toggle(); return }
             if (id === "clipboard") { main.win("clipboardPanel").toggle(); return }
             if (id === "cheatsheet") { main.win("cheatSheet").toggle(); return }
-            if (id === "notif-clear") { if (main.topBar && main.topBar.notifications) main.topBar.notifications.clearAll(); return }
+            if (id === "notif-clear") { if (main.dock && main.dock.notifications) main.dock.notifications.clearAll(); return }
             if (id === "welcome") { main.win("welcome").open(); return }
             if (id === "power") { main.win("powerMenu").dryRun = false; main.win("powerMenu").toggle(); return }
             if (id === "power-preview") { main.win("powerMenu").dryRun = true; main.win("powerMenu").toggle(); return }
@@ -181,12 +175,8 @@ QtObject {
         } }
 
     // ---- click outside closes whatever is open
-    readonly property bool popupOpen: !!topBar && !!dock && (topBar.openLobe !== "" || dock.launcherOpen || (dock.previewShown && dock.lobeMode === "menu"))
+    readonly property bool popupOpen: !!dock && (dock.openLobe !== "" || dock.launcherOpen || (dock.previewShown && dock.lobeMode === "menu"))
     // (no click catcher any more: popups close on focus loss, see Surface.popupFocus. Catcher.qml is unused.)
-    // a press on one of our surfaces closes the OTHER surface's popups (that one keeps the keyboard focus, because the
-    // pressed surface does not take it, so focus loss alone would not notice)
-    property var _cross: Connections { target: main.dock !== main.topBar ? main.dock : null; function onPressedAnywhere() { if (main.topBar && main.topBar.openLobe !== "") main.topBar.openLobe = "" } }
-    property var _cross2: Connections { target: main.dock !== main.topBar ? main.topBar : null; function onPressedAnywhere() { const d = main.dock; if (!d) return; if (d.launcherOpen) d.launcherOpen = false; if (d.previewShown && d.lobeMode === "menu") d.previewShown = false } }
 
     // ---- window watcher for dodging: every visible window on this desktop, ungrouped, with its geometry
     property int rev: 0

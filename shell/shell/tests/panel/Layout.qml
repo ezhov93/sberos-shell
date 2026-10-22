@@ -84,14 +84,11 @@ QtObject {
                 test.capture(p, "layout-quick-settings", () => { test.app.closePopups(); p.launcherOpen = true; });
             } else if (test.step === 6) {
                 test.check(p.launcherOpen && !p.systemOpen, "launcher remains accessible");
-                test.capture(p, "layout-launcher", () => { p.launcherOpen = false; Shell.saveConfigKey("panelLayout", "split"); });
+                    test.capture(p, "layout-launcher", () => { p.launcherOpen = false; });
             } else if (test.step === 7) {
-                test.check(test.app.topBar !== p && p && !p.unified, "split remains available");
-                Shell.saveConfigKey("panelLayout", "unified");
-            } else if (test.step === 8) {
                 test.geometry(p);
-                test.check(test.app.topBar === p, "one surface after restoring unified");
-                console.log("PANEL PASS: five zones at 1920, stable centre, dynamic indicators, themes, popups, split");
+                test.check(test.app.dock === p, "one unified surface");
+                console.log("PANEL PASS: five zones at 1920, stable centre, dynamic indicators, themes, popups");
                 Qt.quit();
             }
             test.step++;

@@ -1,9 +1,5 @@
-// One screen's worth of shell: its wallpaper, and (if this screen is set to have them) its bar and its dock. Main makes one
-// of these per screen. The primary screen has bar and dock unless switched off in edit mode > Screens; every other screen
-// starts with the wallpaper only, and gets a bar or a dock when its switches are turned on there (config key "screens":
-// { "<output name>": { "bar": true, "dock": false } }).
-// The bar and the dock are ALWAYS built for the primary screen (much of the shell talks to main.topBar / main.dock:
-// shortcuts, D-Bus, popups); "off" there means unmapped, not absent. On the other screens they exist only when on.
+// One screen's wallpaper and, when selected, one unified panel. The primary
+// screen has a panel by default; other screens start with the wallpaper only.
 import QtQuick
 import SircaShell
 
@@ -29,25 +25,11 @@ QtObject {
     // a right click on the desktop opens Plasma's menu. D-Bus remapWallpaper re-maps ours on top.
     property var _remap: Connections { target: Shell; function onRemapWallpaperRequested() { if (set.wallpaper) set.wallpaper.remapNow() } }
 
-    // the bar and the dock: built at once on the primary screen, on demand elsewhere
+    // One unified panel per selected screen. Old per-screen bar/dock choices still
+    // determine its default visibility until users replace them with `panel`.
     readonly property bool wantPanel: choice.panel !== undefined ? !!choice.panel : wantBar || wantDock
     property var panel: null
-    property var _layout: Connections { target: Config; function onUnifiedPanelChanged() { set.sync() } }
     property var sberCatcher: SberMenuCatcher { host: set.host; panel: set.panel; targetScreen: set.screen }
-    property var splitBar: null
-    property var splitDock: null
-    readonly property var bar: Config.unifiedPanel ? panel : splitBar
-    readonly property var dock: Config.unifiedPanel ? panel : splitDock
-    readonly property var _cBar: Component { TopBar { screen: set.screen; userHidden: !set.wantBar; maximizedHere: set.dock ? set.dock.anyMaximized : false
-        recorder: set.host.recorder; editing: set.host.editing; onEditRequested: set.host.setEditing(true)
-        quiet: set.host.fullscreenActive; busy: set.host.fullscreenActive || set.host.gameActive; showingDesktop: set.host.showingDesktop
-        activeTitle: set.host.activeTitle; activeApp: set.host.activeApp; activeIcon: set.host.activeIcon
-        onOpenLobeChanged: if (openLobe !== "") set.host.closeLauncher()
-        onShowDesktopRequested: set.host.toggleShowDesktop()
-        covered: { set.host.rev; return !set.host.showingDesktop && set.host.overlaps(Qt.rect(set.ox + x + sidePad, set.oy, barW, strutSize)) } } }
-    readonly property var _cDock: Component { Dock { screen: set.screen; userHidden: !set.wantDock
-        editing: set.host.editing; onEditRequested: set.host.setEditing(true); onLauncherOpenChanged: if (launcherOpen) set.host.closeLobes()
-        covered: { set.host.rev; return !set.host.showingDesktop && set.host.overlaps(Qt.rect(set.ox + x + (width - dockW) / 2, set.oy + y + height - strutSize, dockW, strutSize)) } } }
     readonly property var _cPanel: Component { UnifiedPanel {
         screen: set.screen; userHidden: !set.wantPanel
         recorder: set.host.recorder; editing: set.host.editing
@@ -66,22 +48,12 @@ QtObject {
     property int _syncCalls: 0
     function sync() {
         if (!host || !screen || _syncing) return
-        _syncing = true; _syncCalls++             // building a bar re-evaluates bindings that call sync again: one at a time
-        if (Config.unifiedPanel) {
-            if (splitBar) { splitBar.destroy(); splitBar = null }
-            if (splitDock) { splitDock.destroy(); splitDock = null }
-            if (!panel && (primary || wantPanel)) panel = _cPanel.createObject(set)
-            else if (panel && !primary && !wantPanel) { panel.destroy(); panel = null }
-        } else {
-            if (panel) { panel.destroy(); panel = null }
-            if (!splitBar && (primary || wantBar)) splitBar = _cBar.createObject(set)
-            else if (splitBar && !primary && !wantBar) { splitBar.destroy(); splitBar = null }
-            if (!splitDock && (primary || wantDock)) splitDock = _cDock.createObject(set)
-            else if (splitDock && !primary && !wantDock) { splitDock.destroy(); splitDock = null }
-        }
+        _syncing = true; _syncCalls++             // bindings re-enter sync while a panel is being built
+        if (!panel && (primary || wantPanel)) panel = _cPanel.createObject(set)
+        else if (panel && !primary && !wantPanel) { panel.destroy(); panel = null }
         _syncing = false
     }
-    onWantPanelChanged: sync(); onWantBarChanged: sync(); onWantDockChanged: sync(); onPrimaryChanged: sync(); onHostChanged: sync(); onScreenChanged: sync()
+    onWantPanelChanged: sync(); onPrimaryChanged: sync(); onHostChanged: sync(); onScreenChanged: sync()
     Component.onCompleted: { findScreen(); sync() }
-    Component.onDestruction: { if (panel) panel.destroy(); if (splitBar) splitBar.destroy(); if (splitDock) splitDock.destroy(); if (wallpaper) wallpaper.destroy() }
+    Component.onDestruction: { if (panel) panel.destroy(); if (wallpaper) wallpaper.destroy() }
 }

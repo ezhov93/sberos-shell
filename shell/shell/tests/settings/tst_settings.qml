@@ -19,7 +19,7 @@ TestCase {
     function find(predicate) { return allItems(settings, predicate)[0] }
     function init() {
         Shell.wallpapers = []
-        Shell.config = ({mode: "light", panelLayout: "split"}); Shell.configRevision++
+        Shell.config = ({mode: "light"}); Shell.configRevision++
         const component = Qt.createComponent("Settings.qml")
         compare(component.status, Component.Ready, component.errorString())
         settings = component.createObject(null)
@@ -38,10 +38,10 @@ TestCase {
         verify(Theme.Palette.Background.Default.Primary !== light)
     }
     function test_pendingWritesAndReset() {
-        settings.setKey("barHeight", 42, false)
+        settings.setKey("clockSize", 18, false)
         settings.setKey("dockIcon", 48, false)
         settings.page = 2
-        compare(Shell.config.barHeight, 42)
+        compare(Shell.config.clockSize, 18)
         compare(Shell.config.dockIcon, 48)
         settings.setKey("dockHeight", 64, false)
         settings.close()
@@ -67,23 +67,6 @@ TestCase {
         tryVerify(() => Shell.config.tintAlpha > 0.2)
         Shell.saveConfigKey("tintAlpha", 0.1)
         tryCompare(slider, "value", 0.1)
-    }
-    function test_switchAndFocus() {
-        settings.openIt(1)
-        const toggle = find(o => o.checked !== undefined && o.indicatorWidth !== undefined)
-        verify(toggle)
-        toggle.forceActiveFocus()
-        const previous = toggle.checked
-        keyClick(Qt.Key_Space)
-        compare(Shell.config.nativeTray, !previous)
-        toggle.forceActiveFocus(Qt.TabFocusReason)
-        keyClick(Qt.Key_Tab)
-        verify(settings.activeFocusItem !== toggle)
-        keyClick(Qt.Key_Backtab)
-        compare(settings.activeFocusItem, toggle)
-        wait(50) // Let the focus-driven scroll and layout reach the rendered frame.
-        mouseClick(toggle, toggle.width - 8, toggle.height / 2)
-        compare(Shell.config.nativeTray, previous)
     }
     function test_weatherAndWallpaper() {
         settings.openIt(1)

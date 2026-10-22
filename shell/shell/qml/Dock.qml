@@ -62,7 +62,7 @@ Surface {
     // the icons still read over whatever is behind them (config dockTintAlphaTouched)
     readonly property bool touched: covered && (!Config.dockDodge || dodgeExempt)
     // the look for the dock's state (#7): touched / maximised / full-screen have their own opacity and blur (Config.lookFor)
-    readonly property var look: Config.lookFor("dock", touched && lookState === "normal" ? "touched" : lookState)
+    readonly property var look: Config.lookFor(touched && lookState === "normal" ? "touched" : lookState)
     property real tintA: look.opacity < 0 ? Config.dockTintAlpha : look.opacity
     Behavior on tintA { NumberAnimation { duration: Config.slow } }
     // a maximised window on this screen and desktop: the "maximized" state of both surfaces (the bar reads it through ScreenSet)

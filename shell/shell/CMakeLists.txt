@@ -50,7 +50,6 @@ qt_add_qml_module(sirca-shell
         qml/Config.qml
         qml/Surface.qml
         qml/ScreenSet.qml
-        qml/TopBar.qml
         qml/Dock.qml
         qml/UnifiedPanel.qml
         qml/SberMenu.qml

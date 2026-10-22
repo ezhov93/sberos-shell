@@ -1,6 +1,4 @@
-// Edit mode: a scene of its own, like Plasma's. The desktop dims, the bar and the dock stay live (they show their own
-// edit overlays: widget chips, width handles, unpin badges) and two floating strips carry every option there is, in
-// tabs. All of it writes straight to the config, which the shell re-reads at once: what you change is what you see.
+// Edit mode: a scene of its own, like Plasma's. The desktop dims while the panel stays live, with a floating strip of options.
 import QtQuick
 import SircaShell
 import "Glass"
@@ -13,7 +11,6 @@ Window {
     width: Screen.width; height: Screen.height
     signal done()
     signal moreSettings()
-    property rect barHole: Qt.rect(0, 0, 0, 0)          // where the bar and the dock are (screen coordinates): left clickable
     property rect dockHole: Qt.rect(0, 0, 0, 0)
     property bool setupDone: false
     property real show: 0
@@ -24,9 +21,9 @@ Window {
     function close_() { visible = false; show = 0 }
     Timer { id: regions; interval: 30; onTriggered: es.pushRegions() }
     function pushRegions() { if (!visible) return
-        const p = []; for (const it of [barStrip, dockStrip, pill, screensStrip]) if (it.visible) p.push({ x: it.x, y: it.y, w: it.width, h: it.height, r: it.radius })
-        Shell.setSceneRegions(es, p, [ { x: barHole.x, y: barHole.y, w: barHole.width, h: barHole.height }, { x: dockHole.x, y: dockHole.y, w: dockHole.width, h: dockHole.height } ]); es.requestUpdate() }
-    onBarHoleChanged: regions.restart(); onDockHoleChanged: regions.restart()
+        const p = []; for (const it of [dockStrip, pill, screensStrip]) if (it.visible) p.push({ x: it.x, y: it.y, w: it.width, h: it.height, r: it.radius })
+        Shell.setSceneRegions(es, p, [ { x: dockHole.x, y: dockHole.y, w: dockHole.width, h: dockHole.height } ]); es.requestUpdate() }
+    onDockHoleChanged: regions.restart()
 
     // ---- writing: sliders write while they move, a little throttled (every write re-evaluates the whole shell)
     property var pending: ({})
@@ -34,57 +31,13 @@ Window {
     function put(key, value, now) { const p = Object.assign({}, pending); p[key] = value; pending = p; if (now) { flush.stop(); flush.triggered() } else if (!flush.running) flush.start() }
 
     // ---- every option, as data. t: num | bool | choice
-    readonly property var barTabs: [
-        { name: "Size", items: [
-            { k: "barWidthMode", t: "choice", label: "Width", options: [["auto", "Scaled"], ["fill", "Fill screen"], ["fit", "Fit content"], ["custom", "Custom"]] },
-            { k: "barWidth", t: "num", label: "Custom width", from: 480, to: Screen.width, step: 2, unit: " px", when: "barWidthMode=custom" },
-            { k: "barFillMargin", t: "num", label: "Side margin", from: 0, to: 120, step: 1, unit: " px", when: "barWidthMode=fill" },
-            { k: "barHeight", t: "num", label: "Height", from: 28, to: 56, step: 1, unit: " px" },
-            { k: "barGap", t: "num", label: "Gap to the edge", from: 0, to: 40, step: 1, unit: " px" },
-            { k: "barPad", t: "num", label: "End padding", from: 8, to: 60, step: 1, unit: " px" },
-            { k: "barSpacing", t: "num", label: "Widget spacing", from: 6, to: 40, step: 1, unit: " px" } ] },
-        { name: "Glass", items: [
-            { k: "barBlur", t: "bool", label: "Blur behind" },
-            { k: "barTintAlpha", t: "num", label: "Tint", from: 0, to: 0.95, step: 0.01, pct: true },
-            { k: "barRimAlpha", t: "num", label: "Edge line", from: 0, to: 0.5, step: 0.01, pct: true },
-            { k: "barSheen", t: "num", label: "Top sheen", from: 0, to: 0.3, step: 0.005, pct: true },
-            { k: "barShadow", t: "num", label: "Shadow", from: 0, to: 1, step: 0.01, pct: true },
-            { k: "barHazeStrength", t: "num", label: "Colour haze", from: 0, to: 1, step: 0.01, pct: true },
-            { k: "cornerRadius", t: "num", label: "Popup corners", from: 6, to: 32, step: 1, unit: " px" } ] },
-        { name: "Widgets", items: [
-            { k: "barHoverPills", t: "bool", label: "Hover pills" },
-            { k: "barIconScale", t: "num", label: "Icon size", from: 0.8, to: 1.5, step: 0.05, mult: true },
-            { k: "titleIcon", t: "bool", label: "Title: app icon" },
-            { k: "titleMaxWidth", t: "num", label: "Title: max width", from: 120, to: 900, step: 10, unit: " px" },
-            { k: "levelMeter", t: "bool", label: "Now playing: live meter" } ] },
-        { name: "Clock", items: [
+    readonly property var clockTab: ({ name: "Clock", items: [
             { k: "clock24h", t: "bool", label: "24 hour" },
             { k: "clockSeconds", t: "bool", label: "Seconds" },
             { k: "clockDate", t: "bool", label: "Date in the clock" },
             { k: "clockBold", t: "bool", label: "Bold" },
             { k: "clockSize", t: "num", label: "Size", from: 11, to: 24, step: 1, unit: " px" },
-            { k: "dateFormat", t: "choice", label: "Date format", options: [["ddd d MMM", "Sat 19 Sep"], ["d MMMM", "19 September"], ["dd.MM.yyyy", "19.09.2026"], ["yyyy-MM-dd", "2026-09-19"], ["M/d", "9/19"]] } ] },
-        { name: "Behaviour", items: [
-            { k: "barVisibility", t: "choice", label: "Windows", options: [["always", "Never touch it"], ["dodge", "Hide under them"], ["below", "Go below it"]] },
-            { k: "quietWhenBusy", t: "bool", label: "Quiet during games" } ] },
-        // #7: the bar's look per state, like Plasma's adaptive panel but every value is yours
-        { name: "Touched", items: [
-            { k: "barTouchedOpacity", t: "num", label: "Opacity when a window touches it", from: 0.1, to: 1, step: 0.01, pct: true },
-            { k: "barTouchedBlur", t: "bool", label: "Blur" },
-            { k: "barTouchedWidth", t: "choice", label: "Width", options: [["keep", "Keep"], ["fill", "Full width"]] },
-            { k: "barTouchedCorners", t: "choice", label: "Corners", options: [["round", "Round"], ["square", "Square"]] } ] },
-        { name: "Maximised", items: [
-            { k: "barMaximizedMode", t: "choice", label: "A maximised window on this screen", options: [["touched", "Same as touched"], ["custom", "Its own look"]] },
-            { k: "barMaximizedOpacity", t: "num", label: "Opacity", from: 0.1, to: 1, step: 0.01, pct: true, when: "barMaximizedMode=custom" },
-            { k: "barMaximizedBlur", t: "bool", label: "Blur", when: "barMaximizedMode=custom" },
-            { k: "barMaximizedWidth", t: "choice", label: "Width", options: [["keep", "Keep"], ["fill", "Full width"]], when: "barMaximizedMode=custom" },
-            { k: "barMaximizedCorners", t: "choice", label: "Corners", options: [["round", "Round"], ["square", "Square"]], when: "barMaximizedMode=custom" } ] },
-        { name: "Full-screen", items: [
-            { k: "barFullscreenMode", t: "choice", label: "A full-screen window", options: [["hide", "Hide the bar"], ["keep", "Keep it on top"]] },
-            { k: "barFullscreenOpacity", t: "num", label: "Opacity", from: 0.1, to: 1, step: 0.01, pct: true, when: "barFullscreenMode=keep" },
-            { k: "barFullscreenBlur", t: "bool", label: "Blur", when: "barFullscreenMode=keep" },
-            { k: "barFullscreenWidth", t: "choice", label: "Width", options: [["keep", "Keep"], ["fill", "Full width"]], when: "barFullscreenMode=keep" },
-            { k: "barFullscreenCorners", t: "choice", label: "Corners", options: [["round", "Round"], ["square", "Square"]], when: "barFullscreenMode=keep" } ] } ]
+            { k: "dateFormat", t: "choice", label: "Date format", options: [["ddd d MMM", "Sat 19 Sep"], ["d MMMM", "19 September"], ["dd.MM.yyyy", "19.09.2026"], ["yyyy-MM-dd", "2026-09-19"], ["M/d", "9/19"]] } ] })
     readonly property var dockTabs: [
         { name: "Size", items: [
             { k: "dockWidthMode", t: "choice", label: "Width", options: [["fit", "Fit icons"], ["fill", "Fill screen"]] },
@@ -150,7 +103,7 @@ Window {
                     Text { id: st; anchors.centerIn: parent; text: seg.modelData[1]; color: "white"; font.pixelSize: 11; font.weight: seg.on ? Font.DemiBold : Font.Normal }
                     HoverHandler { id: sh; cursorShape: Qt.PointingHandCursor } TapHandler { onTapped: es.put(op.modelData.k, seg.modelData[0], true) } } } } }
 
-    // ---- a strip: title, tabs, the tab's options, and (bar) the shelf of widgets that are not placed
+    // ---- a strip: title, tabs and the tab's options
     component Strip: Rectangle { id: strip
         property string title; property string hint; property var tabs: []; property int tab: 0; property var shelf: []
         signal shelfTapped(string name)
@@ -183,17 +136,11 @@ Window {
     Item { id: keys; anchors.fill: parent; focus: true; Keys.onPressed: e => { if (e.key === Qt.Key_Escape) { es.done(); e.accepted = true } }
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons } }
 
-    readonly property var unplaced: { const all = Object.keys(Config.barWidgetNames); return all.filter(n => Config.barLeft.indexOf(n) < 0 && Config.barCenter.indexOf(n) < 0 && Config.barRight.indexOf(n) < 0) }
-    Strip { id: barStrip; visible: !Config.unifiedPanel; anchors.horizontalCenter: parent.horizontalCenter; y: es.barHole.y + es.barHole.height + 26 - (1 - es.show) * 14
-        title: "Top bar"; hint: "Drag a widget to move it  ·  × takes it off  ·  drag the ends to resize"; tabs: es.barTabs; shelf: es.unplaced
-        onShelfTapped: name => { const left = ["desktop", "workspaces", "tray", "title"].indexOf(name) >= 0, centre = ["clock", "date"].indexOf(name) >= 0
-            const key = left ? "barLeft" : centre ? "barCenter" : "barRight"; const l = Config[key].slice(); if (left || centre) l.push(name); else l.unshift(name); es.put(key, l, true) } }
-    readonly property var panelTabs: Config.unifiedPanel ? es.dockTabs.concat(es.barTabs.filter(t => t.name === "Clock")) : es.dockTabs
+    readonly property var panelTabs: es.dockTabs.concat([es.clockTab])
     Strip { id: dockStrip; anchors.horizontalCenter: parent.horizontalCenter; y: es.dockHole.y - height - 26 + (1 - es.show) * 14
-        title: Config.unifiedPanel ? "Panel" : "Dock"; hint: "Drag icons to reorder  ·  × unpins  ·  right-click an app to pin it"; tabs: es.panelTabs }
+        title: "Panel"; hint: "Drag icons to reorder  ·  × unpins  ·  right-click an app to pin it"; tabs: es.panelTabs }
 
-    // ---- Screens: which screen shows what. Only with more than one screen. The primary screen (Plasma's, or the one made
-    // primary here) has the bar and the dock unless switched off; the others start with the wallpaper only.
+    // ---- Screens: which screens show the panel. Only with more than one screen.
     Rectangle { id: screensStrip; visible: Qt.application.screens.length > 1; anchors.horizontalCenter: parent.horizontalCenter
         y: pill.y - height - 14; radius: 26                                  // just above the pill, between the two strips
         width: Math.min(es.width - 80, 1180); height: sbody.y + sbody.height + 18
@@ -201,7 +148,7 @@ Window {
         onHeightChanged: regions.restart(); onYChanged: regions.restart()
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
         Text { x: 26; y: 17; text: "Screens"; color: "white"; font.pixelSize: 15; font.weight: Font.DemiBold }
-        Text { x: 26; y: 39; text: Config.unifiedPanel ? "Choose screens for the panel. Popups and shortcuts use the primary screen." : "Each screen shows its wallpaper. Choose which ones also get the bar and the dock, and which one is the primary (popups and shortcuts open there)."; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 11 }
+        Text { x: 26; y: 39; text: "Choose screens for the panel. Popups and shortcuts use the primary screen."; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 11 }
         Column { id: sbody; x: 26; y: 66; width: parent.width - 52; spacing: 8
             Repeater { model: Qt.application.screens
                 Row { id: sr; required property var modelData; spacing: 18; height: 32
@@ -211,23 +158,19 @@ Window {
                     function setChoice(key, on) { const all = Object.assign({}, Config.get("screens", {}) || {}); const mine = Object.assign({}, all[sname] || {}); mine[key] = on; all[sname] = mine; Shell.saveConfigKey("screens", all) }
                     Text { width: 300; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; color: "white"; font.pixelSize: 13
                         text: sr.sname + "  ·  " + sr.modelData.width + " × " + sr.modelData.height + (sr.isPrimary ? "  ·  primary" : "") }
-                    Row { spacing: 8; anchors.verticalCenter: parent.verticalCenter; visible: !Config.unifiedPanel
-                        Text { text: "Bar"; color: Qt.rgba(1, 1, 1, 0.75); font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
-                        GlassSwitch { checked: sr.ch.bar !== undefined ? !!sr.ch.bar : sr.isPrimary; onToggled: on => sr.setChoice("bar", on) } }
                     Row { spacing: 8; anchors.verticalCenter: parent.verticalCenter
-                        Text { text: Config.unifiedPanel ? "Panel" : "Dock"; color: Qt.rgba(1, 1, 1, 0.75); font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
-                        GlassSwitch { checked: Config.unifiedPanel ? (sr.ch.panel !== undefined ? !!sr.ch.panel : ((sr.ch.bar !== undefined ? !!sr.ch.bar : sr.isPrimary) || (sr.ch.dock !== undefined ? !!sr.ch.dock : sr.isPrimary))) : (sr.ch.dock !== undefined ? !!sr.ch.dock : sr.isPrimary); onToggled: on => sr.setChoice(Config.unifiedPanel ? "panel" : "dock", on) } }
+                        Text { text: "Panel"; color: Qt.rgba(1, 1, 1, 0.75); font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                        GlassSwitch { checked: sr.ch.panel !== undefined ? !!sr.ch.panel : ((sr.ch.bar !== undefined ? !!sr.ch.bar : sr.isPrimary) || (sr.ch.dock !== undefined ? !!sr.ch.dock : sr.isPrimary)); onToggled: on => sr.setChoice("panel", on) } }
                     PillBtn { visible: !sr.isPrimary; label: "Make primary"; onTapped: Shell.saveConfigKey("primaryScreen", sr.sname) } } } } }
 
     Rectangle { id: pill; anchors.horizontalCenter: parent.horizontalCenter; radius: height / 2
-        y: Math.round((barStrip.y + barStrip.height + dockStrip.y - height) / 2) + (screensStrip.visible ? Math.round((screensStrip.height + 14) / 2) : 0)
+        y: dockStrip.y - height - 14 - (screensStrip.visible ? Math.round((screensStrip.height + 14) / 2) : 0)
         width: pr.implicitWidth + 44; height: 56; color: Qt.rgba(0.07, 0.08, 0.11, 0.55); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.20); opacity: es.show
         onYChanged: regions.restart(); onWidthChanged: regions.restart()
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
         Row { id: pr; anchors.centerIn: parent; spacing: 12
             Text { text: "Editing the desktop"; color: "white"; font.pixelSize: 14; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter; rightPadding: 8 }
-            PillBtn { visible: !Config.unifiedPanel; label: "Reset bar"; onTapped: Shell.removeConfigKeys(es.keysOf(es.barTabs, ["barLeft", "barCenter", "barRight"])) }
-            PillBtn { label: Config.unifiedPanel ? "Reset panel" : "Reset dock"; onTapped: Shell.removeConfigKeys(es.keysOf(es.panelTabs, [])) }
+            PillBtn { label: "Reset panel"; onTapped: Shell.removeConfigKeys(es.keysOf(es.panelTabs, [])) }
             PillBtn { label: "More settings…"; onTapped: es.moreSettings() }
             PillBtn { label: "Done"; primary: true; onTapped: es.done() } } }
 }

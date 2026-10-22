@@ -370,12 +370,40 @@ Dock {
                 triggeredOnStart: true
                 onTriggered: clockButton.now = new Date()
             }
-            text: now.toLocaleDateString(Qt.locale(), "ddd, d MMM").replace(/^./, day => day.toLocaleUpperCase()) + " " + now.toLocaleTimeString(Qt.locale(), "H:mm")
+            text: now.toLocaleDateString(Qt.locale(), "ddd, d MMM").replace(/^./, day => day.toLocaleUpperCase()) + " · " + now.toLocaleTimeString(Qt.locale(), "HH:mm")
             font: Qt.font({
                 family: Theme.Fonts.BodySB.family,
-                pixelSize: Config.clockSize,
+                pixelSize: Math.min(Config.clockSize, 13),
                 bold: Config.clockBold
             })
+            contentItem: Item {
+                implicitWidth: clockLabel.implicitWidth + 26
+                implicitHeight: clockLabel.implicitHeight
+                Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 8
+                    Kirigami.Icon {
+                        width: 18
+                        height: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "clock"
+                        isMask: true
+                        color: Theme.Palette.Text.Default.Primary
+                    }
+                    Sber.Label {
+                        id: clockLabel
+                        width: Math.max(0, parent.width - 26)
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: clockButton.text
+                        color: Theme.Palette.Text.Default.Primary
+                        font: clockButton.font
+                        elide: Text.ElideRight
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+            }
             description: qsTr("Calendar")
             anchors.verticalCenter: parent.verticalCenter
             onClicked: panel.openAt("clock", this)

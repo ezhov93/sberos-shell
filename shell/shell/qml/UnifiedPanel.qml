@@ -265,12 +265,6 @@ Dock {
                     panel.toggle("media");
                 }
             }
-            WeatherWidget {
-                anchors.verticalCenter: parent.verticalCenter
-                allowed: panel.placed("weather")
-                onClicked: panel.openAt("clock", this)
-                onSetupRequested: Shell.openSettingsPage(1)
-            }
             Repeater {
                 model: panel.placedWidgets.filter(name => name.indexOf("tile:") === 0)
                 BarTile {

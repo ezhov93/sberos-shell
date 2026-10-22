@@ -40,7 +40,7 @@ foreach(module Core Theme Controls)
 endforeach()
 
 set_source_files_properties(qml/Config.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
-qt_add_executable(sirca-shell src/main.cpp src/shell.cpp src/shell.h src/shellcorona.cpp src/shellcorona.h src/applethost.cpp src/applethost.h src/appsmodel.cpp src/appsmodel.h src/trayhost.cpp src/trayhost.h src/osdservice.cpp src/osdservice.h src/clipboardmodel.cpp src/clipboardmodel.h src/screenshot.cpp src/screenshot.h src/recorderprocess.cpp src/recorderprocess.h src/powerinfo.cpp src/powerinfo.h src/keyboardinfo.cpp src/keyboardinfo.h src/privacymonitor.cpp src/privacymonitor.h src/calendarmodel.cpp src/calendarmodel.h src/weather.cpp src/weather.h src/removable.cpp src/removable.h src/lyrics.cpp src/lyrics.h src/spectrum.cpp src/spectrum.h src/shortcutsmodel.cpp src/shortcutsmodel.h src/emojimodel.cpp src/emojimodel.h src/sysmon.cpp src/sysmon.h src/palette.cpp src/palette.h src/userwidgets.cpp src/userwidgets.h src/kwinsnap.cpp src/kwinsnap.h)
+qt_add_executable(sirca-shell src/main.cpp src/shell.cpp src/shell.h src/shellcorona.cpp src/shellcorona.h src/applethost.cpp src/applethost.h src/appsmodel.cpp src/appsmodel.h src/trayhost.cpp src/trayhost.h src/osdservice.cpp src/osdservice.h src/clipboardmodel.cpp src/clipboardmodel.h src/screenshot.cpp src/screenshot.h src/recorderprocess.cpp src/recorderprocess.h src/powerinfo.cpp src/powerinfo.h src/keyboardinfo.cpp src/keyboardinfo.h src/privacymonitor.cpp src/privacymonitor.h src/calendarmodel.cpp src/calendarmodel.h src/removable.cpp src/removable.h src/lyrics.cpp src/lyrics.h src/spectrum.cpp src/spectrum.h src/shortcutsmodel.cpp src/shortcutsmodel.h src/emojimodel.cpp src/emojimodel.h src/sysmon.cpp src/sysmon.h src/palette.cpp src/palette.h src/userwidgets.cpp src/userwidgets.h src/kwinsnap.cpp src/kwinsnap.h)
 qt_add_qml_module(sirca-shell
     URI SircaShell
     VERSION 1.0
@@ -76,7 +76,6 @@ qt_add_qml_module(sirca-shell
         qml/Tray.qml
         qml/TrayMenu.qml
         qml/CalendarPanel.qml
-        qml/WeatherWidget.qml
         qml/RemovableMedia.qml
         qml/MediaSpectrum.qml
         qml/MeterPatch.qml

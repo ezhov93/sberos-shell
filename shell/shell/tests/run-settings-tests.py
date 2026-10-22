@@ -20,11 +20,11 @@ with tempfile.TemporaryDirectory(prefix='sber-settings-') as temporary:
     (work / 'config').mkdir()
     module = work / 'SircaShell'
     module.mkdir()
-    for name in ['Shell.qml', 'Weather.qml']:
+    for name in ['Shell.qml']:
         shutil.copy(ROOT / 'tests/settings' / name, module / name)
     shutil.copy(ROOT / 'qml/Config.qml', module / 'Config.qml')
     (module / 'UserWidgets.qml').write_text('pragma Singleton\nimport QtQuick\nQtObject { property var names: []; function label(name) { return name } }\n')
-    (module / 'qmldir').write_text('module SircaShell\nsingleton Shell 1.0 Shell.qml\nsingleton Config 1.0 Config.qml\nsingleton Weather 1.0 Weather.qml\nsingleton UserWidgets 1.0 UserWidgets.qml\n')
+    (module / 'qmldir').write_text('module SircaShell\nsingleton Shell 1.0 Shell.qml\nsingleton Config 1.0 Config.qml\nsingleton UserWidgets 1.0 UserWidgets.qml\n')
     shutil.copy(args.baseline or ROOT / 'qml/Settings.qml', work / 'Settings.qml')
     shutil.copy(ROOT / 'tests/settings/wallpaper.svg', work / 'wallpaper.svg')
     if args.baseline:

@@ -50,6 +50,14 @@ TestCase {
         verify(Shell.config.dockIcon === undefined)
         compare(Shell.config.dockHeight, 64)
     }
+    function test_legacyWeatherWidgetsAreIgnored() {
+        Shell.config = ({mode: "light", barLeft: ["weather", "desktop"],
+                        barCenter: ["clock", "weather"], barRight: ["weather", "media"]})
+        Shell.configRevision++
+        compare(Config.barLeft.join(","), "desktop")
+        compare(Config.barCenter.join(","), "clock")
+        compare(Config.barRight.join(","), "media")
+    }
     function test_sliderPointerKeyboardAndExternalUpdate() {
         settings.openIt(2)
         wait(100)
@@ -69,19 +77,7 @@ TestCase {
         Shell.saveConfigKey("dockIcon", 44)
         tryCompare(slider, "value", 44)
     }
-    function test_weatherAndWallpaper() {
-        settings.openIt(1)
-        const field = find(o => o.placeholderText === "Town or city")
-        verify(field)
-        field.text = "Moscow"
-        field.accepted()
-        const result = find(o => o.text === "Moscow, Test · RU")
-        verify(result)
-        result.clicked()
-        compare(Shell.config.weatherLocation.name, "Moscow")
-        compare(Shell.config.weatherLocation.lat, 55.75)
-        compare(Shell.config.weather, true)
-        compare(field.text, "")
+    function test_wallpaper() {
         const wallpaper = Qt.resolvedUrl("wallpaper.svg").toString().replace("file://", "")
         Shell.wallpapers = [wallpaper]
         settings.openIt(4)

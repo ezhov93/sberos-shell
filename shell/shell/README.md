@@ -176,7 +176,7 @@ empty file is the default look. A few keys:
 | `trayHidden` | list of tray item ids or titles to keep out of the bar, e.g. `["polychromatic-tray-applet"]` |
 | `recordSound` `levelMeter` `quietWhenBusy` `showFps` | behaviour switches |
 | `dockDodgeMode` `dockTintAlphaTouched` | which windows make the dock leave: `all`, `active` (the focused one), `maximized`; the denser tint (0.85) while a window lies over a dock that stays |
-| `weather` `weatherLocation` `weatherUnits` | off by default. On, the clock popup gets a weather card and the bar a `weather` widget (Open-Meteo, no key; one request every 30 min while on, cached in `~/.cache/sirca-shell/weather.json`). `weatherLocation`: `{"lat": 41.0, "lon": 29.0, "name": "Istanbul"}`; without it GeoClue is asked once. Units `c` or `f` |
+| Legacy `weather`, `weatherLocation`, `weatherUnits` keys | Ignored. Legacy `weather` entries in `barLeft`, `barCenter` and `barRight` are omitted when the panel layout is read. |
 | `disks` (a bar widget) | removable drives: a lobe with every USB stick / card / external disc, Open (mounts first) and Eject / Unmount, from UDisks2 over D-Bus |
 | `levelMeterOverlay` | `true` draws the four level bars in a tiny window of their own over the bar, so their changes (up to 25 a second) do not repaint the whole bar surface. Off by default: on a discrete GPU it makes no measurable difference; try it on a weak integrated one |
 | `selfTestNotify` | `false` keeps the start-up self-test from notifying when something is missing (it always writes one line to the journal) |

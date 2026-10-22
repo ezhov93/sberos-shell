@@ -73,30 +73,6 @@ Item {
                         Text { anchors.verticalCenter: parent.verticalCenter; color: Config.inkDim; font.pixelSize: 12; font.features: { "tnum": 1 }; text: cal.nextEvent ? cal.whenOf(cal.nextEvent) : "" } } } } }
         Rectangle { width: parent.width - 12; x: 6; height: 1; color: Config.fg(0.08) }
 
-        // ---- weather (opt-in, Open-Meteo through the Weather singleton): now, today's range, the next six hours. Without a
-        // location the card only says so; with weather off it is not there at all.
-        Connections { target: Config; function onUserChanged() { wcard.configure() } }
-        Item { id: wcard; width: parent.width; visible: Weather.enabled; height: visible ? (Weather.ready ? 108 : 30) : 0
-            function configure() { const c = Object.assign({}, Config.user || {}); c.weather = Config.weatherOn; Weather.configure(c) }   // placing the bar widget is the opt-in too
-            Component.onCompleted: configure()
-            Text { visible: !Weather.ready; x: 8; height: 30; verticalAlignment: Text.AlignVCenter; color: Config.inkDim; font.pixelSize: 12; elide: Text.ElideRight; width: parent.width - 16
-                text: Weather.status === "no-location" ? "Weather: no location yet — Sirca Settings › Behaviour › Weather" : Weather.status === "error" ? "Weather: " + Weather.error : "Weather: fetching…" }
-            Item { visible: Weather.ready; anchors.fill: parent
-                Kirigami.Icon { id: wIcon; x: 8; y: 4; width: 44; height: 44; source: Weather.iconFor(Weather.code, Weather.isDay); roundToIconSize: false }
-                Text { id: wTemp; anchors.left: wIcon.right; anchors.leftMargin: 10; y: 0; color: Config.ink; font.pixelSize: 34; font.weight: Font.Light; font.letterSpacing: -1; font.features: { "tnum": 1 }; text: Math.round(Weather.temperature) + "°" }
-                Column { anchors.left: wTemp.right; anchors.leftMargin: 10; y: 8; spacing: 1
-                    Text { color: Config.ink; font.pixelSize: 13; font.weight: Font.Medium; text: Weather.describe(Weather.code) }
-                    Text { color: Config.inkDim; font.pixelSize: 11; font.features: { "tnum": 1 }; text: "H " + Math.round(Weather.todayMax) + "°  L " + Math.round(Weather.todayMin) + "°" + (Math.abs(Weather.feelsLike - Weather.temperature) >= 2 ? "  ·  feels " + Math.round(Weather.feelsLike) + "°" : "") } }
-                Text { anchors.right: parent.right; anchors.rightMargin: 8; y: 8; color: Config.inkDim; font.pixelSize: 11; elide: Text.ElideRight; width: 90; horizontalAlignment: Text.AlignRight; text: Weather.locationName }
-                // the next six hours
-                Row { x: 8; y: 56; width: parent.width - 16; spacing: 0
-                    Repeater { model: Weather.hourly.slice(0, 6)
-                        Column { required property var modelData; width: parent.width / 6; spacing: 2
-                            Text { anchors.horizontalCenter: parent.horizontalCenter; color: Config.inkDim; font.pixelSize: 10; font.features: { "tnum": 1 }; text: modelData.time.toLocaleTimeString(cal.loc, "HH") + "h" }
-                            Kirigami.Icon { anchors.horizontalCenter: parent.horizontalCenter; width: 18; height: 18; source: Weather.iconFor(modelData.code, modelData.isDay); roundToIconSize: false }
-                            Text { anchors.horizontalCenter: parent.horizontalCenter; color: Config.ink; font.pixelSize: 11; font.features: { "tnum": 1 }; text: Math.round(modelData.temp) + "°" } } } } } }
-        Rectangle { visible: Weather.enabled; width: parent.width - 12; x: 6; height: visible ? 1 : 0; color: Config.fg(0.08) }
-
         // ---- header: title (zooms out), today, arrows ----
         Item { width: parent.width; height: 32
             Rectangle { id: titlePill; height: 30; width: title.implicitWidth + 22; radius: 15; anchors.verticalCenter: parent.verticalCenter

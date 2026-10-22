@@ -67,11 +67,13 @@ QtObject {
     readonly property int slow: 320
 
     // Legacy widget groups are reused by the unified panel's indicators area.
-    readonly property var barLeft: get("barLeft", ["desktop", "workspaces", "tray", "title"])
-    // Weather remains opt-in and can also be enabled by a configured panel indicator.
-    readonly property bool weatherOn: user && user.weather !== undefined ? user.weather === true : (barLeft.indexOf("weather") >= 0 || barCenter.indexOf("weather") >= 0 || barRight.indexOf("weather") >= 0)
-    readonly property var barCenter: get("barCenter", ["clock"])
-    readonly property var barRight: get("barRight", ["media", "bell", "gear"])
+    function widgetList(key, fallback) {
+        const configured = get(key, fallback)
+        return Array.isArray(configured) ? configured.filter(name => name !== "weather") : fallback
+    }
+    readonly property var barLeft: widgetList("barLeft", ["desktop", "workspaces", "tray", "title"])
+    readonly property var barCenter: widgetList("barCenter", ["clock"])
+    readonly property var barRight: widgetList("barRight", ["media", "bell", "gear"])
     readonly property int titleMaxWidth: get("titleMaxWidth", 420)
     readonly property bool titleIcon: get("titleIcon", true)
     readonly property bool clock24h: get("clock24h", false)

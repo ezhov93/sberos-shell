@@ -51,6 +51,8 @@ TestCase {
         compare(Shell.config.dockHeight, 64)
     }
     function test_sliderPointerKeyboardAndExternalUpdate() {
+        settings.openIt(2)
+        wait(100)
         const slider = find(o => o.objectName === "setting-dockIcon")
         verify(slider)
         const y = slider.height / 2

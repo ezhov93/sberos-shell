@@ -13,7 +13,7 @@ Dock {
     title: "SberOS — Panel"
     // Keep Oska centred while sizing its island from the usable panel width.
     readonly property real zoneGap: 8
-    readonly property real systemZoneWidth: 260
+    readonly property real systemZoneWidth: essential.implicitWidth + 16
     readonly property real oskaWidth: Math.min(dockW * 0.25,
         Math.max(0, dockW - 2 * systemZoneWidth - 4 * zoneGap))
     readonly property real indicatorsAvailableWidth:

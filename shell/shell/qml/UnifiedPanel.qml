@@ -364,13 +364,13 @@ Dock {
             width: panel.systemZoneWidth - 16 - Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S) - 6
             property date now: new Date()
             Timer {
-                interval: Config.clockSeconds ? 1000 : 10000
+                interval: 10000
                 running: panel.visible
                 repeat: true
                 triggeredOnStart: true
                 onTriggered: clockButton.now = new Date()
             }
-            text: (Config.clockDate && panel.screenW >= 1100 ? Qt.formatDate(now, Config.dateFormat) + "  " : "") + Qt.formatTime(now, (Config.clock24h ? "HH:mm" : "h:mm") + (Config.clockSeconds ? ":ss" : "") + (Config.clock24h ? "" : " AP"))
+            text: now.toLocaleDateString(Qt.locale(), "ddd, d MMM").replace(/^./, day => day.toLocaleUpperCase()) + " " + now.toLocaleTimeString(Qt.locale(), "H:mm")
             font: Qt.font({
                 family: Theme.Fonts.BodySB.family,
                 pixelSize: Config.clockSize,

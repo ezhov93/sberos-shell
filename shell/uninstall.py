@@ -18,17 +18,11 @@ DRY = False
 YES = False
 
 
-def command(args: list[str], *, capture: bool = False):
+def command(args: list[str]):
     try:
-        return subprocess.run(args, text=True, stdout=subprocess.PIPE if capture else None,
-                              stderr=subprocess.PIPE if capture else None)
+        return subprocess.run(args)
     except FileNotFoundError:
-        return subprocess.CompletedProcess(args, 127, "" if capture else None, "command not found" if capture else None)
-
-
-def output(args: list[str]) -> str:
-    result = command(args, capture=True)
-    return result.stdout.strip() if result.returncode == 0 and result.stdout else ""
+        return subprocess.CompletedProcess(args, 127)
 
 
 def ask(question: str) -> bool:
@@ -67,22 +61,6 @@ def icon_theme(theme: str) -> bool:
     return command(["kwriteconfig6", "--file", "kdeglobals", "--group", "Icons", "--key", "Theme", theme]).returncode == 0
 
 
-def restore_style() -> None:
-    saved = STATE / "widget-style.txt"
-    if saved.is_file():
-        previous = saved.read_text(encoding="utf-8").strip()
-        if DRY:
-            print(f"  [dry run] widget style back to {previous}")
-        else:
-            command(["kwriteconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "widgetStyle", previous])
-            (HOME / ".local/share/kstyle/themes/darkly.themerc").unlink(missing_ok=True)
-            notify = qdbus_command() + ["org.kde.KGlobalSettings", "/KGlobalSettings",
-                                        "org.kde.KGlobalSettings.notifyChange", "2", "0"]
-            command(notify)
-    run("back to the Darkly decoration", [str(ROOT / "desktop/tools/use_decoration.sh"), "darkly"])
-    run("restore the plugins (sudo)", ["sudo", str(ROOT / "desktop/tools/install_qt.sh"), "--undo"])
-
-
 def main() -> int:
     global DRY, YES
     parser = argparse.ArgumentParser(description="Remove installed Sirca Shell components")
@@ -119,12 +97,6 @@ def main() -> int:
         files = [line.strip() for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
         if files:
             run("delete the installed plugin files (sudo)", ["sudo", "rm", "-f", *files])
-
-    qt_plugin_dir = output(["qtpaths6", "--plugin-dir"]) or output(["qmake6", "-query", "QT_INSTALL_PLUGINS"])
-    glass_decorations = list(pathlib.Path(qt_plugin_dir, "org.kde.kdecoration3").glob("org.kde.glass*.so")) if qt_plugin_dir else []
-    if (ROOT / "desktop/tools/install_qt.sh").is_file() and ((STATE / "widget-style.txt").is_file() or glass_decorations):
-        if ask("Remove the glass Qt style and decoration (sudo; the stock Darkly comes back if there was one)?"):
-            restore_style()
 
     if ask("Revert the KDE colour scheme and GTK look to what you had before?"):
         run("revert the look", [str(ROOT / "desktop/tools/apply_all.sh"), "revert"])

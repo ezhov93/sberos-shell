@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""tokens.json -> KDE pieces: a colour scheme (Glass.colors) and the settings of the Darkly widget style + decoration.
-Interim step of roadmap item 2: Darkly is the closest existing style; a token-driven fork replaces it later.
+"""tokens.json -> KDE colour schemes (Glass.colors / GlassLight.colors).
 Writes to build/kde/. Nothing is installed here — see tools/apply_kde.sh."""
 import json, pathlib, re, sys
 root = pathlib.Path(__file__).resolve().parent.parent
 VARIANT = sys.argv[1] if len(sys.argv) > 1 else "dark"            # dark -> Glass.colors, light -> GlassLight.colors
 NAME = "Glass" if VARIANT == "dark" else "GlassLight"
 t = json.loads((root / "design" / "tokens.json").read_text()); d = t[VARIANT]; g = dict(t["glass"])
-if VARIANT == "light": g["tintApp"] = g.get("tintAppLight", g["tintApp"]); g["contentOpacity"] = g.get("contentOpacityLight", g.get("contentOpacity", 1.0))
+if VARIANT == "light": g["tintApp"] = g.get("tintAppLight", g["tintApp"])
 out = root / "build" / "kde"; out.mkdir(parents=True, exist_ok=True)
 def rgb(c):
     c = c.strip()
@@ -85,18 +84,4 @@ inactiveBlend={s(d['textDim'])}
 inactiveForeground={s(d['textDim'])}
 """
 (out / f"{NAME}.colors").write_text(colors)
-chrome = int(round(alpha(g["tintApp"]) * 100))
-# Darkly: decoration corner radius on Wayland = OtherCornerRadius * 2
-darkly = {
-  "Common": {"CornerRadius": t["radius"]["control"],
-             "ShadowStrength": t["decoration"].get("shadowStrengthLight" if VARIANT == "light" else "shadowStrength", 41),
-             "ShadowSize": t["decoration"].get("shadowSizeLight" if VARIANT == "light" else "shadowSize", "ShadowLarge")},
-  "Style": {"DolphinSidebarOpacity": chrome, "DolphinViewOpacity": int(round(g.get("contentOpacity", 1.0) * 100)), "GlassContentOpacity": int(round(g.get("contentOpacity", 1.0) * 100)), "TransparentDolphinView": "false", "ToolBarOpacity": chrome, "MenuBarOpacity": chrome,
-            "TabBarOpacity": chrome, "MenuOpacity": chrome, "SidePanelDrawFrame": "false", "ToolBarDrawSeparator": "false", "FancyMargins": "false"},
-  "Windeco": {"OtherCornerRadius": t["radius"]["window"] // 2, "TitleAlignment": "AlignCenter", "ButtonSize": "ButtonDefault", "DrawTitleBarSeparator": "false", "DrawBackgroundGradient": "false",
-              "GlassTitleBarHeight": t["spacing"]["titlebarHeight"], "GlassDotSize": t["decoration"]["buttonSize"], "GlassTitleBarOpacity": chrome, "GlassOutlineActive": t["decoration"].get("outlineActive", 96), "GlassOutlineInactive": t["decoration"].get("outlineInactive", 44),
-              "GlassOutlineWidthActive": int(round(t["decoration"].get("outlineWidthActive", 1.6) * 10)), "GlassOutlineWidthInactive": int(round(t["decoration"].get("outlineWidthInactive", 1.0) * 10)),
-              "GlassFocusGlow": str(bool(t["decoration"].get("focusGlow", False))).lower()},
-}
-(out / ("darkly.json" if VARIANT == "dark" else "darkly-light.json")).write_text(json.dumps(darkly, indent=2))
-print("wrote", out / f"{NAME}.colors", "and", out / "darkly.json", f"(chrome opacity {chrome} %)")
+print("wrote", out / f"{NAME}.colors")

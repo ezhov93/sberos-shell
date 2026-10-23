@@ -140,19 +140,6 @@ T="$ROOT/design/tokens.json"
 # 2. KDE colour scheme (Qt apps, decorations, and through the portal everything that asks "light or dark?")
 ( mkdir -p "$HOME/.local/share/color-schemes"; cmp -s "$ROOT/build/kde/$SCHEME.colors" "$HOME/.local/share/color-schemes/$SCHEME.colors" || cp "$ROOT/build/kde/$SCHEME.colors" "$HOME/.local/share/color-schemes/"
   plasma-apply-colorscheme "$SCHEME" >/dev/null 2>&1 || true ) &
-# 2b. how much tint the frosted app chrome carries differs per mode (light needs far less): only the opacity keys of the
-#     widget style + decoration, and the window shadow (light mode needs a stronger one), then tell running Qt apps and
-#     KWin to re-read them
-( J="$ROOT/build/kde/$([ "$want" = light ] && echo darkly-light.json || echo darkly.json)"
-  if [ -f "$J" ] && [ -f "$HOME/.config/darklyrc" ]; then
-    $PY - "$J" <<'P'
-import json,subprocess,sys
-for group,kv in json.load(open(sys.argv[1])).items():
-    for k,v in kv.items():
-        if k.endswith("Opacity") or k.startswith("Shadow"): subprocess.run(["kwriteconfig6","--file","darklyrc","--group",group,"--key",k,str(v)])
-P
-    for o in /DarklyStyle /DarklyDecoration; do dbus-send --session --type=signal "$o" org.kde.Darkly.Style.reparseConfiguration 2>/dev/null || true; done
-  fi ) &
 # 3. GTK
 ( if head -1 "$C/gtk-3.0/gtk.css" 2>/dev/null | grep -q glass-desktop; then     # only if our GTK look is the one applied
     cp "$ROOT/build/gtk/gtk-3.0$SUF.css" "$C/gtk-3.0/gtk.css"; cp "$ROOT/build/gtk/gtk-4.0$SUF.css" "$C/gtk-4.0/gtk.css"; cp "$ROOT/build/gtk/gtk-4.0$SUF.css" "$C/gtk-4.0/gtk-dark.css"; fi

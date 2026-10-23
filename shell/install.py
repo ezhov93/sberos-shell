@@ -210,8 +210,8 @@ def preflight() -> tuple[bool, int, bool]:
 
 def choose(preset: str) -> dict[str, bool] | None:
     head("3. What do you want?")
-    say(f"  {COL['B']}1) Shell only{COL['N']}            the bar, dock, launcher, search, notifications, clipboard, screenshots. No root.\n                            Surfaces use the shell's solid colours.\n  {COL['B']}2) Shell + the look{COL['N']}      1 + KDE colour scheme and GTK look + light/dark switch\n                            with colour themes and the bundled wallpapers + lock screen.\n  {COL['B']}3) The author's full setup{COL['N']}  2 + the Qt widget style and window decoration (sudo, replaces Darkly) + the author's\n                            bar and dock layout. The most invasive option; applies the sample layout.\n  {COL['B']}4) Let me pick{COL['N']}           choose each part yourself.")
-    selected = dict(shell=True, look=False, mode=False, lock=False, qt=False, setup=False)
+    say(f"  {COL['B']}1) Shell only{COL['N']}            the bar, dock, launcher, search, notifications, clipboard, screenshots. No root.\n                            Surfaces use the shell's solid colours.\n  {COL['B']}2) Shell + the look{COL['N']}      1 + KDE colour scheme and GTK look + light/dark switch\n                            with colour themes and the bundled wallpapers + lock screen.\n  {COL['B']}3) The author's full setup{COL['N']}  2 + the author's bar and dock layout. Applies the sample layout.\n  {COL['B']}4) Let me pick{COL['N']}           choose each part yourself.")
+    selected = dict(shell=True, look=False, mode=False, lock=False, setup=False)
     if preset:
         choices = {"shell": "1", "1": "1", "look": "2", "2": "2", "full": "3", "3": "3"}
         choice = choices.get(preset)
@@ -225,13 +225,12 @@ def choose(preset: str) -> dict[str, bool] | None:
     if choice in {"2", "3"}:
         selected.update(look=True, mode=True, lock=True)
     if choice == "3":
-        selected.update(qt=True, setup=True)
+        selected.update(setup=True)
     elif choice == "4":
         for key, prompt, default in (
             ("look", "  KDE colour scheme + GTK 3/4 look (no root, revertible)?", True),
             ("mode", "  Light/dark switch, colour themes and the bundled wallpapers (no root)?", True),
             ("lock", "  Lock screen in the same look (no root; active from the next login)?", True),
-            ("qt", "  Qt widget style + window decoration (sudo; replaces the Darkly style plugin if present)?", False),
             ("setup", "  The author's bar and dock layout (only look and layout keys; your pinned apps stay)?", False),
         ):
             selected[key] = ask(prompt, default)
@@ -339,49 +338,6 @@ def apply_mode(have_papirus: bool) -> bool:
     return True
 
 
-def install_qt() -> bool:
-    build = ROOT / "desktop/qt/darkly-fork/build"
-    if not run("configure the Qt style and decoration", ["cmake", "-S", str(ROOT / "desktop/qt/darkly-fork"),
-            "-B", str(build), "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_QT5=OFF"]):
-        return False
-    if not run("build the Qt style and decoration (several minutes)", ["cmake", "--build", str(build), "-j" + str(os.cpu_count() or 1)]):
-        return False
-    if not DRY:
-        stage = ROOT / "desktop/build"
-        stage.mkdir(parents=True, exist_ok=True)
-        plugins = list((build / "bin").glob("darkly6.so")) + list((build / "bin").glob("org.kde.glass*.so"))
-        if not plugins:
-            bad("no built Qt style or decoration plugins were found")
-            return False
-        for plugin in plugins:
-            shutil.copy2(plugin, stage / plugin.name)
-    else:
-        say(f"  {COL['C']}[dry run]{COL['N']} stage the built plugins")
-    say(f"  {COL['B']}sudo:{COL['N']} installing the style and decoration plugins (the stock Darkly plugin is kept as darkly6.so.orig-glass)")
-    if not run("install the Qt style and decoration (sudo)", ["sudo", str(ROOT / "desktop/tools/install_qt.sh")]):
-        return False
-    run("use the glass window decoration", [str(ROOT / "desktop/tools/use_decoration.sh"), "glass"])
-    style_file = STATE / "widget-style.txt"
-    current = output(["kreadconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "widgetStyle"])
-    if not DRY:
-        if not style_file.exists():
-            style_file.write_text((current or "breeze") + "\n", encoding="utf-8")
-        command(["kwriteconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "widgetStyle", "Darkly"])
-        target = HOME / ".local/share/kstyle/themes"
-        target.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / "desktop/qt/darkly-fork/kstyle/darkly.themerc", target / "darkly.themerc")
-        notify = qdbus_command()
-        notify += ["org.kde.KGlobalSettings", "/KGlobalSettings", "org.kde.KGlobalSettings.notifyChange", "2", "0"]
-        command(notify)
-    else:
-        say(f"  {COL['C']}[dry run]{COL['N']} select Darkly widget style")
-    return True
-
-
-def qdbus_command():
-    return [shutil.which("qdbus6") or shutil.which("qdbus-qt6") or "qdbus6"]
-
-
 def main() -> int:
     global DRY, YES, LOG
     parser = argparse.ArgumentParser(description="Guided per-user installer for Sirca Shell")
@@ -412,7 +368,7 @@ def main() -> int:
     say('  Build dependencies are listed in shell/README.md ("Build dependencies": Ubuntu, Fedora and Arch names); a failed build names what is missing.')
 
     head("2. What you should know before you say yes")
-    say("  • It replaces Plasma's panels while it is switched on. Your panel layout is saved first and restored exactly by sirca-shell-switch off.\n  • It is young software by one person, used daily on one Ubuntu 26.04 / Plasma 6.6 / NVIDIA machine. There is no warranty (GPL-3.0-or-later).\n  • It takes over global shortcuts while running and hands them back when switched off.\n  • The app themes change KDE and GTK settings. Each applier backs up what it touches and has a revert. The optional Qt style and decoration need sudo and replace Darkly when installed.\n  • Nothing is sent anywhere. No telemetry.")
+    say("  • It replaces Plasma's panels while it is switched on. Your panel layout is saved first and restored exactly by sirca-shell-switch off.\n  • It is young software by one person, used daily on one Ubuntu 26.04 / Plasma 6.6 / NVIDIA machine. There is no warranty (GPL-3.0-or-later).\n  • It takes over global shortcuts while running and hands them back when switched off.\n  • The app themes change KDE and GTK settings. Each applier backs up what it touches and has a revert.\n  • Nothing is sent anywhere. No telemetry.")
     if not ask("Understood. Continue?", True):
         say("Nothing was changed.")
         return 0
@@ -424,11 +380,8 @@ def main() -> int:
     say("  Works: bar, dock, launcher, search, quick settings, notifications, clipboard, screenshots, tile picker, window switcher, power menu, edit mode, light and dark inside the shell.")
     say("  Works: KDE and GTK apps in matching colours." if selected["look"] else "  Not: apps keep your current colours.")
     say("  Works: desktop-wide light/dark and seven colour themes." if selected["mode"] else "  Not: desktop-wide light/dark switch and colour themes.")
-    say("  Works: frosted Qt apps and glass title bars." if selected["qt"] else "  Not: frosted Qt apps and glass title bars.")
     say("  Not yet for anyone: X11, other compositors, vertical dock.")
     say("  Optional extras that stay manual: Spotify theme + mini player, Firefox accent, Ghostty styling (see desktop/README.md).")
-    if selected["qt"]:
-        say("  sudo will be asked for by the Qt style and decoration")
     if not DRY:
         STATE.mkdir(parents=True, exist_ok=True)
         (STATE / "root.txt").write_text(str(ROOT) + "\n", encoding="utf-8")
@@ -465,8 +418,6 @@ def main() -> int:
     if selected["lock"] and not run("lock screen (active from the next login)",
                                       [str(ROOT / "desktop/tools/install_lock.sh")]):
         failures.append("lock")
-    if selected["qt"] and not install_qt():
-        failures.append("qt")
     if selected["setup"] and not run("the author's bar and dock layout (your config is backed up first)",
                                      [str(HOME / ".local/bin/sirca-shell-setup"), "import", str(ROOT / "setups/author.json")]):
         failures.append("setup")

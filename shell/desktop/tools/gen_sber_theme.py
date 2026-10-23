@@ -214,20 +214,6 @@ def generate(resources, output):
         'schema': 1,
         'roles': ROLES,
         'modes': {},
-        'darklyStyle': {
-            'Common': {
-                'CornerRadius': lookup(tokens.sizes, 'BorderRadius.s'),
-            },
-            'Style': {
-                'MenuOpacity': 100,
-                'DolphinSidebarOpacity': 100,
-                'DolphinViewOpacity': 100,
-                'TransparentDolphinView': False,
-                'MenuBarOpacity': 100,
-                'ToolBarOpacity': 100,
-                'TabBarOpacity': 100,
-            },
-        },
     }
     for mode, name in [('Light', 'SberOSLight'), ('Dark', 'SberOSDark')]:
         p = palette(tokens, mode)

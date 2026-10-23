@@ -22,8 +22,7 @@ out the hard way.
   Plasma upgrade KWin will refuse to load it until you run `./install.sh` again. Until then everything still works, it just
   looks flat.
 - The app themes change your settings: KDE colour scheme, GTK 3 and 4 css, icon theme. Every step makes a backup and has a
-  revert. The Qt style and window decoration (optional, sudo) replace the Darkly style plugin if you have Darkly. The
-  original is kept next to it as `darkly6.so.orig-glass`.
+  revert.
 - Only Plasma on Wayland. No X11, no Hyprland, Sway or GNOME.
 - Several screens: every connected screen gets its own wallpaper and panel by default; edit mode can disable individual panels.
   Popups and shortcuts use the active or primary screen. I have tested two virtual screens and am still checking real hardware.
@@ -110,7 +109,7 @@ KWin effect is the part that costs GPU time, and it costs the same with or witho
 |---|---|
 | `shell/` | the shell itself (C++ and QML). Its README lists every feature, the settings, scripting and the build dependencies |
 | `kwin-effects/` | the glass KWin effect (blur, refraction, lit edge, shapes the shell describes to it) and Glass Key, which puts glass inside apps that paint opaque windows |
-| `desktop/` | the look for everything else: KDE colour scheme, GTK 3 and 4, Qt style and window decoration, `glass-mode` (light, dark, colour themes), the lock screen and the app extras |
+| `desktop/` | the look for everything else: KDE colour scheme, GTK 3 and 4, `glass-mode` (light, dark, colour themes), the lock screen and the app extras |
 | `wallpapers/` | the wallpapers I use: one picture in seven colours, dark and light (5120 × 1440) |
 | `setups/` | the colour themes, and my bar and dock layout as a file for `sirca-shell-setup import` |
 
@@ -120,7 +119,6 @@ Everything written for this project is GPL-3.0-or-later, see `LICENSE`. A lot of
 folder keeps their notices:
 
 - `kwin-effects/` is a fork of **kwin-effects-glass** by 4v3ngR, itself a fork of KWin's blur effect (KDE) by way of Better Blur; GPL-3.0.
-- `desktop/qt/darkly-fork/` is a fork of **Darkly** (itself a fork of Lightly / Breeze), GPL-2.0-or-later; see its `COPYING`.
 - `desktop/third_party/adw-gtk3/` is **adw-gtk3** by lassekongo83, LGPL-2.1.
 - `shell/qml/control/` derives from **Plasma Control Hub** by zayronxio; `shell/applets/` holds forks of KDE Plasma applets (their headers are kept).
 - Fonts: **Outfit** and **Inter**, SIL Open Font License.

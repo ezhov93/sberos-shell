@@ -21,7 +21,6 @@ every toolkit, plus a matching lock screen. KWin stays the window manager; nothi
 | `design/` | tokens, HTML mocks, the default wallpaper (`tools/make_default_wallpaper.py` draws it) | – | – |
 | `tools/gen_kde.py`, `apply_kde.sh` | KDE colour scheme **Glass** and settings | `tools/apply_kde.sh` | no |
 | `tools/gen_gtk.py`, `apply_gtk.sh` | GTK 4 / libadwaita stylesheet, GTK 3 on the bundled adw-gtk3, Flatpak overrides | `tools/apply_gtk.sh apply` (`revert`) | no |
-| `qt/darkly-fork/` | Qt widget style and the **Glass** window decoration (lit outline, rounded corners) | build, then `sudo tools/install_qt.sh` and `tools/use_decoration.sh glass` | yes |
 | `tools/mode.sh` | **light / dark for the whole desktop**: colour scheme `Glass` / `GlassLight`, GTK 3 / 4, the portal's colour-scheme (Firefox, Electron, Ghostty follow it), Papirus / Papirus-Dark, a wallpaper per mode, Sirca Shell's `mode` | link it as `glass-mode` on your PATH; `glass-mode light\|dark\|toggle`, `glass-mode wallpaper light FILE` | no |
 | `lock/onur.glasslock/` | lock screen | `tools/install_lock.sh` (`--undo`), then log out and in | no |
 | `plasma/osd/` | replaces Plasma's volume / brightness popup (Sirca Shell shows those in its clock pill) | see its README | no |
@@ -53,7 +52,6 @@ The lock screen is safe to try: if it fails to load, Plasma falls back to its ow
 
 GPL-3.0-or-later for everything written for this project, see `LICENSE`.
 
-- `qt/darkly-fork/` is a fork of **Darkly** (itself a fork of Lightly / Breeze), GPL-2.0-or-later; see its `COPYING`.
 - `third_party/adw-gtk3/` is **adw-gtk3** by lassekongo83, LGPL-2.1.
 - Fonts: **Outfit** and **Inter**, SIL Open Font License (`OFL.txt` next to the files).
 - The default wallpaper is drawn by `tools/make_default_wallpaper.py` and is part of this project.

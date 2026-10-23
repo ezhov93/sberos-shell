@@ -25,9 +25,8 @@ QtObject {
     // a right click on the desktop opens Plasma's menu. D-Bus remapWallpaper re-maps ours on top.
     property var _remap: Connections { target: Shell; function onRemapWallpaperRequested() { if (set.wallpaper) set.wallpaper.remapNow() } }
 
-    // One unified panel per selected screen. Old per-screen bar/dock choices still
-    // determine its default visibility until users replace them with `panel`.
-    readonly property bool wantPanel: choice.panel !== undefined ? !!choice.panel : wantBar || wantDock
+    // One unified panel per connected screen unless its config explicitly disables it.
+    readonly property bool wantPanel: choice.panel !== undefined ? !!choice.panel : true
     property var panel: null
     property var sberCatcher: SberMenuCatcher { host: set.host; panel: set.panel; targetScreen: set.screen }
     readonly property var _cPanel: Component { UnifiedPanel {

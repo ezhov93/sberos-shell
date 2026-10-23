@@ -24,8 +24,9 @@ and status areas scroll independently.
 
 The old `panelLayout` key is ignored. The panel uses `dock…` sizing/visibility/style
 options and fills the screen with `dockFillMargin` side margins.
-`screens.<output>.panel` enables it per screen; when absent, old `bar`/`dock`
-choices are combined. Existing configuration is not deleted. Hosted applet
+The panel is enabled on every connected screen by default;
+`screens.<output>.panel: false` disables it on a selected screen. Existing
+configuration is not deleted. Hosted applet
 fallbacks and the separate top-bar editor are no longer available.
 
 [ADR-0008](../../docs/adr/0008-unified-bottom-panel.md),

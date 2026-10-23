@@ -25,9 +25,8 @@ out the hard way.
   revert. The Qt style and window decoration (optional, sudo) replace the Darkly style plugin if you have Darkly. The
   original is kept next to it as `darkly6.so.orig-glass`.
 - Only Plasma on Wayland. No X11, no Hyprland, Sway or GNOME.
-- Several screens: every screen gets the wallpaper; the bar and the dock are on the primary screen unless you put them
-  elsewhere in edit mode (Screens). Popups and shortcuts open on the primary. I have only tested this with two virtual
-  screens, never on real hardware, so tell me what you see.
+- Several screens: every connected screen gets its own wallpaper and panel by default; edit mode can disable individual panels.
+  Popups and shortcuts use the active or primary screen. I have tested two virtual screens and am still checking real hardware.
 - I have never run it on AMD or Intel graphics. It should work. If it does not, I want to hear about it.
 - No telemetry. It sends nothing anywhere.
 - There is no warranty (GPL-3.0-or-later).

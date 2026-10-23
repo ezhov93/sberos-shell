@@ -33,13 +33,13 @@ out the hard way.
 - There is no warranty (GPL-3.0-or-later).
 
 The installer goes through all of this with you before it touches anything, checks your system and says what will not work
-on it, and lets you pick only the parts you want. `./install.sh --dry-run` prints every command and changes nothing.
+on it, and lets you pick only the parts you want. `./install.py --dry-run` prints every command and changes nothing.
 
 ### If something breaks
 
 Open an issue and tell me what you ran and what happened. I will go through it with you until it works or until we know why
 it cannot. I mean that: this has only ever run on my machine, so your problem is most likely a bug I have not seen yet, not
-something you did wrong. Your Plasma version, your GPU and the output of `./install.sh --dry-run` are the most useful
+something you did wrong. Your Plasma version, your GPU and the output of `./install.py --dry-run` are the most useful
 things to include. If you cannot log in properly or your panels are gone, run `sirca-shell-switch off` from a terminal
 first, then write to me.
 
@@ -72,7 +72,7 @@ does not constitute a production rollout or a migration from the GNOME panel.
 ## Install
 
 ```
-./install.sh
+./install.py
 ```
 
 You can take just the shell (no root needed), the shell plus the look, or my whole setup with wallpapers and app themes.
@@ -80,7 +80,7 @@ You can take just the shell (no root needed), the shell plus the look, or my who
 ```
 sirca-shell-switch on      # saves your Plasma panels and takes over
 sirca-shell-switch off     # your panels come back exactly as they were
-./uninstall.sh             # removes what was installed, part by part
+./uninstall.py             # removes what was installed, part by part
 ```
 
 Keep the source folder if you install the light/dark switch. `glass-mode` and the theme generators run from it.

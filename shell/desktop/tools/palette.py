@@ -5,7 +5,7 @@
     palette.py --json IMAGE     -> {accent, accentLight, hue, chroma, source, swatches: [{hex, population, chroma}, …]}
 
 The SAME algorithm lives in the shell (sirca-shell/src/palette.cpp): the shell shows the colour at once, this script
-derives it for everything else (Qt / GTK / Spotify / folders). Both must give the same answer, so every step below is
+derives it for everything else (Qt / GTK / folders). Both must give the same answer, so every step below is
 deterministic and integer where it can be (no k-means, no library resampling):
   1. box-average the picture down to <= 128 px on its long side (integer factor, remainder dropped; integer rounding)
   2. median cut to 16 boxes: split the box with the widest channel range (ties: the lower box index, then r,g,b) at

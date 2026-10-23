@@ -82,39 +82,7 @@ if t.get("accent"): o["accent"]=t["accent"]
 if t.get("light"): o["wallpaperLight"]=t["light"]
 if t.get("dark"): o["wallpaperDark"]=t["dark"]
 json.dump(o,open(p,"w"),indent=4); print("theme:",arg)
-# the terminal follows the colour theme: its accent entries (blue slot of the palette, its bright twin, the cursor) in both
-# Glass theme files. A running Ghostty re-reads them on the reload signal sent at the end of the switch; no window closes.
-import os,re,colorsys
-acc=t.get("accent")
-if acc:
-    r,g,b=[int(acc.lstrip("#")[i:i+2],16)/255 for i in (0,2,4)]; h,l,sat=colorsys.rgb_to_hls(r,g,b)
-    hexof=lambda L,S: "#%02x%02x%02x" % tuple(round(v*255) for v in colorsys.hls_to_rgb(h,max(0,min(1,L)),max(0,min(1,S))))
-    sets={"glass-dark":{"4":acc,"12":hexof(l+0.13,sat),"cursor":acc},"glass-light":{"4":hexof(l-0.08,sat),"12":hexof(l+0.04,sat),"cursor":hexof(l-0.08,sat)}}
-    # one line "R;G;B" that anything may read: the bash prompt reads it at every prompt, the fastfetch galaxy at render time
-    rgb=";".join(str(round(v*255)) for v in (r,g,b)); d=os.path.expanduser("~/.config/sirca-shell"); os.makedirs(d,exist_ok=True); open(d+"/accent-rgb","w").write(rgb+"\n")
-    # fastfetch: key / title colour in its config, and the galaxy logo re-rendered in the new gradient (its cache cleared)
-    ff=os.path.expanduser("~/.config/fastfetch/config.jsonc") if os.environ.get("GLASS_NO_EXTRAS","0")!="1" else "/nonexistent"
-    if os.path.isfile(ff):
-        c=open(ff).read(); c2=re.sub(r'("(?:keys|title)":\s*"1;38;2;)\d+;\d+;\d+(")', lambda m: m.group(1)+rgb+m.group(2), c)
-        if c2!=c: open(ff,"w").write(c2)
-    # ten palette slots (176..185) for art that must re-colour while it is already on screen (the fastfetch galaxy): a radial
-    # gradient core -> rim derived from the accent: pale core, the accent, the hue drifting on while it sinks into dark glass
-    def grad(tt):
-        stops=[(0.00,(h,0.87,min(1,sat+0.15))),(0.18,(h,l,sat)),(0.42,(h+0.03,l*0.85,sat*0.75)),(0.70,(h+0.10,l*0.66,sat*0.58)),(1.00,(h+0.125,0.30,0.20))]
-        for (t0,a),(t1,b_) in zip(stops,stops[1:]):
-            if tt<=t1:
-                f_=(tt-t0)/(t1-t0); hh,ll,ss=[a[i]+(b_[i]-a[i])*f_ for i in range(3)]
-                return "#%02x%02x%02x" % tuple(round(v*255) for v in colorsys.hls_to_rgb(hh%1.0,max(0,min(1,ll)),max(0,min(1,ss))))
-        return "#333"
-    slots={176+i: grad((i+0.5)/10) for i in range(10)}
-    for name,v in sets.items():
-        f=os.path.expanduser("~/.config/ghostty/themes/"+name) if os.environ.get("GLASS_NO_EXTRAS","0")!="1" else "/nonexistent"
-        if not os.path.isfile(f): continue
-        s=open(f).read()
-        s=re.sub(r"(?m)^palette = 1[78]\d=.*\n","",s)                       # our ten slots, rewritten below
-        s=s.rstrip("\n")+"\n"+"".join("palette = %d=%s\n" % kv for kv in sorted(slots.items()))
-        s=re.sub(r"(?m)^palette = 4=.*$","palette = 4="+v["4"],s); s=re.sub(r"(?m)^palette = 12=.*$","palette = 12="+v["12"],s); s=re.sub(r"(?m)^cursor-color = .*$","cursor-color = "+v["cursor"],s)
-        open(f,"w").write(s)
+
 P
      [ $rc -eq 0 ] || exit $(( rc == 3 ? 0 : rc )); exec "$0" "$now" ;;      # re-apply the current mode with the new wallpapers
   wallpaper) [ -f "${3:-}" ] || { echo "usage: glass-mode wallpaper light|dark FILE"; exit 2; }
@@ -132,7 +100,6 @@ if [ -n "$wall" ] && [ -f "$wall" ]; then cfg_set mode "$want" wallpaper "$wall"
 SCHEME=$([ "$want" = light ] && echo GlassLight || echo Glass); SUF=$([ "$want" = light ] && echo "-light" || echo "")
 THEME=$([ "$want" = light ] && echo adw-gtk3 || echo adw-gtk3-dark)
 "$(dirname "$(readlink -f "$0")")/lock_state.sh" >/dev/null 2>&1 || true        # the lock screen wears the same look
-[ "${GLASS_NO_EXTRAS:-0}" = 1 ] || ( /usr/bin/python3 "$(dirname "$(readlink -f "$0")")/gen_spotify.py" --apply >/dev/null 2>&1 || true ) &        # Spotify (Spicetify): accent at its next start, light / dark live
 # the generated files only change when the tokens do: build them when missing or older than tokens.json, not on every switch
 T="$ROOT/design/tokens.json"
 { [ "$ROOT/build/kde/$SCHEME.colors" -nt "$T" ] && [ "$ROOT/build/kde/$SCHEME.colors" -nt "$ROOT/tools/gen_kde.py" ]; } || $PY "$ROOT/tools/gen_kde.py" "$want" >/dev/null

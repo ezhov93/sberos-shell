@@ -332,7 +332,6 @@ def apply_mode(have_papirus: bool) -> bool:
     except (OSError, ValueError):
         accent = "blue"
     env = os.environ.copy()
-    env["GLASS_NO_EXTRAS"] = "1"
     run("apply the colour theme once (folder icons in the theme colour)",
         [str(HOME / ".local/bin/glass-mode"), "theme", accent], env=env)
     return True
@@ -381,7 +380,6 @@ def main() -> int:
     say("  Works: KDE and GTK apps in matching colours." if selected["look"] else "  Not: apps keep your current colours.")
     say("  Works: desktop-wide light/dark and seven colour themes." if selected["mode"] else "  Not: desktop-wide light/dark switch and colour themes.")
     say("  Not yet for anyone: X11, other compositors, vertical dock.")
-    say("  Optional extras that stay manual: Spotify theme + mini player, Firefox accent, Ghostty styling (see desktop/README.md).")
     if not DRY:
         STATE.mkdir(parents=True, exist_ok=True)
         (STATE / "root.txt").write_text(str(ROOT) + "\n", encoding="utf-8")

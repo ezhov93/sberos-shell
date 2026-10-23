@@ -24,15 +24,10 @@ every toolkit, plus a matching lock screen. KWin stays the window manager; nothi
 | `tools/mode.sh` | **light / dark for the whole desktop**: colour scheme `Glass` / `GlassLight`, GTK 3 / 4, the portal's colour-scheme (Firefox, Electron, Ghostty follow it), Papirus / Papirus-Dark, a wallpaper per mode, Sirca Shell's `mode` | link it as `glass-mode` on your PATH; `glass-mode light\|dark\|toggle`, `glass-mode wallpaper light FILE` | no |
 | `lock/onur.glasslock/` | lock screen | `tools/install_lock.sh` (`--undo`), then log out and in | no |
 | `plasma/osd/` | replaces Plasma's volume / brightness popup (Sirca Shell shows those in its clock pill) | see its README | no |
-| `apps/` | Ghostty dialog styling, Firefox accent colours | copy by hand | no |
-| `apps/spotify/`, `tools/gen_spotify.py` | **Spotify in the Glass look** (optional): a Spicetify theme generated from the tokens and the current accent, an in-app extension that follows light / dark and colour themes without a restart, and the Miniplayer as a glass widget | needs Spotify from its apt / rpm package (not snap or Flatpak) and [Spicetify](https://spicetify.app); then `tools/gen_spotify.py --apply`, `spicetify config extensions glass-live.js`, `spicetify backup apply -n`, `tools/install_spotify_widget.sh` | only for Spicetify's write access to Spotify's folder |
-| `kwin/glasstranslucent/` | small KWin script: keeps listed apps translucent when window rules cannot (apps that name their window late) | copy to `~/.local/share/kwin/scripts/`, enable | no |
 
 A switch of mode or colour theme is one cross-fade for the whole screen (KWin's blend-changes effect, started by
 `tools/mode.sh`; off with `"modeBlend": false` in the shell config). Folder icons follow the colour theme through small
-generated icon themes (`tools/folder_theme.py`: `Glass-<Papirus variant>-<colour>`). Real glass inside Spotify (surfaces
-see-through, text and pictures solid) and the Miniplayer's shadow need the **Glass Key** effect from the companion KWin
-effects repository; without it the theme is simply opaque.
+generated icon themes (`tools/folder_theme.py`: `Glass-<Papirus variant>-<colour>`).
 
 `tools/apply_all.sh apply|revert` runs the user-level pieces together. `tools/folder_color.sh <colour>` switches the
 Papirus folder colour (link it as `glass-folder-color` on your PATH and Sirca Settings shows a colour picker).

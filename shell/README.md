@@ -21,7 +21,7 @@ out the hard way.
   KWin, so a bug in it can take your whole session down with it. It is also built for the exact KWin you have. After a
   Plasma upgrade KWin will refuse to load it until you run `./install.sh` again. Until then everything still works, it just
   looks flat.
-- The app themes change your settings: KDE colour scheme, GTK 3 and 4 css, icon theme. Every step makes a backup and has a
+- The desktop look changes your settings: KDE colour scheme, GTK 3 and 4 CSS, and icon theme. Every step makes a backup and has a
   revert.
 - Only Plasma on Wayland. No X11, no Hyprland, Sway or GNOME.
 - Several screens: every connected screen gets its own wallpaper and panel by default; edit mode can disable individual panels.
@@ -73,7 +73,7 @@ does not constitute a production rollout or a migration from the GNOME panel.
 ./install.py
 ```
 
-You can take just the shell (no root needed), the shell plus the look, or my whole setup with wallpapers and app themes.
+You can take just the shell (no root needed), the shell plus the desktop look, or my whole setup with wallpapers.
 
 ```
 sirca-shell-switch on      # saves your Plasma panels and takes over
@@ -109,7 +109,7 @@ KWin effect is the part that costs GPU time, and it costs the same with or witho
 |---|---|
 | `shell/` | the shell itself (C++ and QML). Its README lists every feature, the settings, scripting and the build dependencies |
 | `kwin-effects/` | the glass KWin effect (blur, refraction, lit edge, shapes the shell describes to it) and Glass Key, which puts glass inside apps that paint opaque windows |
-| `desktop/` | the look for everything else: KDE colour scheme, GTK 3 and 4, `glass-mode` (light, dark, colour themes), the lock screen and the app extras |
+| `desktop/` | desktop look tools: KDE colour scheme, GTK 3 and 4, `glass-mode` (light, dark, colour themes), and the lock screen |
 | `wallpapers/` | the wallpapers I use: one picture in seven colours, dark and light (5120 × 1440) |
 | `setups/` | the colour themes, and my bar and dock layout as a file for `sirca-shell-setup import` |
 

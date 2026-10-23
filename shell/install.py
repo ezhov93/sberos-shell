@@ -367,7 +367,7 @@ def main() -> int:
     say('  Build dependencies are listed in shell/README.md ("Build dependencies": Ubuntu, Fedora and Arch names); a failed build names what is missing.')
 
     head("2. What you should know before you say yes")
-    say("  • It replaces Plasma's panels while it is switched on. Your panel layout is saved first and restored exactly by sirca-shell-switch off.\n  • It is young software by one person, used daily on one Ubuntu 26.04 / Plasma 6.6 / NVIDIA machine. There is no warranty (GPL-3.0-or-later).\n  • It takes over global shortcuts while running and hands them back when switched off.\n  • The app themes change KDE and GTK settings. Each applier backs up what it touches and has a revert.\n  • Nothing is sent anywhere. No telemetry.")
+    say("  • It replaces Plasma's panels while it is switched on. Your panel layout is saved first and restored exactly by sirca-shell-switch off.\n  • It is young software by one person, used daily on one Ubuntu 26.04 / Plasma 6.6 / NVIDIA machine. There is no warranty (GPL-3.0-or-later).\n  • It takes over global shortcuts while running and hands them back when switched off.\n  • The desktop look changes KDE and GTK settings. Each applier backs up what it touches and has a revert.\n  • Nothing is sent anywhere. No telemetry.")
     if not ask("Understood. Continue?", True):
         say("Nothing was changed.")
         return 0

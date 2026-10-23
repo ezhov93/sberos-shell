@@ -1,5 +1,5 @@
 // Accent from the wallpaper (Material-You style): `Palette.fromImage(path)` / `Palette.themeForWallpaper(path)`.
-// The SAME algorithm lives in glass-desktop/tools/palette.py, which derives the colour for Qt / GTK / Spotify / folders
+// The SAME algorithm lives in glass-desktop/tools/palette.py, which derives the colour for Qt / GTK / folders
 // (`glass-mode theme wallpaper`); the two must agree, so every step is deterministic and integer where it can be. The
 // steps are described in palette.cpp next to the code and in palette.py's docstring.
 #pragma once

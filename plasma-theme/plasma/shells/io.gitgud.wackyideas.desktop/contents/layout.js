@@ -8,7 +8,10 @@ var panelScreen = panel.screen
 // even numbers
 panel.location = "bottom"
 panel.height = 64
-panel.floating = true
+// Keep one shared panel and strut, but let applets draw their own island surfaces.
+panel.floating = false
+panel.floatingApplets = true
+panel.opacityMode = Panel.Translucent
 
 // Restrict horizontal panel to a maximum size of a 21:9 monitor
 const maximumAspectRatio = 21/9;

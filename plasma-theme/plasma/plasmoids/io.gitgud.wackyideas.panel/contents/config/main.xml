@@ -13,7 +13,7 @@
       <default>64</default>
     </entry>
     <entry name="panelFloating" type="Bool">
-      <default>true</default>
+      <default>false</default>
     </entry>
     <entry name="panelFloatingApplets" type="Bool">
       <default>true</default>

@@ -13,7 +13,7 @@ import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.ksvg 1.0 as KSvg
 import org.kde.plasma.components 3.0 as PC3
-import org.kde.plasma.shell
+import org.kde.plasma.shell.panel as Panel
 import org.kde.kquickcontrols 2.0
 import "panelconfiguration"
 
@@ -89,7 +89,7 @@ ColumnLayout {
     }
     Component.onCompleted: {
 
-        if (panel.lengthMode === Panel.Custom) {
+        if (panel.lengthMode === Panel.Global.Custom) {
             Qt.callLater(()=> {
                 panelConfiguration.panelRulerView.visible = true
             })
@@ -354,17 +354,17 @@ ColumnLayout {
                     i18nd("plasma_shell_org.kde.plasma.desktop", "Fit content"),
                     i18nd("plasma_shell_org.kde.plasma.desktop", "Custom")
                 ]
-                currentIndex: (panel.lengthMode === Panel.FillAvailable ? 0 :
-                                panel.lengthMode === Panel.FitContent ? 1 : 2)
+                currentIndex: (panel.lengthMode === Panel.Global.FillAvailable ? 0 :
+                                panel.lengthMode === Panel.Global.FitContent ? 1 : 2)
                 onActivated: (index) => {
                     if (index === 0) {
-                        panel.lengthMode = Panel.FillAvailable
+                        panel.lengthMode = Panel.Global.FillAvailable
                         panelConfiguration.panelRulerView.visible = false
                     } else if (index === 1) {
-                        panel.lengthMode = Panel.FitContent
+                        panel.lengthMode = Panel.Global.FitContent
                         panelConfiguration.panelRulerView.visible = false
                     } else {
-                        panel.lengthMode = Panel.Custom
+                        panel.lengthMode = Panel.Global.Custom
                         panelConfiguration.panelRulerView.visible = true
                     }
                 }
@@ -410,13 +410,13 @@ ColumnLayout {
                 Layout.minimumWidth: visibilityRepresentation.width
                 currentIndex: {
                     switch (panel.visibilityMode) {
-                        case Panel.AutoHide:
+                        case Panel.Global.AutoHide:
                             return 1;
-                        case Panel.DodgeWindows:
+                        case Panel.Global.DodgeWindows:
                             return 2;
-                        case Panel.WindowsGoBelow:
+                        case Panel.Global.WindowsGoBelow:
                             return 3;
-                        case Panel.NormalPanel:
+                        case Panel.Global.NormalPanel:
                         default:
                             return 0;
                     }
@@ -424,17 +424,17 @@ ColumnLayout {
                 onActivated: (index) => {
                     switch (index) {
                         case 1:
-                            panel.visibilityMode = Panel.AutoHide;
+                            panel.visibilityMode = Panel.Global.AutoHide;
                             break;
                         case 2:
-                            panel.visibilityMode = Panel.DodgeWindows;
+                            panel.visibilityMode = Panel.Global.DodgeWindows;
                             break;
                         case 3:
-                            panel.visibilityMode = Panel.WindowsGoBelow;
+                            panel.visibilityMode = Panel.Global.WindowsGoBelow;
                             break;
                         case 0:
                         default:
-                            panel.visibilityMode = Panel.NormalPanel;
+                            panel.visibilityMode = Panel.Global.NormalPanel;
                             break;
                     }
                 }
@@ -477,15 +477,15 @@ ColumnLayout {
                 ]
                 Layout.alignment: Qt.AlignHCenter
                 Layout.minimumWidth: opacityRepresentation.width
-                currentIndex: (panel.opacityMode === Panel.Adaptive ? 0 :
-                                panel.opacityMode === Panel.Opaque ? 1 : 2)
+                currentIndex: (panel.opacityMode === Panel.Global.Adaptive ? 0 :
+                                panel.opacityMode === Panel.Global.Opaque ? 1 : 2)
                 onActivated: (index) => {
                     if (index === 0) {
-                        panel.opacityMode = Panel.Adaptive
+                        panel.opacityMode = Panel.Global.Adaptive
                     } else if (index === 1) {
-                        panel.opacityMode = Panel.Opaque
+                        panel.opacityMode = Panel.Global.Opaque
                     } else {
-                        panel.opacityMode = Panel.Translucent
+                        panel.opacityMode = Panel.Global.Translucent
                     }
                 }
             }

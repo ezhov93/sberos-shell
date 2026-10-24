@@ -14,7 +14,7 @@ import org.kde.kirigami 2.20 as Kirigami
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kquickcontrolsaddons 2.0
 
-import io.gitgud.wackyideas.desktopcontainment.folder as Folder
+import org.kde.private.desktopcontainment.folder as Folder
 import "code/FolderTools.js" as FolderTools
 
 FocusScope {
@@ -585,12 +585,25 @@ FocusScope {
         Component {
             id: rubberBandObject
 
-            Folder.RubberBand {
+            Rectangle {
                 id: rubberBand
 
                 width: 0
                 height: 0
                 z: 99999
+
+                SystemPalette {
+                    id: sysPalette
+                    colorGroup: SystemPalette.Active
+                }
+
+                radius: Kirigami.Units.cornerRadius
+                border.color: sysPalette.highlight
+                color: Qt.alpha(border.color, 0.3)
+
+                function intersects(rect) {
+                    return x + width >= rect.x && y + height >= rect.y && rect.x + rect.width >= x && rect.y + rect.height >= y;
+                }
 
                 function close() {
                     rubberBand.opacity = 0;

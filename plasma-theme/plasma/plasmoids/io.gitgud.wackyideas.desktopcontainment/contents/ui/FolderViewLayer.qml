@@ -363,12 +363,6 @@ FocusScope {
         menu: viewPropertiesMenu.menu
     }
     PlasmaCore.Action {
-        id: viewSortMenu
-        text: i18n("Sort by")
-        //icon.name: ""
-        menu: viewPropertiesMenu.sortMenu
-    }
-    PlasmaCore.Action {
         id: actionSeparator
         isSeparator: true
     }
@@ -394,7 +388,6 @@ FocusScope {
             }
             if (actionName === "refresh") {
                 Plasmoid.contextualActions.push(viewPropertiesAction);
-                Plasmoid.contextualActions.push(viewSortMenu);
             }
             Plasmoid.contextualActions.push(modelAction);
             if (actionName === "refresh") {

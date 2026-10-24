@@ -173,18 +173,6 @@ FocusScope {
         function onSelectionDone() {
             main.generateDragImage();
         }
-
-        function onHasRefreshed() {
-            gridView.visible = false;
-            refreshGridView.start();
-        }
-    }
-    Timer {
-        id: refreshGridView
-        interval: 100
-        onTriggered: {
-            gridView.visible = true;
-        }
     }
 
     Connections {
@@ -1417,10 +1405,6 @@ FocusScope {
             perStripe: Math.floor((gridView.flow === GridView.FlowLeftToRight)
                 ? (gridView.width / gridView.cellWidth)
                 : (gridView.height / gridView.cellHeight))
-
-            Component.onCompleted: {
-                positioner.loadAndApplyPositionsConfig();
-            }
 
         }
 

@@ -39,7 +39,7 @@ Item {
     Accessible.role: Accessible.Canvas
 
 
-    readonly property real dpi: main.Window.window.devicePixelRatio
+    readonly property real dpi: main.Window.window ? main.Window.window.devicePixelRatio : 1.0
 
     // This MouseArea exists to intercept press and hold; preventing edit mode
     // from being triggered when pressing and holding on an icon (if there is one).

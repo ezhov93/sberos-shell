@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Panel — референсный мок</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101719; --panel:#192225; --raised:#222d31; --line:#344146; --text:#f1f5f5; --muted:#a6b2b5; --accent:#40c9a4; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--text); background:var(--bg); font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,a { font:inherit; }
+    button { color:inherit; }
+    button:focus-visible,a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .app { min-height:100vh; display:grid; grid-template-columns:258px minmax(0,1fr); }
+    aside { position:sticky; top:0; height:100vh; overflow:auto; padding:18px 14px 20px; background:var(--panel); border-right:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:11px; margin:0 0 18px; padding:2px 5px 15px; border-bottom:1px solid var(--line); }
+    .logo { width:36px; height:36px; display:grid; place-items:center; color:#052b26; background:var(--accent); border-radius:11px; font-weight:850; font-size:17px; }
+    .brand b { display:block; font-size:14px; }
+    .brand small { color:var(--muted); font-size:11px; }
+    .label { margin:15px 7px 6px; color:#839195; font-size:10px; font-weight:750; letter-spacing:.1em; text-transform:uppercase; }
+    .group { display:grid; gap:3px; }
+    .group button { width:100%; display:flex; align-items:center; gap:9px; padding:8px 9px; border:0; border-radius:8px; background:transparent; text-align:left; cursor:pointer; color:#dce4e5; font-size:12px; }
+    .group button:hover { background:var(--raised); }
+    .group button.active { color:#a8f2dd; background:#183c35; }
+    .group .glyph { width:20px; color:#9eacad; text-align:center; font-size:15px; }
+    .info { margin:18px 2px 0; padding:11px; color:var(--muted); background:#202a2d; border:1px solid var(--line); border-radius:10px; font-size:11px; }
+    .info strong { display:block; margin-bottom:4px; color:var(--text); }
+    main { min-width:0; padding:20px clamp(16px,2.3vw,36px) 28px; }
+    .topbar { max-width:1500px; display:flex; align-items:center; justify-content:space-between; gap:15px; margin:0 auto 12px; }
+    .titles { min-width:0; }
+    .eyebrow { margin:0 0 2px; color:var(--accent); font-size:10px; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { overflow:hidden; margin:0; font-size:19px; font-weight:690; letter-spacing:-.025em; text-overflow:ellipsis; white-space:nowrap; }
+    .actions { display:flex; align-items:center; gap:7px; }
+    .counter { padding:6px 8px; color:var(--muted); border:1px solid var(--line); border-radius:8px; font-size:11px; white-space:nowrap; }
+    .nav-arrow,.fit { width:34px; height:32px; display:grid; place-items:center; border:1px solid var(--line); border-radius:8px; background:var(--panel); cursor:pointer; }
+    .nav-arrow:hover,.fit:hover { background:var(--raised); }
+    .stage-wrap { max-width:1500px; margin:auto; }
+    .stage { position:relative; overflow:hidden; width:100%; aspect-ratio:16 / 9; margin:auto; background:#080d0e; border:1px solid #3c484b; border-radius:11px; box-shadow:0 12px 38px #0005; }
+    .shot { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; object-position:center; }
+    .hotspot { position:absolute; z-index:2; padding:0; border:1px solid transparent; background:transparent; cursor:pointer; }
+    .hotspot:hover,.hotspot:focus-visible { border-color:#9bf0d4; background:#56d6b222; box-shadow:0 0 0 2px #08221b66,0 0 22px #45d5b866; }
+    .hotspot::after { content:attr(aria-label); position:absolute; top:-26px; left:0; width:max-content; padding:4px 7px; color:#eafff7; background:#10352d; border-radius:5px; opacity:0; pointer-events:none; font-size:10px; }
+    .hotspot:hover::after,.hotspot:focus-visible::after { opacity:1; }
+    .shot-caption { max-width:1500px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px auto 0; color:var(--muted); font-size:11px; }
+    .caption-text { min-width:0; }
+    .caption-text b { color:#e8eeee; font-weight:650; }
+    .image-link { flex:none; color:#91dfc8; text-decoration:none; }
+    .image-link:hover { text-decoration:underline; }
+    .strip { max-width:1500px; display:flex; gap:7px; overflow-x:auto; margin:14px auto 0; padding:2px 1px 8px; scrollbar-color:#58666a transparent; }
+    .thumb { min-width:125px; max-width:180px; flex:0 0 auto; overflow:hidden; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--panel); cursor:pointer; text-align:left; }
+    .thumb:hover { border-color:#79918b; }
+    .thumb.active { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+    .thumb img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; background:#090e0f; }
+    .thumb span { display:block; overflow:hidden; padding:6px 7px; color:#c7d1d2; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }
+    @media (max-width:880px) {
+      .app { grid-template-columns:62px minmax(0,1fr); }
+      aside { padding:12px 6px; }
+      .brand { justify-content:center; padding:0 0 12px; }
+      .brand>div:last-child,.label,.group .name,.info { display:none; }
+      .group { margin:9px 0; }
+      .group button { justify-content:center; padding:10px 3px; }
+      .group .glyph { width:auto; font-size:18px; }
+      main { padding:15px 10px; }
+    }
+    @media (max-width:560px) {
+      .app { grid-template-columns:48px minmax(0,1fr); }
+      aside { padding:10px 3px; }
+      .logo { width:32px;height:32px;font-size:14px; }
+      main { padding:12px 7px; }
+      .topbar { align-items:flex-start; }
+      h1 { font-size:16px; }
+      .eyebrow { font-size:9px; }
+      .counter { display:none; }
+      .stage { border-radius:7px; }
+      .shot-caption { align-items:flex-start; font-size:10px; }
+      .thumb { min-width:105px; }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside aria-label="Разделы референса">
+      <div class="brand"><div class="logo">С</div><div><b>Smart Panel</b><small>Мок по исходным кадрам</small></div></div>
+      <div id="nav"></div>
+      <div class="info"><strong>Референсный режим</strong>В центре показываются исходные изображения без перерисовки. Выбирай состояния слева или кликай по подсвечиваемым точкам входа на кадре.</div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div class="titles"><p class="eyebrow">Интерактивный HTML-мок · исходные кадры</p><h1 id="title">Приложения · Закреплённые и запущенные</h1></div>
+        <div class="actions"><span class="counter" id="counter">1 / 6</span><button class="nav-arrow" id="prev" aria-label="Предыдущее состояние" title="Предыдущее состояние">‹</button><button class="nav-arrow" id="next" aria-label="Следующее состояние" title="Следующее состояние">›</button><button class="fit" id="fit" aria-label="Показать весь кадр" title="Показать весь кадр">⛶</button></div>
+      </header>
+      <section class="stage-wrap" aria-label="Кадр референса">
+        <div class="stage" id="stage"><img class="shot" id="shot" alt="Исходный скриншот референса Smart Panel"><div id="hotspots"></div></div>
+        <div class="shot-caption"><span class="caption-text" id="caption"></span><a class="image-link" id="sourceLink" target="_blank" rel="noopener">Исходный PNG ↗</a></div>
+        <div class="strip" id="strip" aria-label="Состояния этого раздела"></div>
+      </section>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const base = '../../sources/panel/screenshots/';
+      const groups = [
+        { key:'applications', label:'Приложения', glyph:'▣', items:[
+          ['applications-pinned-running.png','Закреплённые и запущенные'],['applications-empty.png','Пустая панель'],['applications-icons-40px.png','Иконки 40 px'],['applications-icons-32px.png','Иконки 32 px'],['applications-unread-count.png','Счётчики непрочитанного'],['applications-overflow-count.png','Переполнение +N'],['applications-overflow-open.png','Раскрытое переполнение']
+        ]},
+        { key:'sber', label:'Меню Сбера', glyph:'◉', items:[
+          ['button-sber-sber-button-default.png','Кнопка по умолчанию'],['button-sber-sber-button-hover.png','Кнопка наведена'],['button-sber-menu-hover.png','Меню · наведение'],['button-sber-menu-open.png','Меню открыто'],['button-sber-menu-power.png','Меню питания']
+        ]},
+        { key:'launchpad', label:'Launchpad и Оська', glyph:'▦', items:[
+          ['launchpad-icon-hover.png','Кнопка Launchpad'],['launchpad-open.png','Все приложения'],['launchpad-search.png','Поиск приложения'],['launchpad-search-empty.png','Пустая выдача'],['launchpad-search-notification.png','Поиск и уведомление']
+        ]},
+        { key:'quick', label:'Быстрые настройки', glyph:'☷', items:[
+          ['quick-settings-light.png','Общий вид · светлая'],['quick-settings-dark.png','Общий вид · тёмная'],['quick-settings-wifi-collapsed.png','Wi‑Fi · свёрнуто'],['quick-settings-wifi-expanded.png','Wi‑Fi · список сетей'],['quick-settings-wifi-off.png','Wi‑Fi · отключён'],['quick-settings-bt-not-connected.png','Bluetooth · не подключён'],['quick-settings-bt-connected.png','Bluetooth · подключён'],['quick-settings-bt-not-found.png','Bluetooth · устройств нет'],['quick-settings-power-balanced-1.png','Питание · сбалансированный'],['quick-settings-power-balanced-2.png','Питание · энергосберегающий'],['quick-settings-power-performance.png','Питание · производительный']
+        ]},
+        { key:'calendar', label:'Календарь', glyph:'▦', items:[
+          ['calendar-light.png','Календарь · светлая тема'],['calendar-dark.png','Календарь · тёмная тема']
+        ]},
+        { key:'indicators', label:'Индикаторы', glyph:'◉', items:[
+          ['indicators-battery-low.png','Низкий заряд'],['indicators-sound-volume-1.png','Громкость · состояние 1'],['indicators-sound-volume-2.png','Громкость · состояние 2'],['indicators-sound-volume-3.png','Громкость · состояние 3'],['indicators-sound-headphones-1.png','Наушники · состояние 1'],['indicators-sound-headphones-2.png','Наушники · состояние 2'],['indicators-sound-headphones-3.png','Наушники · состояние 3']
+        ]}
+      ];
+      const nav=document.getElementById('nav'), shot=document.getElementById('shot'), title=document.getElementById('title'), counter=document.getElementById('counter'), caption=document.getElementById('caption'), link=document.getElementById('sourceLink'), strip=document.getElementById('strip'), hotspots=document.getElementById('hotspots');
+      let groupIndex=0, itemIndex=0;
+      function renderNav(){ nav.innerHTML=groups.map((g,gi)=>`<div class="label">${g.label}</div><div class="group">${g.items.map((it,ii)=>`<button data-group="${gi}" data-item="${ii}" title="${it[1]}" class="${gi===groupIndex&&ii===itemIndex?'active':''}"><span class="glyph">${g.glyph}</span><span class="name">${it[1]}</span></button>`).join('')}</div>`).join(''); }
+      function select(gi,ii){ groupIndex=(gi+groups.length)%groups.length; const g=groups[groupIndex];itemIndex=(ii+g.items.length)%g.items.length;const [file,name]=g.items[itemIndex];const path=base+file;shot.src=path;shot.alt=`${g.label}: ${name}`;shot.onload=()=>{caption.innerHTML=`<b>${name}</b><span> ${file} · ${shot.naturalWidth} × ${shot.naturalHeight}</span>`;};title.textContent=`${g.label} · ${name}`;counter.textContent=`${itemIndex+1} / ${g.items.length}`;link.href=path;strip.innerHTML=g.items.map((item,i)=>`<button class="thumb ${i===itemIndex?'active':''}" data-thumb="${i}" title="${item[1]}"><img loading="lazy" src="${base+item[0]}" alt=""><span>${item[1]}</span></button>`).join('');renderNav();renderHotspots(file); }
+      function renderHotspots(file){
+        const spots=[];const add=(x,y,w,h,label,gi,ii)=>spots.push(`<button class="hotspot" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%" aria-label="${label}" title="${label}" data-hot-group="${gi}" data-hot-item="${ii}"></button>`);
+        const find=(key,part)=>[groups.findIndex(g=>g.key===key),groups.find(g=>g.key===key).items.findIndex(i=>i[0]===part)];
+        if(file.startsWith('applications-')){let a=find('launchpad','launchpad-open.png');add(5,92,4.5,7,'Открыть Launchpad',...a);if(file==='applications-overflow-count.png'){let b=find('applications','applications-overflow-open.png');add(31,92,7,7,'Раскрыть переполнение',...b);} }
+        if(file.startsWith('button-sber-')){let a=find('sber','button-sber-menu-open.png');add(0,91,5,9,'Открыть меню Сбера',...a);let p=find('sber','button-sber-menu-power.png');add(0,74,7,16,'Питание и сеанс',...p);}
+        if(file.startsWith('quick-settings-')){let a=find('quick','quick-settings-wifi-expanded.png');add(74,68,13,8,'Показать сети Wi‑Fi',...a);let b=find('quick','quick-settings-bt-connected.png');add(74,75,13,8,'Состояние Bluetooth',...b);let c=find('quick','quick-settings-power-performance.png');add(87,75,13,8,'Режим питания',...c);let d=find('calendar','calendar-dark.png');add(87,92,12,7,'Открыть календарь',...d);}
+        if(file.startsWith('calendar-')){let a=find('calendar',file==='calendar-dark.png'?'calendar-light.png':'calendar-dark.png');add(80,60,18,32,'Сменить тему календаря',...a);}
+        if(file.startsWith('launchpad-')){let a=find('launchpad','launchpad-search.png');add(37,91,27,8,'Поиск приложений',...a);}
+        hotspots.innerHTML=spots.join('');
+      }
+      function move(dir){const g=groups[groupIndex];select(groupIndex,(itemIndex+dir+g.items.length)%g.items.length);}
+      nav.addEventListener('click',e=>{const b=e.target.closest('button[data-group]');if(b)select(Number(b.dataset.group),Number(b.dataset.item));});
+      strip.addEventListener('click',e=>{const b=e.target.closest('button[data-thumb]');if(b)select(groupIndex,Number(b.dataset.thumb));});
+      hotspots.addEventListener('click',e=>{const b=e.target.closest('button[data-hot-group]');if(b)select(Number(b.dataset.hotGroup),Number(b.dataset.hotItem));});
+      document.getElementById('prev').addEventListener('click',()=>move(-1));document.getElementById('next').addEventListener('click',()=>move(1));
+      document.getElementById('fit').addEventListener('click',()=>{shot.style.maxHeight=shot.style.maxHeight?'':'calc(100vh - 135px)';});
+      document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1);if(e.key==='Escape')select(0,0);});
+      select(0,0);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Panel — живой HTML-мок</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="viewport">
+    <main id="scene" class="scene" aria-label="Рабочий стол SberOS, демонстрация">
+      <div class="wallpaper" aria-hidden="true"></div>
+      <div id="desktopTargets" aria-label="Приложения рабочего стола"></div>
+      <div id="appWindow" hidden></div>
+      <div id="launcher" class="launcher" hidden></div>
+      <div id="popups"></div>
+      <div id="panel">
+        <button id="sberButton" class="sber island" title="Меню Сбера" aria-label="Меню Сбера" aria-expanded="false"></button>
+        <div id="applications" class="applications island" aria-label="Панель приложений"></div>
+        <div id="oska" class="oska island">
+          <span class="oska-avatar" aria-hidden="true"></span>
+          <button id="searchButton" class="search-button">Найду документ или приложение</button>
+          <span class="keyboard-label">RU</span>
+        </div>
+        <div class="system island">
+          <button id="quickButton" class="system-button" title="Быстрые настройки" aria-label="Быстрые настройки" aria-expanded="false"></button>
+          <button id="calendarButton" class="clock-button" aria-label="Календарь" aria-expanded="false">Чт, 10 сент. · 08:45</button>
+        </div>
+      </div>
+      <div id="oskaMessage" class="oska-message island" role="status" hidden></div>
+      <div id="confirmation" hidden></div>
+      <div id="referenceLayer" hidden><img id="referenceImage" alt="Исходный скриншот для сравнения"><span class="reference-label">Исходный кадр</span></div>
+      <div id="comparisonLine" hidden></div>
+    </main>
+  </div>
+  <aside class="prototype-tools" aria-label="Управление мокапом">
+    <button id="toolsButton" aria-expanded="false">Мок · управление <span>⌄</span></button>
+    <div id="toolsBody" hidden>
+      <label>Состояние <select id="scenario">
+        <option value="desktop">Панель · закреплённые и запущенные</option>
+        <option value="empty">Панель · нет открытых приложений</option>
+        <option value="icons40">Приложения · 40 px</option>
+        <option value="icons32">Приложения · 32 px</option>
+        <option value="unread">Приложения · непрочитанные</option>
+        <option value="overflow">Приложения · +12</option>
+        <option value="overflowOpen">Приложения · раскрыто</option>
+        <option value="sber">Меню Сбера</option>
+        <option value="power">Меню питания</option>
+        <option value="quick">Быстрые настройки</option>
+        <option value="wifi">Wi‑Fi · подключён</option>
+        <option value="wifiList">Wi‑Fi · список сетей</option>
+        <option value="wifiOff">Wi‑Fi · отключён</option>
+        <option value="bluetooth">Bluetooth · список устройств</option>
+        <option value="bluetoothConnected">Bluetooth · подключён</option>
+        <option value="bluetoothOff">Bluetooth · отключён</option>
+        <option value="balanced">Питание · сбалансированное</option>
+        <option value="saving">Питание · энергосбережение</option>
+        <option value="performance">Питание · производительность</option>
+        <option value="calendar">Календарь</option>
+        <option value="launcher">Launchpad · все приложения</option>
+        <option value="search">Launchpad · поиск «сбер»</option>
+        <option value="noResults">Launchpad · пустая выдача</option>
+        <option value="notification">Launchpad · уведомление</option>
+      </select></label>
+      <div class="tool-row"><button id="themeButton">Тёмная тема</button><button id="surfaceButton">Поверхности: по макету</button></div>
+      <div class="tool-row"><button id="compareButton" aria-pressed="false">Сверить со скриншотом</button><button id="scaleButton">Масштаб 1:1</button></div>
+      <label id="compareControls" hidden>Доля HTML-мока <input id="comparisonRange" type="range" min="0" max="100" value="50"></label>
+      <p id="referenceName"></p>
+      <p class="tool-note">Демо: настройки и действия работают внутри страницы. Esc закрывает текущий уровень. H скрывает эту панель.</p>
+      <a href="references.html">Все 37 исходных кадров ↗</a>
+    </div>
+  </aside>
+  <script src="mock.js"></script>
+</body>
+</html>

@@ -166,8 +166,8 @@
         const actions=[['settings','settings','Настройки оболочки'],['terminal','terminal','Терминал'],['power','power','Питание и сеанс'],['collapse','down','Свернуть меню']];
         const menu=`<div class="popup sber-menu" role="menu" aria-label="Меню Сбера"><div class="menu-inner">${actions.map(([action,i,label])=>`<button class="menu-icon ${action==='power'&&state.powerMenu?'active':''}" data-action="${action}" title="${label}" aria-label="${label}" role="menuitem">${icon(i)}</button>`).join('')}</div></div>`;
         if (!state.powerMenu) return menu;
-        const commands=[['Завершить сеанс',''],['Перезагрузить',''],['Перезагрузить с обновлением',''],['Выключить с обновлением',''],['Выключить','Ctrl+Alt+Delete'],['Заблокировать экран','Win+L'],['Спящий режим','']];
-        return menu+`<div class="power-menu" role="menu" aria-label="Питание и сеанс">${commands.map(([label,hint],i)=>`${i===5?'<div class="power-divider"></div>':''}<button class="power-action" data-action="session" data-command="${label}" role="menuitem">${label} <small>${hint}</small></button>`).join('')}</div>`;
+        const commands=[['Завершить сеанс',''],['Перезагрузить',''],['Выключить','Ctrl+Alt+Delete'],['Заблокировать экран','Win+L'],['Спящий режим','']];
+        return menu+`<div class="power-menu" role="menu" aria-label="Питание и сеанс">${commands.map(([label,hint],i)=>`${i===3?'<div class="power-divider"></div>':''}<button class="power-action" data-action="session" data-command="${label}" role="menuitem">${label} <small>${hint}</small></button>`).join('')}</div>`;
     }
     function tile(action, i, title, subtitle, on, expandable=false) {
         return `<button class="quick-tile ${on?'on':''}" data-action="${action}"><span class="round">${icon(i)}</span><span class="tile-label"><strong>${title}</strong><small>${escape(subtitle)}</small></span>${expandable?`<span class="tile-chevron">${icon('right')}</span>`:''}</button>`;

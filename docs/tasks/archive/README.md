@@ -13,3 +13,5 @@
 | [SHELL-002](SHELL-002.md) | Удалить старую двухпанельную раскладку Sirca |
 | [SHELL-003](SHELL-003.md) | Удалить погоду из Sirca Shell |
 | [SHELL-006](SHELL-006.md) | Переписать установщик Sirca на Python |
+
+| [REF-001](REF-001.md) | Подготовить рабочую копию AeroThemePlasma в корне |

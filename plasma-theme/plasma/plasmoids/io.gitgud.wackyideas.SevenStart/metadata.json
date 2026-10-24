@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Category": "Application Launchers",
+        "Description": "Open application menu",
+        "EnabledByDefault": true,
+        "Icon": "start-here-kde",
+        "Id": "io.gitgud.wackyideas.SevenStart",
+        "License": "AGPLv3",
+        "Name": "Seven Start",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

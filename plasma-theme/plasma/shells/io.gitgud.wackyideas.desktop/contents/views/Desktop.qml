@@ -124,7 +124,7 @@ Item {
     Loader {
         id: wallpaperColors
 
-        active: root.containment && root.containment.wallpaper && desktop.usedInAccentColor
+        active: !!(root.containment?.wallpaper && desktop.usedInAccentColor)
         asynchronous: true
 
         sourceComponent: Kirigami.ImageColors {

@@ -1,39 +1,14 @@
 var panel = new Panel("io.gitgud.wackyideas.panel");
 var panelScreen = panel.screen
 
-// No need to set panel.location as ShellCorona::addPanel will automatically pick one available edge
+// SberOS keeps the unified panel on the lower screen edge.
 
 // For an Icons-Only Task Manager on the bottom, *3 is too much, *2 is too little
 // Round down to next highest even number since the Panel size widget only displays
 // even numbers
-panel.height = 40
-panel.floating = false
-
-var freeEdges = {"bottom": true, "top": true, "left": true, "right": true}
-
-for (i = 0; i < panelIds.length; ++i) {
-    var tmpPanel = panelById(panelIds[i])
-    if (tmpPanel.screen == panelScreen) {
-        // Ignore the new panel
-        if (tmpPanel.id != panel.id) {
-            freeEdges[tmpPanel.location] = false;
-        }
-    }
-}
-
-
-if (freeEdges["bottom"] == true) {
-    panel.location = "bottom";
-} else if (freeEdges["top"] == true) {
-    panel.location = "top";
-} else if (freeEdges["left"] == true) {
-    panel.location = "left";
-} else if (freeEdges["right"] == true) {
-    panel.location = "right";
-} else {
-    // There is no free edge, so leave the default value
-    panel.location = "top";
-}
+panel.location = "bottom"
+panel.height = 64
+panel.floating = true
 
 // Restrict horizontal panel to a maximum size of a 21:9 monitor
 const maximumAspectRatio = 21/9;
@@ -48,9 +23,8 @@ if (panel.formFactor === "horizontal") {
     }
 }
 
-panel.addWidget("io.gitgud.wackyideas.SevenStart")
-//panel.addWidget("org.kde.plasma.showActivityManager")
-panel.addWidget("io.gitgud.wackyideas.seventasks")
+panel.addWidget("org.kde.plasma.kicker")
+panel.addWidget("org.kde.plasma.taskmanager")
 
 /* Next up is determining whether to add the Input Method Panel
  * widget to the panel or not. This is done based on whether
@@ -92,10 +66,9 @@ var langIds = ["as",    // Assamese
                "zh_TW"] // Traditional Chinese
 
 if (langIds.indexOf(languageId) != -1) {
-    panel.addWidget("io.gitgud.wackyideas.keyboardlayout");
+    panel.addWidget("org.kde.plasma.keyboardlayout");
 }
 
-panel.addWidget("io.gitgud.wackyideas.systemtray")
-panel.addWidget("io.gitgud.wackyideas.digitalclocklite")
-panel.addWidget("io.gitgud.wackyideas.win7showdesktop")
-
+panel.addWidget("org.kde.plasma.systemtray")
+panel.addWidget("org.kde.plasma.digitalclock")
+panel.addWidget("org.kde.plasma.showdesktop")

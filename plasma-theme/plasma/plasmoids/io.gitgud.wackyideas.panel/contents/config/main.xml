@@ -10,10 +10,10 @@
       <label>encoded order of items</label>
     </entry>
     <entry name="panelThickness" type="Int">
-      <default>40</default>
+      <default>64</default>
     </entry>
     <entry name="panelFloating" type="Bool">
-      <default>false</default>
+      <default>true</default>
     </entry>
     <entry name="panelFloatingApplets" type="Bool">
       <default>true</default>

@@ -25,9 +25,9 @@ ContainmentItem {
     // filled in by the shell (Panel.qml) with the plasma-workspace PanelView
     property var panel: null
 
-    property int panelThickness: root.panel.thickness
-    property bool panelFloating: root.panel.floating
-    property bool panelFloatingApplets: root.panel.floatingApplets
+    property int panelThickness: root.panel ? root.panel.thickness : Plasmoid.configuration.panelThickness
+    property bool panelFloating: root.panel ? root.panel.floating : Plasmoid.configuration.panelFloating
+    property bool panelFloatingApplets: root.panel ? root.panel.floatingApplets : Plasmoid.configuration.panelFloatingApplets
 
     onPanelThicknessChanged: {
         if(root.panel) {
@@ -74,7 +74,7 @@ ContainmentItem {
         var item = currentLayout.visibleChildren[currentLayout.visibleChildren.length-2];
         if(item) {
             if(typeof item.applet !== "undefined") {
-                if(item.applet.Plasmoid.pluginName === "io.gitgud.wackyideas.win7showdesktop") {
+                if(item.applet?.Plasmoid?.pluginName === "org.kde.plasma.showdesktop") {
                     return item;
                 }
             }
@@ -497,10 +497,11 @@ ContainmentItem {
             property bool iconsOnlyApplet: applet ? applet.applet.iconsOnly : false
             property int index: applet ? applet.index : -1
             property int count: appletsModel.count
-            property string targetPlasmoid: "io.gitgud.wackyideas.seventasks"
+            property string targetPlasmoid: "org.kde.plasma.taskmanager"
             function findApplet() {
                 for(var i = 0; i < currentLayout.visibleChildren.length; i++) {
-                    if(currentLayout.visibleChildren[i].applet.Plasmoid.pluginName === targetPlasmoid) {
+                    const applet = currentLayout.visibleChildren[i]?.applet;
+                    if(applet?.Plasmoid?.pluginName === targetPlasmoid) {
                         return currentLayout.visibleChildren[i];
                     }
                 }
@@ -508,7 +509,8 @@ ContainmentItem {
             }
             function findNextApplet() {
                 for(var i = 0; i < currentLayout.visibleChildren.length; i++) {
-                    if(currentLayout.visibleChildren[i].applet.Plasmoid.pluginName === targetPlasmoid) {
+                    const applet = currentLayout.visibleChildren[i]?.applet;
+                    if(applet?.Plasmoid?.pluginName === targetPlasmoid) {
                         if(i == currentLayout.visibleChildren.length-1) {
                             return null;
                         }

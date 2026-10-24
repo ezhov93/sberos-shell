@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Smart Panel — живой HTML-мок</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assets/icons.css">
 </head>
 <body>
   <div id="viewport">
     <main id="scene" class="scene" aria-label="Рабочий стол SberOS, демонстрация">
       <div class="wallpaper" aria-hidden="true"></div>
+      <img class="desktop-art" src="assets/desktop.svg" alt="" aria-hidden="true">
       <div id="desktopTargets" aria-label="Приложения рабочего стола"></div>
       <div id="appWindow" hidden></div>
       <div id="launcher" class="launcher" hidden></div>
@@ -18,7 +20,7 @@
         <button id="sberButton" class="sber island" title="Меню Сбера" aria-label="Меню Сбера" aria-expanded="false"></button>
         <div id="applications" class="applications island" aria-label="Панель приложений"></div>
         <div id="oska" class="oska island">
-          <span class="oska-avatar" aria-hidden="true"></span>
+          <button id="notificationsButton" class="oska-avatar" title="Уведомления" aria-label="Уведомления" aria-expanded="false"></button>
           <button id="searchButton" class="search-button">Найду документ или приложение</button>
           <span class="keyboard-label">RU</span>
         </div>
@@ -29,7 +31,7 @@
       </div>
       <div id="oskaMessage" class="oska-message island" role="status" hidden></div>
       <div id="confirmation" hidden></div>
-      <div id="referenceLayer" hidden><img id="referenceImage" alt="Исходный скриншот для сравнения"><span class="reference-label">Исходный кадр</span></div>
+      <div id="referenceLayer" hidden><img id="referenceImage" alt="Исходный SVG или PNG для сравнения"><span class="reference-label">Исходный кадр</span></div>
       <div id="comparisonLine" hidden></div>
     </main>
   </div>
@@ -57,13 +59,15 @@
         <option value="saving">Питание · энергосбережение</option>
         <option value="performance">Питание · производительность</option>
         <option value="calendar">Календарь</option>
+        <option value="localSearch">Оська · поиск приложений и документов</option>
+        <option value="notificationsList">Оська · список уведомлений</option>
         <option value="launcher">Launchpad · все приложения</option>
         <option value="search">Launchpad · поиск «сбер»</option>
         <option value="noResults">Launchpad · пустая выдача</option>
         <option value="notification">Launchpad · уведомление</option>
       </select></label>
       <div class="tool-row"><button id="themeButton">Тёмная тема</button><button id="surfaceButton">Поверхности: по макету</button></div>
-      <div class="tool-row"><button id="compareButton" aria-pressed="false">Сверить со скриншотом</button><button id="scaleButton">Масштаб 1:1</button></div>
+      <div class="tool-row"><button id="compareButton" aria-pressed="false">Сверить с оригиналом</button><button id="scaleButton">Масштаб 1:1</button></div>
       <label id="compareControls" hidden>Доля HTML-мока <input id="comparisonRange" type="range" min="0" max="100" value="50"></label>
       <p id="referenceName"></p>
       <p class="tool-note">Демо: настройки и действия работают внутри страницы. Esc закрывает текущий уровень. H скрывает эту панель.</p>

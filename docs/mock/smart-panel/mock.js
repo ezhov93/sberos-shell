@@ -23,7 +23,8 @@
         capture: '<path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3"/><circle cx="12" cy="12" r="4"/>',
         info: '<circle cx="12" cy="12" r="10"/><path d="M12 11v6m0-11v1"/>'
     };
-    const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${shapes[name] || shapes.info}</svg>`;
+    const originalIcons = new Set('sber settings terminal power down left right controls wifi bluetooth battery speaker sun moon plane night bellOff capture'.split(' '));
+    const icon = name => originalIcons.has(name) ? `<span class="icon original-icon" data-glyph="${name}" aria-hidden="true"></span>` : `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${shapes[name] || shapes.info}</svg>`;
     const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const appData = [
         ['browser','СберБраузер'], ['usersoft','UserSoft'], ['jazz','Jazz'], ['pulse','Пульс'],
@@ -37,13 +38,11 @@
     ].map(([id, name], index) => ({id, name, x:256 + index % 8 * 184, y:124 + Math.floor(index / 8) * 196}));
     const appsById = Object.fromEntries(appData.map(a => [a.id, a]));
     function appIcon(id, size) {
-        const app = appsById[id];
-        const ratio = size / 120;
-        return `<span class="app-icon" role="img" aria-label="${escape(app.name)}" style="width:${size}px;height:${size}px;background-image:url('${sourceBase}launchpad-open.png');background-size:${1920 * ratio}px ${1080 * ratio}px;background-position:${-app.x * ratio}px ${-app.y * ratio}px"></span>`;
+        return `<img class="app-icon" src="assets/apps/${id}.svg" width="${size}" height="${size}" alt="${escape(appsById[id].name)}" draggable="false">`;
     }
-    const launchIcon = '<span class="launch-icon" aria-hidden="true">' + '<i></i>'.repeat(9) + '</span>';
+    const launchIcon = '<img class="launch-icon" src="assets/launchpad.svg" alt="" aria-hidden="true">';
     const state = {
-        dark:false, opaque:false, popup:null, powerMenu:false, launcher:false, query:'', page:0,
+        dark:false, opaque:false, popup:null, localQuery:'сбер', noticesCleared:false, powerMenu:false, launcher:false, query:'', page:0,
         appsMode:'desktop', running:{files:4,jazz:1}, notifications:true, wifi:true, wifiExpanded:false,
         ssid:'NovayaSetWiFi_5G_1786527', bluetooth:true, btDevice:'AirPods Pro', profile:'Сбалансированный',
         vpn:true, night:false, airplane:false, volume:75, brightness:90, month:8, year:2026,
@@ -60,8 +59,11 @@
     }
     function setReference(file) {
         state.reference = file;
-        $('referenceImage').src = sourceBase + file;
-        $('referenceName').textContent = `Сверка: ${file}`;
+        const svgRefs = {'quick-settings-light.png':'quick','calendar-light.png':'calendar','button-sber-menu-power.png':'sber','quick-settings-wifi-expanded.png':'wifi','quick-settings-bt-connected.png':'bluetooth','launchpad-open.png':'launcher'};
+        const key = file.startsWith('svg:') ? file.slice(4) : svgRefs[file];
+        state.referenceAsset = key ? `assets/references/${key}.svg` : sourceBase + file;
+        $('referenceImage').src = state.referenceAsset;
+        $('referenceName').textContent = `Сверка: ${state.referenceAsset}`;
     }
     function syncTheme() {
         $('scene').classList.toggle('dark', state.dark);
@@ -92,6 +94,9 @@
         if (restore && lastTrigger?.isConnected) lastTrigger.focus();
     }
     function updateExpanded() {
+        $('searchButton').textContent = state.noticesCleared ? 'Новых уведомлений пока нет' : 'Найду документ или приложение';
+        $('oska').hidden = ['localSearch','notificationsList'].includes(state.popup);
+        $('notificationsButton').setAttribute('aria-expanded', String(state.popup === 'notificationsList'));
         $('sberButton').hidden = state.popup === 'sber';
         $('sberButton').setAttribute('aria-expanded', String(state.popup === 'sber'));
         $('quickButton').setAttribute('aria-expanded', String(['quick','wifi','bluetooth','profile'].includes(state.popup)));
@@ -109,8 +114,11 @@
         state.popup = name;
         if (name === 'calendar') { state.year=2026; state.month=8; state.selectedDay=null; }
         renderPopup(); updateExpanded(); syncPopupReference();
+        if (name === 'localSearch') $('localQuery').focus();
     }
     function syncPopupReference() {
+        if (state.popup === 'localSearch') return setReference('svg:search');
+        if (state.popup === 'notificationsList') return setReference('svg:notifications');
         if (state.popup === 'sber') return setReference(state.powerMenu ? 'button-sber-menu-power.png' : 'button-sber-menu-open.png');
         if (state.popup === 'quick') return setReference(`quick-settings-${state.dark ? 'dark' : 'light'}.png`);
         if (state.popup === 'calendar') return setReference(`calendar-${state.dark ? 'dark' : 'light'}.png`);
@@ -149,7 +157,10 @@
         if (state.popup==='bluetooth') html=renderBluetooth();
         if (state.popup==='profile') html=renderProfiles();
         if (state.popup==='calendar') html=renderCalendar();
+        if (state.popup==='localSearch') html=renderLocalSearch();
+        if (state.popup==='notificationsList') html=renderNotifications();
         $('popups').innerHTML=html;
+        if (state.popup==='localSearch') { $('localQuery').value=state.localQuery; renderLocalResults(); }
     }
     function renderSber() {
         const actions=[['settings','settings','Настройки оболочки'],['terminal','terminal','Терминал'],['power','power','Питание и сеанс'],['collapse','down','Свернуть меню']];
@@ -162,7 +173,7 @@
         return `<button class="quick-tile ${on?'on':''}" data-action="${action}"><span class="round">${icon(i)}</span><span class="tile-label"><strong>${title}</strong><small>${escape(subtitle)}</small></span>${expandable?`<span class="tile-chevron">${icon('right')}</span>`:''}</button>`;
     }
     function renderQuick() {
-        return `<section class="popup quick" aria-label="Быстрые настройки"><div class="quick-header"><button data-action="battery" aria-label="Батарея заряжена на 64 процента">${icon('battery')}64%</button><button class="capture" data-action="capture" aria-label="Сделать снимок экрана">${icon('capture')}</button></div><label class="slider-row">${icon('speaker')}<input type="range" aria-label="Громкость" data-setting="volume" min="0" max="100" value="${state.volume}" style="--fill:${state.volume}%"></label><label class="slider-row">${icon('sun')}<input type="range" aria-label="Яркость" data-setting="brightness" min="0" max="100" value="${state.brightness}" style="--fill:${state.brightness}%"></label><div class="quick-grid">${tile('wifi','wifi','Wi‑Fi',state.wifi?state.ssid:'Выкл.',state.wifi,true)}${tile('vpn','vpn','VPN',state.vpn?'SberVPN (CORP) Active':'Выкл.',state.vpn,true)}${tile('bluetooth','bluetooth','Bluetooth',state.bluetooth?(state.btDevice||'Не подключено'):'Выкл.',state.bluetooth,true)}${tile('profile','battery','Режим питания',state.profile,false,true)}${tile('notifications','bell','Уведомления',state.notifications?'Вкл.':'Выкл.',state.notifications)}${tile('night','night','Ночной свет',state.night?'Вкл.':'Выкл.',state.night)}${tile('airplane','plane','Авиарежим',state.airplane?'Вкл.':'Выкл.',state.airplane)}${tile('dark','moon','Тёмный стиль',state.dark?'Вкл.':'Выкл.',state.dark)}</div></section>`;
+        return `<section class="popup quick" aria-label="Быстрые настройки"><div class="quick-header"><button data-action="battery" aria-label="Батарея заряжена на 64 процента">${icon('battery')}64%</button><button class="capture" data-action="capture" aria-label="Сделать снимок экрана">${icon('capture')}</button></div><div class="quick-sliders"><label class="slider-group"><span class="slider-title">Звук</span><span class="slider-row">${icon('speaker')}<input type="range" aria-label="Громкость" data-setting="volume" min="0" max="100" value="${state.volume}" style="--fill:${state.volume}%"></span></label><label class="slider-group"><span class="slider-title">Дисплей</span><span class="slider-row">${icon('sun')}<input type="range" aria-label="Яркость" data-setting="brightness" min="0" max="100" value="${state.brightness}" style="--fill:${state.brightness}%"></span></label></div><div class="quick-grid">${tile('wifi','wifi','Wi‑Fi',state.wifi?state.ssid:'Выкл.',state.wifi,true)}${tile('vpn','vpn','VPN',state.vpn?'SberVPN (CORP) Active':'Выкл.',state.vpn,true)}${tile('bluetooth','bluetooth','Bluetooth',state.bluetooth?(state.btDevice||'Не подключено'):'Выкл.',state.bluetooth,true)}${tile('profile','battery','Режим питания',state.profile,false,true)}${tile('notifications',state.notifications?'bell':'bellOff','Уведомления',state.notifications?'Вкл.':'Выкл.',state.notifications)}${tile('night','night','Ночной свет',state.night?'Вкл.':'Выкл.',state.night)}${tile('airplane','plane','Авиарежим',state.airplane?'Вкл.':'Выкл.',state.airplane)}${tile('dark','moon','Тёмный стиль',state.dark?'Вкл.':'Выкл.',state.dark)}</div></section>`;
     }
     function subHeader(title, toggleAction, on) {
         return `<div class="sub-header"><button class="back-button" data-action="back" aria-label="Назад к быстрым настройкам">${icon('left')}</button><strong>${title}</strong>${toggleAction?`<button class="toggle ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="${title}" data-action="${toggleAction}"></button>`:'<span style="width:32px"></span>'}</div>`;
@@ -190,6 +201,35 @@
         const month=new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric'}).format(new Date(state.year,state.month,1)).replace(/\s*г\.$/,'');
         const monthLabel=month[0].toUpperCase()+month.slice(1);
         return `<section class="popup calendar" aria-label="Календарь"><div class="date-heading"><strong>Четверг, 10 сентября</strong><span>Встреч пока нет</span></div><div class="calendar-sheet"><div class="month-heading"><button data-action="monthPrev" aria-label="Предыдущий месяц">${icon('left')}</button><strong>${monthLabel}</strong><button data-action="monthNext" aria-label="Следующий месяц">${icon('right')}</button></div><div class="calendar-grid">${['пн','вт','ср','чт','пт','сб','вс'].map(x=>`<span class="weekday">${x}</span>`).join('')}${calendarDays(state.year,state.month).map(date=>{const outside=date.getMonth()!==state.month;const today=date.getFullYear()===2026&&date.getMonth()===8&&date.getDate()===10;const past=date<new Date(2026,8,10);const key=[date.getFullYear(),date.getMonth(),date.getDate()].join('-');return `<button class="calendar-day ${outside?'outside':''} ${past?'past':''} ${today?'today':''} ${state.selectedDay===key?'selected':''}" data-action="date" data-value="${key}" aria-label="${new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(date)}" ${today?'aria-current="date"':''}>${date.getDate()}</button>`;}).join('')}</div></div></section>`;
+    }
+    const localDocuments = [
+        ['SberDecision (преза).pdf','11 июня 2026 · 14 Мб','filePdf'],
+        ['Должностная (Сбер)','5 апр. 2026 · 120 Кб','fileWord'],
+        ['KV Сбера.pptx','20 янв. 2026 · 3.5 Мб','filePowerpoint'],
+        ['Лого Сбер.png','24 дек. 2025 · 1.3 Мб','fileImage'],
+        ['Сбербанкиада.xlsx','14 янв. 2025 · 29 Кб','fileExcel'],
+        ['Сбер.txt','11 янв. 2025 · 230 Кб','file']
+    ];
+    const notices = [
+        ['Срок действия PIN истёк','Обновите сертификат PIN в домене Sigma','2 часа назад','settings'],
+        ['Почта','Почтовый ящик почти заполнен. Удалите часть писем или отправьте в архив','Вчера в 14:52','mail'],
+        ['Доступ к ресурсам ограничен','Для доступа к внешним ресурсам оформите заявку в Друг','7 сент. в 09:43','settings']
+    ];
+    function searchFooter(input=false) {
+        return `<div class="oska-footer">${input?'<input id="localQuery" type="search" aria-label="Поиск приложений и документов" placeholder="Найду документ или приложение" autocomplete="off">':'<button class="oska-avatar" data-action="closeNotifications" aria-label="Закрыть уведомления"></button><button class="search-button" data-action="localSearch">Найду документ или приложение</button><span class="keyboard-label">RU</span>'}</div>`;
+    }
+    function renderLocalSearch() {
+        return `<section class="popup local-search" aria-label="Локальный поиск"><div id="localResults" class="local-results"></div>${searchFooter(true)}</section>`;
+    }
+    function renderLocalResults() {
+        const normalize=value=>value.toLocaleLowerCase('ru').replaceAll('sber','сбер');
+        const query=normalize(state.localQuery.trim());
+        const apps=['browser','chat','docs','boost'].filter(id=>normalize(appsById[id].name).includes(query));
+        const docs=localDocuments.filter(d=>normalize(d[0]).includes(query));
+        $('localResults').innerHTML=apps.length||docs.length ? `<h2>Приложения</h2><div class="local-apps">${apps.map(id=>`<button data-action="app" data-id="${id}">${appIcon(id,64)}<span>${escape(appsById[id].name)}</span></button>`).join('')}</div><h2 class="documents-heading">Документы</h2><div class="document-list">${docs.map(([name,meta,i])=>`<button class="document-result" data-action="document" data-value="${escape(name)}"><img src="assets/icons/${i}.svg" width="24" height="24" alt=""><span><strong>${escape(name)}</strong><small>${meta}</small></span>${icon('right')}</button>`).join('')}</div>` : '<p class="local-empty">Ничего не найдено</p>';
+    }
+    function renderNotifications() {
+        return `<section class="popup notifications-list" aria-label="Уведомления"><div class="notices-header"><strong>Уведомления <span>${state.noticesCleared?0:notices.length}</span></strong><button data-action="clearNotices">Очистить</button></div><div class="notices">${state.noticesCleared?'<p class="local-empty">Уведомлений пока нет</p>':notices.map(([title,text,time,i])=>`<article class="notice"><span class="notice-icon">${i==='mail'?appIcon('mail',24):icon(i)}</span><div><h3>${title}</h3><p>${text}</p></div><time>${time}</time></article>`).join('')}</div>${searchFooter()}</section>`;
     }
     function openLauncher(query='', trigger) {
         closeTop(false); state.powerMenu=false; state.launcher=true; state.query=query; state.page=0;
@@ -243,6 +283,8 @@
         else if(['wifi','wifiList','wifiOff'].includes(name)){state.popup='wifi';state.wifi=name!=='wifiOff';state.wifiExpanded=name==='wifiList';syncPopupReference();}
         else if(['bluetooth','bluetoothConnected','bluetoothOff'].includes(name)){state.popup='bluetooth';state.bluetooth=name!=='bluetoothOff';state.btDevice=name==='bluetoothConnected'?'AirPods Pro':'';syncPopupReference();}
         else if(['balanced','saving','performance'].includes(name)){state.popup='profile';state.profile=name==='saving'?'Энергосберегающий':name==='performance'?'Производительный':'Сбалансированный';syncPopupReference();}
+        else if(name==='localSearch'){state.popup='localSearch';state.localQuery='сбер';syncPopupReference();}
+        else if(name==='notificationsList'){state.popup='notificationsList';state.noticesCleared=false;syncPopupReference();}
         else if(name==='calendar'){state.popup='calendar';state.year=2026;state.month=8;syncPopupReference();}
         else if(['launcher','search','noResults','notification'].includes(name)){
             openLauncher(name==='launcher'?'':name==='noResults'?'лмвртуоцаимушатмы':'сбер');
@@ -251,14 +293,16 @@
         }
         renderApps();renderPopup();updateExpanded();
     }
-    $('sberButton').innerHTML=icon('sber');$('quickButton').innerHTML=icon('controls');
+    $('sberButton').innerHTML='<span class="button-face">'+icon('sber')+'</span>'; $('quickButton').innerHTML=icon('controls');
     $('sberButton').addEventListener('click',e=>openPopup('sber',e.currentTarget));
     $('quickButton').addEventListener('click',e=>openPopup('quick',e.currentTarget));
     $('calendarButton').addEventListener('click',e=>openPopup('calendar',e.currentTarget));
-    $('searchButton').addEventListener('click',e=>openLauncher('',e.currentTarget));
+    $('searchButton').addEventListener('click',e=>openPopup('localSearch',e.currentTarget));
+    $('notificationsButton').addEventListener('click',e=>openPopup('notificationsList',e.currentTarget));
     const targets=[['files',0,0],['jazz',1,0],['files',2,0],['browser',0,1],['files',1,1],['varm',2,1],['usersoft',0,2],['chat',1,2],['files',2,2],['pixso',0,3],['disk',1,3],['docs',2,3],['files',0,4],['files',1,4],['vpn',0,5],['mail',1,5],['pulse',0,6],['files',1,6],['files',0,7],['python',1,7]];
     $('desktopTargets').innerHTML=targets.map(([id,col,rowIndex])=>`<button class="desktop-target" data-action="app" data-id="${id}" style="left:${16+col*112}px;top:${20+rowIndex*120}px" aria-label="${escape(appsById[id].name)}"></button>`).join('');
     document.addEventListener('input',e=>{
+        if (e.target.id==='localQuery') { state.localQuery=e.target.value; renderLocalResults(); }
         if (e.target.matches('[data-setting]')) { state[e.target.dataset.setting]=Number(e.target.value);e.target.style.setProperty('--fill',e.target.value+'%'); }
     });
     document.addEventListener('click',e=>{
@@ -266,7 +310,7 @@
         if(!button){
             if(e.target.closest('.prototype-tools')) return;
             if(state.launcher && e.target.closest('#launcher') && !e.target.closest('.launch-search,.launch-grid,.pages')) closeTop();
-            else if(state.popup && !e.target.closest('.popup,.power-menu,.system,.sber')) closeTop();
+            else if(state.popup && !e.target.closest('.popup,.power-menu,.system,.sber,.oska')) closeTop();
             else if(state.appsMode==='overflowOpen' && !e.target.closest('#applications')) closeTop();
             return;
         }
@@ -274,6 +318,10 @@
         if(state.powerMenu && button.closest('.sber-menu') && action!=='power') {
             state.powerMenu=false;renderPopup();syncPopupReference();return;
         }
+        if(action==='localSearch') return openPopup('localSearch',button);
+        if(action==='closeNotifications') return closeTop();
+        if(action==='clearNotices'){state.noticesCleared=true;closeTop();return;}
+        if(action==='document'){closeTop(false);message(`${button.dataset.value}: демонстрация открытия документа`);return;}
         if(action==='launchpad') return openLauncher('',button);
         if(action==='app') return launchApp(button.dataset.id);
         if(action==='overflow'){state.appsMode='overflowOpen';lastTrigger=button;renderApps();setReference('applications-overflow-open.png');return;}
@@ -311,6 +359,7 @@
             const index=items.indexOf(document.activeElement);const backwards=e.key==='ArrowUp'||e.shiftKey;
             e.preventDefault();items[index<0?(backwards?items.length-1:0):(index+(backwards?-1:1)+items.length)%items.length].focus();
         }
+        if(state.popup==='localSearch'&&e.key==='Enter'&&e.target.id==='localQuery')document.querySelector('.local-apps button,.document-result')?.click();
         if(state.launcher&&e.key==='Enter'&&e.target.id==='launchQuery')document.querySelector('.launch-app')?.click();
     });
     $('toolsButton').addEventListener('click',()=>{$('toolsBody').hidden=!$('toolsBody').hidden;$('toolsButton').setAttribute('aria-expanded',String(!$('toolsBody').hidden));});

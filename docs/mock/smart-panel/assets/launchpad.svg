@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="112 1016 40 40" width="40" height="40" fill="none"><defs><clipPath id="clipPath_102">
+			<rect width="40.000000" height="40.000000" x="112.000000" y="1016.000000" rx="12.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+		<clipPath id="clipPath_103">
+			<rect width="28.000000" height="28.000000" x="118.000000" y="1022.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+		<linearGradient id="paint_linear_8" x1="122" x2="122" y1="1030" y2="1022" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(2,162,154)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(2,162,154)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_9" x1="142" x2="142" y1="1040" y2="1032" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(235,51,68)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(235,51,68)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_10" x1="122" x2="122" y1="1050" y2="1042" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(74,101,232)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(74,101,232)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_11" x1="142" x2="142" y1="1050" y2="1042" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(45,205,192)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(45,205,192)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_12" x1="132" x2="132" y1="1050" y2="1042" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(157,71,220)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(157,71,220)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_13" x1="132" x2="132" y1="1040" y2="1032" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,145,255)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,145,255)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_14" x1="122" x2="122" y1="1040" y2="1032" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(147,152,169)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(147,152,169)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_15" x1="142" x2="142" y1="1030" y2="1022" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(255,111,0)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(255,111,0)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		<linearGradient id="paint_linear_16" x1="132" x2="132" y1="1030" y2="1022" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(255,186,0)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(255,186,0)" offset="1" stop-opacity="0.5" />
+		</linearGradient>
+		</defs><g id="launchpad" clip-path="url(#clipPath_102)" customFrame="url(#clipPath_102)">
+									<rect id="launchpad" width="40.000000" height="40.000000" x="112.000000" y="1016.000000" rx="12.000000" />
+									<g id="apps.grid" customFrame="url(#clipPath_103)">
+										<rect id="apps.grid" width="28.000000" height="28.000000" x="118.000000" y="1022.000000" />
+										<rect id="Rectangle 240655931" width="8.000000" height="8.000000" x="118.000000" y="1022.000000" rx="2.000000" fill="url(#paint_linear_8)" />
+										<rect id="Rectangle 240655932" width="8.000000" height="8.000000" x="138.000000" y="1032.000000" rx="2.000000" fill="url(#paint_linear_9)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="118.000000" y="1042.000000" rx="2.000000" fill="url(#paint_linear_10)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="138.000000" y="1042.000000" rx="2.000000" fill="url(#paint_linear_11)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="128.000000" y="1042.000000" rx="2.000000" fill="url(#paint_linear_12)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="128.000000" y="1032.000000" rx="2.000000" fill="url(#paint_linear_13)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="118.000000" y="1032.000000" rx="2.000000" fill="url(#paint_linear_14)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="138.000000" y="1022.000000" rx="2.000000" fill="url(#paint_linear_15)" />
+										<rect id="Rectangle 240655933" width="8.000000" height="8.000000" x="128.000000" y="1022.000000" rx="2.000000" fill="url(#paint_linear_16)" />
+									</g>
+								</g>
+							</svg>

@@ -1,0 +1,771 @@
+{
+  "sources": {
+    "quick": {
+      "file": "быстрые настройки.svg",
+      "sha256": "0ae8089675e09edca2594b0b840fac0fa636df7dab736728dd2fc2ed61ca74ae",
+      "viewBox": "0 0 1920 1080"
+    },
+    "calendar": {
+      "file": "календарь.svg",
+      "sha256": "77710ed6ad6631936ab1b69259c3cdc92d121c7dced3c4ba559e8dd75bdf9423",
+      "viewBox": "0 0 1920 1080"
+    },
+    "sber": {
+      "file": "sber меню.svg",
+      "sha256": "047486bf582e45eb1af75044fc72d49c483a35d00b1d2c81043aa8f2d368da3d",
+      "viewBox": "0 0 1920 1080"
+    },
+    "wifi": {
+      "file": "wifi.svg",
+      "sha256": "2506bf82863414f527dfc6021663375d5c26521613f0b03ac9de56e261c1c8b8",
+      "viewBox": "0 0 1920 1080"
+    },
+    "bluetooth": {
+      "file": "bluetooth.svg",
+      "sha256": "0a8a6369a0b2fdc2a4a3013b0058421b6bb0906a7f57b3e55ec304fcdfd6ae22",
+      "viewBox": "0 0 1920 1080"
+    },
+    "launcher": {
+      "file": "меню приложений.svg",
+      "sha256": "6868585df66074ee7948cb65ef244c111fd14b1f69780b531d66a99ea561d5cd",
+      "viewBox": "0 0 1920 1080"
+    },
+    "search": {
+      "file": "поиск.svg",
+      "sha256": "7078b4c483120c99b42e1ecf75dc6202890141170bacc0c1ee3fef00218f4ac7",
+      "viewBox": "0 0 1920 1080"
+    },
+    "notifications": {
+      "file": "меню уведомлений.svg",
+      "sha256": "01ce587fabd2ef4b433f31563f99ed2126aa87cac119ecdc69e3c4c29e1f44b3",
+      "viewBox": "0 0 1920 1080"
+    }
+  },
+  "geometry": {
+    "quick": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "pad",
+        "box": [
+          16.0,
+          1000.0,
+          1888.0,
+          72.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "frog.line.default.ru",
+        "box": [
+          732.0,
+          1000.0,
+          456.0,
+          72.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "pad.lay",
+        "box": [
+          1416.0,
+          452.0,
+          488.0,
+          540.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "settings",
+        "box": [
+          1432.0,
+          468.0,
+          456.0,
+          504.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "lines",
+        "box": [
+          1432.0,
+          548.0,
+          456.0,
+          152.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "sound",
+        "box": [
+          1432.0,
+          548.0,
+          456.0,
+          68.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "volume.line",
+        "box": [
+          1432.0,
+          576.0,
+          456.0,
+          40.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "display",
+        "box": [
+          1432.0,
+          632.0,
+          456.0,
+          68.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "display.line",
+        "box": [
+          1432.0,
+          660.0,
+          456.0,
+          40.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "center",
+        "box": [
+          1432.0,
+          724.0,
+          456.0,
+          248.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      }
+    ],
+    "calendar": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "pad",
+        "box": [
+          16.0,
+          1000.0,
+          1888.0,
+          72.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "frog.line.default.ru",
+        "box": [
+          732.0,
+          1000.0,
+          456.0,
+          72.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "pad.lay",
+        "box": [
+          1560.0,
+          610.0,
+          344.0,
+          382.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "users.today",
+        "box": [
+          1576.0,
+          622.0,
+          312.0,
+          354.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "Date & Time Picker ✅",
+        "box": [
+          1576.0,
+          660.0,
+          312.0,
+          316.0
+        ],
+        "fill": "rgb(255,255,255)",
+        "opacity": null,
+        "radius": "16.000000"
+      }
+    ],
+    "sber": [
+      {
+        "id": "pad",
+        "box": [
+          16.0,
+          1000.0,
+          1888.0,
+          72.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "frog.line.default.ru",
+        "box": [
+          732.0,
+          1000.0,
+          456.0,
+          72.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      }
+    ],
+    "wifi": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "pad.lay",
+        "box": [
+          1560.0,
+          396.0,
+          344.0,
+          595.999756
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "wi-fi",
+        "box": [
+          1576.0,
+          412.0,
+          312.0,
+          559.999756
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "settings.wifi",
+        "box": [
+          1576.0,
+          596.0,
+          312.0,
+          335.999878
+        ],
+        "fill": "rgb(255,255,255)",
+        "opacity": null,
+        "radius": "16.000000"
+      },
+      {
+        "id": "frog.line.default.ru",
+        "box": [
+          732.0,
+          1000.0,
+          456.0,
+          72.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      }
+    ],
+    "bluetooth": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "pad",
+        "box": [
+          16.0,
+          1000.0,
+          1888.0,
+          72.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "frog.line.default.ru",
+        "box": [
+          732.0,
+          1000.0,
+          456.0,
+          72.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "pad.lay",
+        "box": [
+          1560.0,
+          436.0,
+          344.0,
+          555.999756
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "wi-fi",
+        "box": [
+          1576.0,
+          452.0,
+          312.0,
+          519.999756
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "settings.wifi",
+        "box": [
+          1576.0,
+          596.0,
+          312.0,
+          335.999878
+        ],
+        "fill": "rgb(255,255,255)",
+        "opacity": null,
+        "radius": "16.000000"
+      }
+    ],
+    "launcher": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "launchpad.overlay",
+        "box": [
+          0.0,
+          0.0,
+          1920.0,
+          1080.0
+        ],
+        "fill": "rgb(50,53,62)",
+        "opacity": "0.579999983",
+        "radius": null
+      },
+      {
+        "id": "launchpad.apps",
+        "box": [
+          256.0,
+          124.0,
+          1408.0,
+          736.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "launchpad.line",
+        "box": [
+          256.0,
+          124.0,
+          1408.0,
+          148.000015
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "launchpad.line",
+        "box": [
+          256.0,
+          320.0,
+          1408.0,
+          148.000015
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "launchpad.line",
+        "box": [
+          256.0,
+          516.0,
+          1408.0,
+          148.000015
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "launchpad.line",
+        "box": [
+          256.0,
+          712.0,
+          1408.0,
+          148.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "Оськи в тёмной теме",
+        "box": [
+          732.0,
+          1000.0,
+          456.0,
+          72.0
+        ],
+        "fill": "rgb(31,35,43)",
+        "opacity": "0.400000006",
+        "radius": "24.000000"
+      }
+    ],
+    "search": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "frog.search.index",
+        "box": [
+          732.0,
+          419.0,
+          456.0,
+          653.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "frog.search",
+        "box": [
+          740.0,
+          427.0,
+          440.0,
+          637.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "frog.answer",
+        "box": [
+          740.0,
+          427.0,
+          440.0,
+          573.0
+        ],
+        "fill": "rgb(255,255,255)",
+        "opacity": "0.920000017",
+        "radius": "20.000000"
+      },
+      {
+        "id": "apps.index",
+        "box": [
+          756.0,
+          439.0,
+          408.0,
+          133.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "apps.index",
+        "box": [
+          756.0,
+          467.0,
+          408.0,
+          96.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "apps.index",
+        "box": [
+          756.0,
+          588.0,
+          408.0,
+          352.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "docs",
+        "box": [
+          756.0,
+          616.0,
+          408.0,
+          324.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      }
+    ],
+    "notifications": [
+      {
+        "id": "labels.workplace",
+        "box": [
+          16.0,
+          20.0,
+          320.0,
+          960.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "pad.lay",
+        "box": [
+          732.0,
+          718.0,
+          456.0,
+          354.0
+        ],
+        "fill": "rgb(247,249,251)",
+        "opacity": "0.720000029",
+        "radius": "24.000000"
+      },
+      {
+        "id": "noti.list.off",
+        "box": [
+          740.0,
+          730.0,
+          440.0,
+          334.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "noti.full",
+        "box": [
+          740.0,
+          730.0,
+          440.0,
+          262.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "noti.lines",
+        "box": [
+          740.0,
+          762.0,
+          440.0,
+          230.0
+        ],
+        "fill": null,
+        "opacity": null,
+        "radius": null
+      },
+      {
+        "id": "noti.line",
+        "box": [
+          740.0,
+          828.0,
+          440.0,
+          78.0
+        ],
+        "fill": "rgb(255,255,255)",
+        "opacity": null,
+        "radius": "20.000000"
+      },
+      {
+        "id": "noti.line",
+        "box": [
+          740.0,
+          914.0,
+          440.0,
+          78.0
+        ],
+        "fill": "rgb(255,255,255)",
+        "opacity": null,
+        "radius": "20.000000"
+      }
+    ]
+  },
+  "icons": [
+    "battery",
+    "bellOff",
+    "bluetooth",
+    "capture",
+    "controls",
+    "down",
+    "file",
+    "fileExcel",
+    "fileImage",
+    "filePdf",
+    "filePowerpoint",
+    "fileWord",
+    "left",
+    "moon",
+    "night",
+    "plane",
+    "power",
+    "right",
+    "sber",
+    "settings",
+    "speaker",
+    "sun",
+    "terminal",
+    "wifi"
+  ],
+  "apps": [
+    "browser",
+    "usersoft",
+    "jazz",
+    "pulse",
+    "pixso",
+    "varm",
+    "online",
+    "mail",
+    "python",
+    "emp",
+    "office",
+    "chat",
+    "friend",
+    "pdf",
+    "boards",
+    "f1",
+    "citrix",
+    "sigma",
+    "disk",
+    "docs",
+    "access",
+    "potok",
+    "protocol",
+    "vpn",
+    "mapp",
+    "isy",
+    "space",
+    "shares",
+    "design",
+    "boost",
+    "aigen",
+    "files"
+  ],
+  "note": "Vector paths preserved. Embedded images: PNG icons and JPEG wallpaper <=1920px, icon art <=240px. Text is outlined; no font-family information in the exports."
+}

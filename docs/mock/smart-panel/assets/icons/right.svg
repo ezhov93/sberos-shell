@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="1628 744 16 16" width="16" height="16" fill="none"><defs><clipPath id="clipPath_172">
+			<rect width="16.000000" height="16.000000" x="1628.000000" y="744.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+		</defs><g id="chevron-right" clip-path="url(#clipPath_172)" customFrame="url(#clipPath_172)">
+															<rect id="chevron-right" width="16.000000" height="16.000000" x="1628.000000" y="744.000000" />
+															<path id="Shape" d="M1633.53 747.529C1633.79 747.268 1634.21 747.268 1634.47 747.529L1638.47 751.529C1638.73 751.789 1638.73 752.211 1638.47 752.472L1634.47 756.472C1634.21 756.732 1633.79 756.732 1633.53 756.472C1633.27 756.211 1633.27 755.789 1633.53 755.529L1637.06 752L1633.53 748.472C1633.27 748.211 1633.27 747.789 1633.53 747.529Z" fill="rgb(69,72,84)" fill-rule="evenodd" />
+														</g>
+														</svg>

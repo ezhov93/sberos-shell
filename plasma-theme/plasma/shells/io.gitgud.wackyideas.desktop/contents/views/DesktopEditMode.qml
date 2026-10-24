@@ -17,8 +17,6 @@ import org.kde.kcmutils as KCM
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PC
 
-import aeroshell.utils as AeroShellUtils
-
 import "../components"
 
 Item {
@@ -34,15 +32,6 @@ Item {
     Rectangle {
         color: "#1D5F7A"
         anchors.fill: parent
-    }
-
-    AeroShellUtils.SDDM { id: sddm }
-
-    Image {
-        id: bg
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        source: sddm.currentBackground
     }
 
     Rectangle {
@@ -187,6 +176,5 @@ Item {
 
     Component.onCompleted: {
         open = Qt.binding(() => {return containment.plasmoid.corona.editMode});
-        executable.exec("kreadconfig6 --file \"/usr/share/sddm/themes/sddm-theme-mod/theme.conf.user\" --group \"General\" --key \"background\"");
     }
 }

@@ -21,6 +21,8 @@ import org.kde.plasma.plasmoid 2.0
 Item {
     id: root
 
+    Component.onCompleted: Qt.callLater(() => panel.opacityMode = Panel.Global.Translucent)
+
     Connections {
         target: root
 

@@ -29,6 +29,8 @@ ContainmentItem {
     property bool panelFloating: root.panel ? root.panel.floating : Plasmoid.configuration.panelFloating
     property bool panelFloatingApplets: root.panel ? root.panel.floatingApplets : Plasmoid.configuration.panelFloatingApplets
 
+    Component.onCompleted: Plasmoid.backgroundHints = PlasmaCore.Types.NoBackground
+
     onPanelThicknessChanged: {
         if(root.panel) {
             if(root.panel.userConfiguring) {
@@ -255,7 +257,7 @@ ContainmentItem {
             id: appletContainerComponent
             // This loader conditionally manages the BusyIndicator, it's not
             // loading the applet. The applet becomes a regular child item.
-            Loader {
+            Item {
                 id: container
                 required property Item applet
                 required property int index
@@ -265,6 +267,21 @@ ContainmentItem {
                 property int appletIndex: index // To make sure it's always readable even inside other models
                 property bool inThickArea: false
                 visible: applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus || (!Plasmoid.immutable && Plasmoid.userConfiguring) || Containment.corona.editMode;
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: Kirigami.Units.smallSpacing
+                    radius: 24
+                    color: Kirigami.Theme.backgroundColor
+                    opacity: 0.72
+                    border.width: 1
+                    border.color: Qt.rgba(Kirigami.Theme.textColor.r,
+                                          Kirigami.Theme.textColor.g,
+                                          Kirigami.Theme.textColor.b,
+                                          0.22)
+                    visible: root.isHorizontal
+                        && applet?.plasmoid?.pluginName !== "org.kde.plasma.panelspacer"
+                }
 
                 //when the applet moves caused by its resize, don't animate.
                 //this is completely heuristic, but looks way less "jumpy"
@@ -294,7 +311,9 @@ ContainmentItem {
                 // https://bugs.kde.org/show_bug.cgi?id=473420
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                property bool wantsToFillWidth: applet?.Layout.fillWidth
+                property bool wantsToFillWidth: applet?.plasmoid?.pluginName === "org.kde.plasma.icontasks"
+                    ? false
+                    : applet?.Layout.fillWidth
                 property bool wantsToFillHeight: applet?.Layout.fillHeight
                 onWantsToFillWidthChanged: checkLastSpacer()
                 onWantsToFillHeightChanged: checkLastSpacer()
@@ -310,7 +329,7 @@ ContainmentItem {
                 Layout.preferredWidth: root.isHorizontal ? findPositive(applet?.Layout.preferredWidth, Layout.minimumWidth) : availWidth
                 Layout.preferredHeight: !root.isHorizontal ? findPositive(applet?.Layout.preferredHeight, Layout.minimumHeight) : availHeight
 
-                Layout.maximumWidth: root.isHorizontal ? (wantsToFillWidth ? findPositive(applet?.Layout.maximumWidth, root.width) : Math.min(applet?.Layout.maximumWidth, Layout.preferredWidth)) : availWidth
+                Layout.maximumWidth: root.isHorizontal ? (wantsToFillWidth ? findPositive(applet?.Layout.maximumWidth, root.width) : Math.min(findPositive(applet?.Layout.maximumWidth, Layout.preferredWidth), Layout.preferredWidth)) : availWidth
                 Layout.maximumHeight: !root.isHorizontal ? (wantsToFillHeight ? findPositive(applet?.Layout.maximumHeight, root.height) : Math.min(applet?.Layout.maximumHeight, Layout.preferredHeight)) : availHeight
     // END BUG 454095
 
@@ -374,15 +393,19 @@ ContainmentItem {
                     if (applet) {
                         applet.parent = container
                         applet.anchors.fill = container
+                        applet.z = 60
                         //applet.Plasmoid.internalAction("configure").text = "Properties"
 
                     } else {
                         appletsModel.remove(index)
                     }
                 }
-                active: applet && applet.Plasmoid.busy
-                sourceComponent: PC3.BusyIndicator {
-                    z: 999
+                Loader {
+                    anchors.fill: parent
+                    active: container.applet && container.applet.Plasmoid.busy
+                    sourceComponent: PC3.BusyIndicator {
+                        z: 999
+                    }
                 }
 
                 property int oldX: 0

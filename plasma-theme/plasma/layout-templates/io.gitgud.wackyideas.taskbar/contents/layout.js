@@ -1,5 +1,9 @@
 var panel = new Panel("io.gitgud.wackyideas.panel");
 var panelScreen = panel.screen
+if (panelScreen < 0 && screenCount > 0) {
+    // A new panel has no screen association yet; use the primary screen for initial sizing.
+    panelScreen = 0
+}
 
 // SberOS keeps the unified panel on the lower screen edge.
 
@@ -8,10 +12,8 @@ var panelScreen = panel.screen
 // even numbers
 panel.location = "bottom"
 panel.height = 64
-// Keep one shared panel and strut, but let applets draw their own island surfaces.
+// Keep one shared panel and strut; the panel containment paints the mock's islands.
 panel.floating = false
-panel.floatingApplets = true
-panel.opacityMode = Panel.Translucent
 
 // Restrict horizontal panel to a maximum size of a 21:9 monitor
 const maximumAspectRatio = 21/9;
@@ -28,7 +30,7 @@ if (panel.formFactor === "horizontal") {
 
 panel.addWidget("org.kde.plasma.kicker")
 //panel.addWidget("org.kde.plasma.showActivityManager")
-panel.addWidget("org.kde.plasma.taskmanager")
+panel.addWidget("org.kde.plasma.icontasks")
 
 /* Next up is determining whether to add the Input Method Panel
  * widget to the panel or not. This is done based on whether
@@ -72,6 +74,9 @@ var langIds = ["as",    // Assamese
 if (langIds.indexOf(languageId) != -1) {
     panel.addWidget("org.kde.plasma.keyboardlayout");
 }
+
+var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer");
+systemSpacer.writeConfig("expanding", true);
 
 panel.addWidget("org.kde.plasma.systemtray")
 panel.addWidget("org.kde.plasma.digitalclock")

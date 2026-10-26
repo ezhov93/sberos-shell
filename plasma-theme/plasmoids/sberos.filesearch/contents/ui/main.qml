@@ -15,7 +15,22 @@ PlasmoidItem {
     property alias logic: controller
     property bool notificationsOpen: false
     readonly property bool editingSmartSearch: isExtraWideMode && expanded && !notificationsOpen
-    onExpandedChanged: if (!expanded) notificationsOpen = false
+    property bool searchFocusSettling: false
+    onExpandedChanged: {
+        if (!expanded) {
+            notificationsOpen = false
+            searchFocusSettling = false
+            searchFocusGuard.stop()
+        } else if (editingSmartSearch) {
+            searchFocusSettling = true
+            searchFocusGuard.restart()
+        }
+    }
+    Timer {
+        id: searchFocusGuard
+        interval: 600
+        onTriggered: root.searchFocusSettling = false
+    }
     NotificationManager.WatchedNotificationsModel { id: notificationModel }
     Instantiator {
         id: notificationRows
@@ -96,7 +111,7 @@ PlasmoidItem {
 
     // Prevent closing when interacting with external dialogs (like auth)
     property bool preventClosing: false
-    hideOnWindowDeactivate: !preventClosing
+    hideOnWindowDeactivate: !preventClosing && !(editingSmartSearch && searchFocusSettling)
 
     // ===== VIEW MODE CONFIGURATION =====
     readonly property int viewMode: Plasmoid.configuration.viewMode

@@ -68,6 +68,7 @@ controls UI Kit сверяются по UIKIT-002; компоненты, спе�
 
 | Задача | Работа | Статус | Зависимости |
 | --- | --- | --- | --- |
+| [PLASMA-DEFAULT](archive/PLASMA-DEFAULT.md) | Сделать Plasma Smart Panel основной для пользователя | Готово | ATP-001 |
 | [SHELL-001](SHELL-001.md) | Оформление по HTML-моку через UI Kit | В работе | — |
 | [SHELL-002](archive/SHELL-002.md) | Удалить старую двухпанельную раскладку Sirca | Готово | PANEL-001, ADR-0008 |
 | [SHELL-003](archive/SHELL-003.md) | Удалить погоду из Sirca Shell | Готово | — |

@@ -133,3 +133,26 @@ SVG доставляется в четыре KPackage тем же `sync-smart-pa
 зависит от внутреннего устройства libplasma 6.7; после обновления Plasma
 повторять целевую проверку рамки, маски и курсора.
 [Снимки KWin до/после и результаты](../docs/tasks/evidence/ATP-001/popup-frame/).
+
+## Основная панель текущего пользователя
+
+По запросу пользователя 26.10.2026 Smart Panel включена вместо обычного shell
+в штатной `plasma-plasmashell.service`. Пользовательский drop-in
+`~/.config/systemd/user/plasma-plasmashell.service.d/sberos-shell.conf`:
+
+```ini
+[Service]
+ExecStart=
+ExecStart=/usr/bin/plasmashell --no-respawn --shell-plugin io.gitgud.wackyideas.desktop
+```
+
+Служба включена в `plasma-core.target`; настройка действует после перезапуска
+Plasma и при следующих входах пользователя. `install.sh` по-прежнему только
+устанавливает пакеты; основной запуск настроен отдельно. Для обновления
+установленных пакетов: `bash plasma-theme/install.sh`, затем
+`systemctl --user restart plasma-plasmashell.service`.
+
+Для возврата удалить только этот drop-in, выполнить `systemctl --user daemon-reload`
+и `systemctl --user restart plasma-plasmashell.service`. Обычный профиль Plasma
+сохранён. Резервные копии, снимки, состояние службы и ограничения проверки —
+[PLASMA-DEFAULT](../docs/tasks/archive/PLASMA-DEFAULT.md).

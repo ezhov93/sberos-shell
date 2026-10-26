@@ -52,3 +52,8 @@ var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
 systemSpacer.writeConfig("expanding", true)
 
 panel.addWidget("KdeControlStation")
+
+// The Plasma digital clock opens its calendar popup when clicked.
+var clock = panel.addWidget("org.kde.plasma.digitalclock")
+clock.currentConfigGroup = ["Appearance"]
+clock.writeConfig("showDate", true)

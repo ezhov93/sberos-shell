@@ -352,16 +352,16 @@ Item {
                 id: clockContent
                 anchors.centerIn: parent
                 spacing: 8
-                BarDateStatus {
-                    id: dateStatus
-                    anchors.verticalCenter: parent.verticalCenter
-                    onActivated: sourceItem => integratedCalendarPopup.toggle(sourceItem)
-                }
                 BarStatusArea {
                     anchors.verticalCenter: parent.verticalCenter
                     dockHosted: true
                     dockEdge: ConfigService.position
                     controlCenterPlacement: "control-center-only"
+                }
+                BarDateStatus {
+                    id: dateStatus
+                    anchors.verticalCenter: parent.verticalCenter
+                    onActivated: sourceItem => integratedCalendarPopup.toggle(sourceItem)
                 }
             }
         }

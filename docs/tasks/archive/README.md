@@ -6,6 +6,7 @@
 
 | Задача | Работа |
 | --- | --- |
+| [PLASMA-ALT-TAB](PLASMA-ALT-TAB.md) | Восстановить Alt+Tab в Plasma Smart Panel |
 | [PLASMA-DEFAULT](PLASMA-DEFAULT.md) | Сделать Plasma Smart Panel основной для пользователя |
 | [ASSESS-THREE-SHELLS](ASSESS-THREE-SHELLS.md) | Оценить модификации трёх оболочек и выбрать основу дальнейшей работы |
 | [DOCS-AGENT-WORKFLOW](DOCS-AGENT-WORKFLOW.md) | Описать экономную работу с контекстом и командами |

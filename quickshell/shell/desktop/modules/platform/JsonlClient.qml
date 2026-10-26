@@ -40,7 +40,7 @@ QtObject {
     // their read operations here.
     property var readOperations: ({})
     readonly property int maxQueueSize: 200
-    readonly property int requestTimeoutMs: 30000
+    property int requestTimeoutMs: 30000
     // Per-operation expiry overrides for requests whose legitimate duration
     // exceeds the default; 0 disables expiry entirely. Empty here;
     // PlatformClient overrides it.
@@ -142,7 +142,7 @@ QtObject {
     }
 
     property Timer _timeoutSweep: Timer {
-        interval: 5000
+        interval: 250
         repeat: true
         running: true
         onTriggered: client._expireRequests()

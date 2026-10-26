@@ -12,81 +12,34 @@ ControlCenterCard {
     signal pageRequested(string page)
     signal brightnessPreviewRequested(real value)
     signal draggingBrightnessRequested(bool value)
-    ControlCenterSelection {
-        pointer: brightnessPagePointer
-        cornerRadius: slotCard6.cardRadius
-        hovered: brightnessPagePointer.containsMouse || brightnessSlider._hovered
-        pressed: brightnessPagePointer.pressed || brightnessSlider._pressed
-    }
     Row {
         anchors {
             left: parent.left
             top: parent.top
-            leftMargin: 14
-            topMargin: 8
+            topMargin: 0
         }
         spacing: 4
         ThemeText {
-            text: I18n.tr("Display Brightness")
+            text: I18n.tr("Display")
             color: ThemeService.foregroundColor
             font {
-                pixelSize: 11
-                weight: Font.DemiBold
+                pixelSize: 14
+                weight: Font.Medium
                 family: "Noto Sans CJK SC"
             }
         }
     }
-    ThemeText {
-        anchors {
-            right: parent.right
-            top: parent.top
-            rightMargin: 30
-            topMargin: 8
-        }
-        text: slotCard6.service.brightnessAvailable ? Math.round(slotCard6.brightnessPreview) + "%" : I18n.tr("No brightness device")
-        color: ThemeService.foregroundColor
-        opacity: 0.50
-        font {
-            pixelSize: 9
-            family: "Noto Sans CJK SC"
-        }
-    }
-    ThemeText {
-        anchors {
-            right: parent.right
-            top: parent.top
-            rightMargin: 13
-            topMargin: 5
-        }
-        text: "›"
-        color: ThemeService.foregroundColor
-        font {
-            pixelSize: 15
-            weight: Font.Bold
-        }
-    }
-    MouseArea {
-        id: brightnessPagePointer
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-        }
-        height: 27
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: slotCard6.pageRequested("brightness")
-    }
     ControlCenterSlider {
         id: brightnessSlider
         objectName: "brightnessSlider"
+        accessibleName: I18n.tr("Brightness")
         anchors {
             left: parent.left
             right: parent.right
             bottom: parent.bottom
-            leftMargin: 31
-            rightMargin: 31
-            bottomMargin: 8
+            leftMargin: 48
+            rightMargin: 0
+            bottomMargin: 0
         }
         value: slotCard6.brightnessPreview / 100
         enabled: slotCard6.service.brightnessAvailable
@@ -103,16 +56,38 @@ ControlCenterCard {
             slotCard6.service.setBrightness(Math.round(v * 100));
         }
     }
-    ThemeText {
+    Canvas {
         anchors {
             left: parent.left
-            leftMargin: 12
-            bottom: parent.bottom
-            bottomMargin: 12
+            leftMargin: 8
+            verticalCenter: brightnessSlider.verticalCenter
         }
-        text: "☀"
-        color: ThemeService.foregroundColor
-        opacity: 0.65
-        font.pixelSize: 13
+        width: 16
+        height: 16
+        readonly property color ink: AppearanceTokens.content.shellInk()
+        onInkChanged: requestPaint()
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.reset();
+            ctx.strokeStyle = ink;
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.arc(8, 8, 2.7, 0, Math.PI * 2);
+            ctx.stroke();
+            const rays = [[8, 0.5, 8, 2.3], [8, 13.7, 8, 15.5], [0.5, 8, 2.3, 8], [13.7, 8, 15.5, 8], [2.7, 2.7, 4, 4], [12, 12, 13.3, 13.3], [2.7, 13.3, 4, 12], [12, 4, 13.3, 2.7]];
+            for (const ray of rays) {
+                ctx.beginPath();
+                ctx.moveTo(ray[0], ray[1]);
+                ctx.lineTo(ray[2], ray[3]);
+                ctx.stroke();
+            }
+        }
+        Connections {
+            target: ThemeService
+            function onIsDarkChanged() {
+                parent.requestPaint();
+            }
+        }
     }
 }

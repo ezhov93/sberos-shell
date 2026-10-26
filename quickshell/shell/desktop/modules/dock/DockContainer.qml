@@ -50,12 +50,67 @@ Item {
     // Inputs (from services / parent)
     // ═══════════════════════════════════════════════════════════
     // Visible shell controls take layout slots, but never enter the app pin model.
-    readonly property int pinnedCount: DockModelService.pinnedCount
-        + (ConfigService.showLauncher ? 1 : 0)
-        + (ConfigService.showTrash ? 1 : 0)
-    readonly property int windowCount: DockModelService.windowCount
+    readonly property int allMockAppCount: (ConfigService.showLauncher ? 1 : 0)
+        + DockModelService.pinnedItems.length + DockModelService.windowCount
+    readonly property int mockFit40: Math.max(1, Math.floor((availableLength - 32) / 48))
+    readonly property int mockFit32: Math.max(mockFit40, Math.floor((availableLength - 32) / 40))
+    readonly property bool mockCompact: mockPanelMode && allMockAppCount > mockFit40
+    readonly property bool mockHasOverflow: mockPanelMode && allMockAppCount > mockFit32
+    readonly property int mockVisibleAppCount: mockHasOverflow
+        ? Math.max(1, mockFit32 - 1) : Math.min(allMockAppCount, mockFit32)
+    readonly property int mockVisiblePinnedCount: Math.max(0,
+        mockVisibleAppCount - (ConfigService.showLauncher ? 1 : 0))
+    readonly property int mockVisibleWindowCount: Math.max(0,
+        mockVisibleAppCount - (ConfigService.showLauncher ? 1 : 0)
+            - Math.min(DockModelService.pinnedItems.length, mockVisiblePinnedCount))
+    // Mock mode uses the icon dock only. Trash and information cards are not
+    // part of the reference composition and therefore do not consume slots.
+    readonly property int pinnedCount: mockPanelMode
+        ? Math.min(DockModelService.pinnedItems.length, mockVisiblePinnedCount)
+            + (ConfigService.showLauncher ? 1 : 0)
+        : DockModelService.pinnedCount + (ConfigService.showLauncher ? 1 : 0)
+            + (ConfigService.showTrash ? 1 : 0)
+    readonly property int windowCount: mockPanelMode
+        ? mockVisibleWindowCount + (mockHasOverflow ? 1 : 0)
+        : DockModelService.windowCount
     function infoCardSelected(id) {
         return ConfigService.infoCardOrder.indexOf(id) >= 0
+    }
+    readonly property var overflowEntries: {
+        const entries = []
+        if (ConfigService.showLauncher)
+            entries.push({ kind: "launcher", name: I18n.tr("Applications"),
+                icon: Qt.resolvedUrl("../../assets/applauncher.svg") })
+        for (const item of DockModelService.pinnedItems)
+            entries.push({ kind: "app", appId: item.appId, name: item.name,
+                icon: item.icon ?? "" })
+        for (let i = 0; i < DockModelService.windowModel.count; i++) {
+            const item = DockModelService.windowModel.get(i)
+            entries.push({ kind: item.isWindowItem ? "window" : "app",
+                appId: item.appId ?? "", windowId: item.windowId ?? "",
+                name: item.title ?? "", icon: item.icon ?? "" })
+        }
+        return entries
+    }
+    function activateOverflowEntry(entry) {
+        DockModelService.setDockPopupVisible(overflowPopup, false)
+        if (DockModelService.activeDockPopup === overflowPopup)
+            DockModelService.releaseDockPopup(overflowPopup)
+        if (entry.kind === "launcher") {
+            AppLauncherService.toggle(targetScreen)
+        } else if (entry.kind === "window") {
+            DockModelService.toggleWindow(entry.windowId)
+        } else if (entry.appId) {
+            DockModelService.activateApp(entry.appId)
+        }
+    }
+    function toggleOverflowPopup() {
+        if (DockModelService.activeDockPopup === overflowPopup) {
+            DockModelService.setDockPopupVisible(overflowPopup, false)
+            DockModelService.releaseDockPopup(overflowPopup)
+        } else {
+            DockModelService.openDockPopup(overflowPopup)
+        }
     }
     readonly property bool hasPlayingMusic: infoCardSelected("music")
         && DockMprisService.hasPlayer
@@ -68,8 +123,8 @@ Item {
     // Temperature is a permanent horizontal Dock page. MetricsService may
     // still be loading its first snapshot; the card remains and shows "--".
     readonly property bool hasTemperature: infoCardSelected("metrics")
-    readonly property bool hasAvailableInfo: hasPlayingMusic || hasWeather || hasClock
-        || hasTemperature
+    readonly property bool hasAvailableInfo: !mockPanelMode
+        && (hasPlayingMusic || hasWeather || hasClock || hasTemperature)
     readonly property int screenWidth: targetScreen?.width
         ?? Quickshell.screens[0]?.width ?? 1920
     readonly property int screenHeight: targetScreen?.height
@@ -93,9 +148,19 @@ Item {
         : ((vertical ? screenHeight - reservedBarHeight : screenWidth)
             - Math.round(floatingSpreadInset * 2))
     readonly property real baseHeight: mockPanelMode ? 72 : ConfigService.baseHeight
+    readonly property real layoutBaseHeight: mockPanelMode
+        ? (mockCompact ? 45 : 56) : baseHeight
+    readonly property int layoutIconSize: mockPanelMode
+        ? (mockCompact ? 32 : 40) : _layout.iconSize
     // Shape proportions come from the supported SberOS token set. User-owned
     // height/position/visibility remain in DockConfigService.
-    readonly property var proportions: ({
+    readonly property var proportions: mockPanelMode ? ({
+        activeRadiusRatio: AppearanceTokens.dock.activeRadiusRatio,
+        vpad: 0.20,
+        hpad: 0.30,
+        spacing: 0,
+        divmargin: 0.15,
+    }) : ({
         activeRadiusRatio: AppearanceTokens.dock.activeRadiusRatio,
         vpad: AppearanceTokens.dock.verticalPaddingRatio,
         hpad: AppearanceTokens.dock.horizontalPaddingRatio,
@@ -143,7 +208,7 @@ Item {
     // whether it is safe to show. This avoids a feedback loop where hiding the
     // carousel makes icons larger and immediately makes it reappear.
     readonly property var _infoProbeLayout: AdaptiveMath.computeLayout(
-        baseHeight, pinnedCount, windowCount,
+        layoutBaseHeight, pinnedCount, windowCount,
         hasAvailableInfo && !vertical,
         Math.max(baseHeight, availableLength - estimatedAccessoryWidth),
         proportions,
@@ -180,7 +245,7 @@ Item {
     // must affect the calculation through counts/units instead of changing
     // height or spacing locally, otherwise width fitting can be bypassed.
     readonly property var _layout: AdaptiveMath.computeLayout(
-        baseHeight, pinnedCount, windowCount,
+        layoutBaseHeight, pinnedCount, windowCount,
         hasInfo,
         Math.max(baseHeight, availableLength - estimatedAccessoryWidth),
         proportions,
@@ -189,8 +254,8 @@ Item {
         accessoryCount > 0
     )
 
-    readonly property int computedDockHeight: _layout.dockHeight
-    readonly property int iconSize: _layout.iconSize
+    readonly property int computedDockHeight: mockPanelMode ? 72 : _layout.dockHeight
+    readonly property int iconSize: layoutIconSize
     // naturalDockWidth is the width the content asks for. A taskbar or relaxed
     // layout grows to the available edge length. distributionSlack is spent
     // only by relaxed content, between apps/windows and trailing components.
@@ -809,7 +874,7 @@ Item {
         // Shell control, intentionally outside the pinned-app drag ordering.
         DockIcon {
             id: trashIcon
-            visible: ConfigService.showTrash
+            visible: ConfigService.showTrash && !container.mockPanelMode
             onVisibleChanged: {
                 if (!visible) {
                     DockModelService.setDockPopupVisible(trashContextMenu, false)
@@ -853,7 +918,9 @@ Item {
 
         Repeater {
             id: pinnedRepeater
-            model: DockModelService.pinnedItems
+            model: container.mockPanelMode
+                ? DockModelService.pinnedItems.slice(0, container.mockVisiblePinnedCount)
+                : DockModelService.pinnedItems
             delegate: Item {
                 id: pinnedItemLoader
                 required property var modelData
@@ -1096,7 +1163,10 @@ Item {
             lineColor: Qt.rgba(1, 1, 1, 1)
             lineOpacity: 0.46
             lineRadius: 999
-            visible: container.pinnedCount > 0 && container.windowCount > 0
+            visible: container.pinnedCount > 0
+                && (container.mockPanelMode
+                    ? container.mockVisibleWindowCount > 0
+                    : DockModelService.windowCount > 0)
         }
 
         // ── Unpinned window tasks ──
@@ -1104,6 +1174,7 @@ Item {
             id: windowsRepeater
             model: DockModelService.windowModel
             delegate: DockIcon {
+                visible: !container.mockPanelMode || index < container.mockVisibleWindowCount
                 magnificationRoot: container
                 magnificationPointer: container.magnificationPointer
                 targetScreen: container.targetScreen
@@ -1131,6 +1202,35 @@ Item {
                     else
                         DockModelService.activateApp(model.appId)
                 }
+            }
+        }
+
+        Item {
+            id: overflowButton
+            visible: container.mockHasOverflow
+            width: visible ? 40 : 0
+            height: container.computedDockHeight
+            Text {
+                anchors.centerIn: parent
+                text: "+" + Math.max(0,
+                    container.allMockAppCount - container.mockVisibleAppCount)
+                color: AppearanceTokens.colors.surfaceForeground
+                font.pixelSize: 14
+                font.weight: Font.Medium
+            }
+            Rectangle {
+                anchors.fill: parent
+                radius: 12
+                color: overflowMouse.containsMouse
+                    ? Qt.rgba(1, 1, 1, AppearanceTokens.isDarkTheme ? 0.14 : 0.22)
+                    : "transparent"
+                z: -1
+            }
+            MouseArea {
+                id: overflowMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: container.toggleOverflowPopup()
             }
         }
 
@@ -1244,5 +1344,12 @@ Item {
             if (visible)
                 container.editMode = true
         }
+    }
+
+    DockOverflowPopup {
+        id: overflowPopup
+        anchorItem: overflowButton
+        entries: container.overflowEntries
+        onEntryActivated: function(entry) { container.activateOverflowEntry(entry) }
     }
 }

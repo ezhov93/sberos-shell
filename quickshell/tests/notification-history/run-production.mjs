@@ -65,19 +65,22 @@ if (!process.argv.includes("--session")) {
         copyFileSync(new URL("../../shell/desktop/modules/common/NotificationCountMatch.mjs", import.meta.url), join(common, "NotificationCountMatch.mjs"));
         fixture("bar", [["ControlCenterService", 'pragma Singleton\nimport QtQuick\nQtObject { property bool doNotDisturbEnabled: false }', true]]);
         const notificationDir = fixture("notifications", [
-            ...["NotificationCenter", "NotificationGroupService", "NotificationHistoryObserver", "NotificationHistoryService", "NotificationPolicyService"].map(name => [name, `@../../shell/desktop/modules/notifications/${name}.qml`, name.endsWith("Service") && name !== "NotificationGroupService"]),
+            ...["NotificationCenter", "NotificationGroupService", "NotificationHistoryObserver", "NotificationHistoryService", "NotificationPolicyService", "OskaNotificationService"].map(name => [name, `@../../shell/desktop/modules/notifications/${name}.qml`, name.endsWith("Service") && name !== "NotificationGroupService"]),
             ["NotificationWindow", 'import QtQuick\nimport qs.desktop.modules.common\nQtObject { property var screen; property bool visible; property var groupService; property Timer timer: Timer { running: true; repeat: true; interval: 30; onTriggered: ScreenLifecycle.testBannerCount = groupService.groupsModel.count } }', false]]);
         copyFileSync(new URL("../../shell/desktop/modules/notifications/NotificationIdentity.mjs", import.meta.url),
             join(notificationDir, "NotificationIdentity.mjs"));
         await start();
         const id = notify("Same Name", 0, "first", "old", "org.test.one");
         await waitFor(() => stats().rows.length === 1 && stats().banners === 1);
+        assert.equal(stats().oskaBannerActive, true);
+        assert.equal(stats().oskaSummary, "first");
         const key = stats().rows[0].key;
         notify("Same Name", id, "update", "new", "org.test.one");
         await waitFor(() => stats().rows[0].body === "new");
         assert.equal(stats().rows.length, 1);
         assert.equal(stats().rows[0].key, key);
         ipc("dnd", true);
+        assert.equal(stats().oskaBannerActive, false);
         const silentId = notify("DND", 0, "silent", "history", "org.test.dnd");
         await waitFor(() => stats().rows.length === 2 && stats().banners === 0);
         assert(stats().dnd);
@@ -111,6 +114,7 @@ if (!process.argv.includes("--session")) {
         assert.equal(stats().rows.length, beforeDndReplace.rows.length);
         assert.deepEqual(stats().unread, beforeDndReplace.unread);
         ipc("preference", "bannersEnabled", false);
+        assert.equal(stats().oskaBannerActive, false);
         const quietCount = stats().rows.length;
         notify("Quiet", 0, "no banner", "history preserved", "org.test.quiet");
         await waitFor(() => stats().rows.length === quietCount + 1 && stats().banners === 0);
@@ -151,6 +155,13 @@ if (!process.argv.includes("--session")) {
         assert.deepEqual(stats().unread, beforeFallback.unread);
         notify("Fallback", 0, "desktop source", "allowed", "org.test.fallback");
         await waitFor(() => stats().rows.length === beforeFallback.rows.length + 1);
+        await waitFor(() => stats().oskaBannerActive);
+        ipc("dismissOskaBanner");
+        assert.equal(stats().oskaBannerActive, false);
+        notify("Timeout", 0, "expires", "shortly", "org.test.timeout");
+        await waitFor(() => stats().oskaBannerActive);
+        await sleep(3600);
+        assert.equal(stats().oskaBannerActive, false);
         assert.doesNotMatch(output, /TypeError|ReferenceError|Failed to load/);
         console.log("Production NotificationCenter: normal, DND, identity isolation, block/replacement, unblock and persisted sources/policy passed");
     } finally {

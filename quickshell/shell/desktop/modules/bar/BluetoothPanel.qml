@@ -17,8 +17,9 @@ AnimatedPopupWindow {
     property Item anchorItem: null
     property bool dockHosted: false
     property string dockEdge: "bottom"
-    implicitWidth: 300
-    implicitHeight: 340
+    readonly property var targetScreen: ScreenLifecycle.activeScreen
+    implicitWidth: Math.max(1, Math.min(344, (panel.targetScreen?.width ?? 1920) - 32))
+    implicitHeight: Math.min(556, Math.max(1, (panel.targetScreen?.height ?? 900) - 110))
     color: "transparent"
     grabFocus: interactive
     motionOrigin: !dockHosted ? Item.Top : dockEdge === "left" ? Item.Left : dockEdge === "right" ? Item.Right : Item.Bottom
@@ -73,10 +74,16 @@ AnimatedPopupWindow {
         }
     }
 
-    OpaqueSurface {
+    Item {
         id: surface
         anchors.fill: parent
-        radius: 20
+        readonly property color foregroundColor: AppearanceTokens.colors.surfaceForeground
+        readonly property color secondaryForegroundColor: AppearanceTokens.colors.surfaceVariantForeground
+
+        FrostedSurface {
+            anchors.fill: parent
+            radius: 24
+        }
 
         ListView {
             id: deviceList

@@ -56,17 +56,18 @@ Item {
         anchors.fill: parent
         visible: root.surfaceVisible
         radius: Math.max(1, Math.min(Math.round(root.cardRadius), Math.floor(Math.min(root.cardWidth, root.cardHeight) / 2)))
+    }
 
-        // Concrete card content (declared by the card instance), above the surface.
-        Item {
-            id: cardContent
-            anchors.fill: parent
-            visible: root.cardOpacity > 0.001
-            scale: root.cardScale
-            opacity: root.contentOpacity
-            transform: Translate {
-                y: root.contentOffsetY
-            }
+    // Content is a sibling of the optional surface: cards that omit a backing
+    // still need to render their controls and labels.
+    Item {
+        id: cardContent
+        anchors.fill: parent
+        visible: root.cardOpacity > 0.001
+        scale: root.cardScale
+        opacity: root.contentOpacity
+        transform: Translate {
+            y: root.contentOffsetY
         }
     }
 }

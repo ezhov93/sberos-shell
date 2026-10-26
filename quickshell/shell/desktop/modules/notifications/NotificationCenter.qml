@@ -22,6 +22,8 @@ Scope {
             return;
         }
         notification.tracked = !ControlCenterService.doNotDisturbEnabled && NotificationPolicyService.bannersEnabled;
+        if (notification.tracked)
+            OskaNotificationService.present(notification);
         AppNotificationService.recordNotification({
             desktopEntry: notification.desktopEntry || "",
             appName: notification.appName || "",
@@ -68,9 +70,11 @@ Scope {
     Connections {
         target: NotificationPolicyService
         function onBannersEnabledChanged() {
-            if (!NotificationPolicyService.bannersEnabled)
+            if (!NotificationPolicyService.bannersEnabled) {
+                OskaNotificationService.dismiss();
                 for (const notification of notifGroupService._collectNotifications())
                     notification.tracked = false;
+            }
         }
         function onBlockedKeysChanged() {
             for (const notification of notifGroupService._collectNotifications())
@@ -81,9 +85,11 @@ Scope {
     Connections {
         target: ControlCenterService
         function onDoNotDisturbEnabledChanged() {
-            if (ControlCenterService.doNotDisturbEnabled)
+            if (ControlCenterService.doNotDisturbEnabled) {
+                OskaNotificationService.dismiss();
                 for (const notification of notifGroupService._collectNotifications())
                     notification.tracked = false;
+            }
         }
     }
 

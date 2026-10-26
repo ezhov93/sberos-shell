@@ -22,6 +22,9 @@ Scope {
             NotificationHistoryService.clear();
             AppNotificationService.clearAll();
         }
+        function dismissOskaBanner(): void {
+            OskaNotificationService.dismiss();
+        }
         function stats(): string {
             const rows = [];
             for (let i = 0; i < NotificationHistoryService.history.count; ++i) {
@@ -46,6 +49,8 @@ Scope {
                 },
                 unread: AppNotificationService.unreadGroups,
                 banners: ScreenLifecycle.testBannerCount,
+                oskaBannerActive: OskaNotificationService.active,
+                oskaSummary: OskaNotificationService.summary,
                 dnd: ControlCenterService.doNotDisturbEnabled
             });
         }

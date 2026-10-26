@@ -31,10 +31,10 @@ AnimatedPopupWindow {
     property bool confirmForgetNetwork: false
     property string dialogError: ""
     // Keep the popup geometry stable while a join sheet opens. The sheet is
-    // intentionally narrower than the 310px Wi-Fi list, so it reads as a
+    // intentionally narrower than the 344px Wi-Fi list, so it reads as a
     // nested action instead of making the top-bar panel suddenly expand.
-    implicitWidth: 310
-    implicitHeight: 365
+    implicitWidth: Math.max(1, Math.min(344, (panel.targetScreen?.width ?? 1920) - 32))
+    implicitHeight: Math.min(596, Math.max(1, (panel.targetScreen?.height ?? 900) - 110))
     color: "transparent"
     // A password field lives in this separate Wayland popup surface. It must
     // explicitly own keyboard focus; otherwise the Bar's prior focus target
@@ -234,10 +234,16 @@ AnimatedPopupWindow {
         NetworkService.connectWifi(selectedNetwork.ssid, requestedPassword, selectedNetwork.savedProfileUuid || "");
     }
 
-    OpaqueSurface {
+    Item {
         id: panelSurface
         anchors.fill: parent
-        radius: 19
+        readonly property color foregroundColor: AppearanceTokens.colors.surfaceForeground
+        readonly property color secondaryForegroundColor: AppearanceTokens.colors.surfaceVariantForeground
+
+        FrostedSurface {
+            anchors.fill: parent
+            radius: 24
+        }
     }
 
     Rectangle {

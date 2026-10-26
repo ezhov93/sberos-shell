@@ -6,8 +6,9 @@ import qs.desktop.modules.dock
 import qs.desktop.modules.platform
 import "ClipboardPlacement.mjs" as ClipboardPlacement
 
-// Global controller for search and clipboard history. Clipboard placement uses
-// a pre-focus snapshot on its containing output; other modes use the main one.
+// Global controller for app/document search, window search and clipboard
+// history. App search embeds in Oska when the integrated bottom Dock is active.
+// Clipboard placement uses a pre-focus snapshot on its containing output.
 //
 // It also owns the clipboard "click to paste" lifecycle. Ctrl+V is delivered by
 // the compositor to whichever window holds keyboard focus, and that focus only
@@ -20,6 +21,7 @@ Scope {
 
     property bool open: false
     property string mode: "window"
+    property bool appSearchEmbedded: false
     property string viewMode: "list"
     property string query: ""
     property var clipboardAnchor: null
@@ -220,7 +222,9 @@ Scope {
 
     QuickSearchWindow {
         screen: root.targetScreen
-        open: root.open && ScreenLifecycle.outputAvailable && root.targetScreen !== null
+        // App/document search is rendered by the integrated Oska island.
+        // Keep this floating window for window search and clipboard history.
+        open: root.open && (!root.appSearchEmbedded || root.mode !== "app") && ScreenLifecycle.outputAvailable && root.targetScreen !== null
         mode: root.mode
         viewMode: root.viewMode
         initialQuery: root.query

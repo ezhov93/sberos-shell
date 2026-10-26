@@ -14,8 +14,9 @@ Item {
     height: implicitHeight
     property bool dockHosted: false
     property string dockEdge: "bottom"
-    // The integrated SberOS panel places Quick Settings with the clock while
-    // the remaining status cells stay in their own island.
+    property bool notificationToggleVisible: true
+    // Integrated SberOS panel layouts can show only the native tray in a
+    // separate island, while shell-owned controls stay with the clock.
     property string controlCenterPlacement: "all"
     // Reveal progress of the auto-hiding Bar this cluster lives in. 1 for a
     // cluster that is not inside a sliding Bar (the Dock host) and for a Bar
@@ -64,6 +65,8 @@ Item {
     readonly property var visibleTrailingCells: trailingCells.filter(entry =>
         !AppearanceConfigService.isStatusCellHidden(entry.key)
         && (entry.key !== "battery" || root.showBatteryCell)
+        && (entry.key !== "notifications" || root.notificationToggleVisible)
+        && (root.controlCenterPlacement !== "native-tray-only")
         && (root.controlCenterPlacement !== "control-center-only" || entry.key === "controlcenter")
         && (root.controlCenterPlacement !== "without-control-center" || entry.key !== "controlcenter"))
 
@@ -93,6 +96,24 @@ Item {
     function closeDetailPanels() {
         trafficPanel.close();
         batteryPanel.close();
+    }
+
+    function toggleNotificationHistory(anchorItem) {
+        root.closeDetailPanels();
+        if (!notificationPanel.requestedOpen) {
+            networkPanel.close();
+            bluetoothPanel.close();
+            root.closeControlCenter();
+        }
+        notificationPanel.toggle(anchorItem);
+    }
+
+    function closeForExternalNotificationHistory() {
+        closeDetailPanels();
+        networkPanel.close();
+        bluetoothPanel.close();
+        root.closeControlCenter();
+        notificationPanel.close();
     }
 
     function toggleControlCenter(anchorItem) {
@@ -253,15 +274,7 @@ Item {
                 dockHosted: root.dockHosted
                 dockEdge: root.dockEdge
                 verticalDock: root.verticalDock && !SysTrayOrderService.isCollected("cell:notifications")
-                onPanelToggleRequested: {
-                    root.closeDetailPanels();
-                    if (!notificationPanel.requestedOpen) {
-                        networkPanel.close();
-                        bluetoothPanel.close();
-                        root.closeControlCenter();
-                    }
-                    notificationPanel.toggle(notificationToggle);
-                }
+                onPanelToggleRequested: root.toggleNotificationHistory(notificationToggle)
             }
         }
     }

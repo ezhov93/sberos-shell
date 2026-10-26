@@ -10,7 +10,6 @@ import Quickshell.Widgets
 import qs.desktop.modules.bar
 import qs.desktop.modules.common
 import qs.desktop.modules.platform
-import qs.desktop.modules.stage
 import qs.desktop.modules.dock
 import "../../../shared/qml/i18n"
 import "../../../Kos/Ui"
@@ -649,13 +648,23 @@ PopupWindow {
     // Disc toggles power; tapping the pill opens the device list.
     ControlParts.BluetoothCard {
         id: bluetoothCard
-        offsetTop: 271
-        offsetRight: 17
+        offsetTop: 335
+        offsetRight: 249
         cardRadius: 17
         cardWidth: 224
         cardHeight: 56
         service: ControlCenterService
         onPageRequested: panel.bluetoothRequested()
+    }
+
+    ControlParts.UnavailableControlCard {
+        title: I18n.tr("VPN")
+        iconName: "network-vpn"
+        offsetTop: 271
+        offsetRight: 17
+        cardRadius: 17
+        cardWidth: 224
+        cardHeight: 56
     }
 
     // ── Card 4: Screenshot ───────────────────────────────────────────
@@ -713,7 +722,7 @@ PopupWindow {
         }
     }
 
-    // ── Card 5: Dark Mode / Theme Toggle ─────────────────────────────
+    // ── Card 8: Dark Mode / Theme Toggle ─────────────────────────────
     ControlCenterCard {
         id: slotCard2
         ControlCenterSelection {
@@ -721,8 +730,8 @@ PopupWindow {
             cornerRadius: slotCard2.cardRadius
             selected: ThemeService.isDark
         }
-        offsetTop: 335
-        offsetRight: 249
+        offsetTop: 463
+        offsetRight: 132
         cardRadius: 17
         cardWidth: 224
         cardHeight: 56
@@ -797,167 +806,14 @@ PopupWindow {
         }
     }
 
-    // ── Card 6: Power & Session ──────────────────────────────────────
-    ControlCenterCard {
-        id: slotCard3
-        ControlCenterSelection {
-            pointer: powerPointer
-            cornerRadius: slotCard3.cardRadius
-        }
+    // ── Card 4: Performance mode ─────────────────────────────────────
+    ControlParts.PowerModeCard {
+        service: PowerProfileService
         offsetTop: 335
         offsetRight: 17
         cardRadius: 17
         cardWidth: 224
         cardHeight: 56
-
-        cardScale: powerPointer.pressed ? 0.91 : (powerPointer.containsMouse ? 1.06 : 1.0)
-        Behavior on cardScale {
-            NumberAnimation {
-                duration: 110
-                easing.type: Easing.OutCubic
-            }
-        }
-        Rectangle {
-            anchors.fill: parent
-            radius: AppearanceTokens.shape.extraLarge
-            color: powerPointer.pressed ? AppearanceTokens.state.pressed : AppearanceTokens.state.hover
-            opacity: powerPointer.containsMouse || powerPointer.pressed ? 1 : 0
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 140
-                }
-            }
-        }
-        Rectangle {
-            x: 12
-            width: 32
-            height: 32
-            radius: 16
-            anchors.verticalCenter: parent.verticalCenter
-            color: AppearanceTokens.colors.surfaceContainerHigh
-        }
-        Image {
-            anchors {
-                left: parent.left
-                leftMargin: 19
-                verticalCenter: parent.verticalCenter
-            }
-            width: 18
-            height: 18
-            source: BundledIcons.source("power")
-            sourceSize.width: 48
-            sourceSize.height: 48
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                colorization: 1.0
-                colorizationColor: ThemeService.foregroundColor
-            }
-        }
-        Column {
-            anchors {
-                left: parent.left
-                leftMargin: 56
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: 1
-            ThemeText {
-                text: I18n.tr("Power and session")
-                color: AppearanceTokens.colors.surfaceForeground
-                font.pixelSize: 16
-                font.weight: Font.DemiBold
-            }
-            ThemeText {
-                text: I18n.tr("Lock, log out, or power off")
-                color: AppearanceTokens.colors.surfaceVariantForeground
-                font.pixelSize: 12
-            }
-        }
-        MouseArea {
-            id: powerPointer
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: !ControlCenterService.sessionActionInProgress
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: panel.openSessionPanel()
-        }
-    }
-
-    // ── Card 7: Do Not Disturb ───────────────────────────────────────
-    ControlCenterCard {
-        id: slotCard4
-        ControlCenterSelection {
-            pointer: dndPointer
-            cornerRadius: slotCard4.cardRadius
-            selected: ControlCenterService.doNotDisturbEnabled
-        }
-        offsetTop: 399
-        offsetRight: 249
-        cardRadius: 17
-        cardWidth: 224
-        cardHeight: 56
-
-        cardScale: dndPointer.pressed ? 0.91 : (dndPointer.containsMouse ? 1.06 : 1.0)
-        Behavior on cardScale {
-            NumberAnimation {
-                duration: 110
-                easing.type: Easing.OutCubic
-            }
-        }
-        Rectangle {
-            x: 12
-            width: 32
-            height: 32
-            radius: 16
-            anchors.verticalCenter: parent.verticalCenter
-            color: ControlCenterService.doNotDisturbEnabled ? AppearanceTokens.colors.primary : AppearanceTokens.colors.surfaceContainerHigh
-        }
-        Image {
-            anchors {
-                left: parent.left
-                leftMargin: 19
-                verticalCenter: parent.verticalCenter
-            }
-            width: 18
-            height: 18
-            source: BundledIcons.source("do-not-disturb")
-            sourceSize.width: 44
-            sourceSize.height: 44
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                colorization: 1.0
-                colorizationColor: ControlCenterService.doNotDisturbEnabled ? "#ffffff" : ThemeService.foregroundColor
-            }
-        }
-        Column {
-            anchors {
-                left: parent.left
-                leftMargin: 56
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: 1
-            ThemeText {
-                text: I18n.tr("Notifications")
-                color: AppearanceTokens.colors.surfaceForeground
-                font.pixelSize: 16
-                font.weight: Font.DemiBold
-            }
-            ThemeText {
-                text: ControlCenterService.doNotDisturbEnabled ? I18n.tr("Off") : I18n.tr("On")
-                color: AppearanceTokens.colors.surfaceVariantForeground
-                font.pixelSize: 12
-            }
-        }
-        MouseArea {
-            id: dndPointer
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: ControlCenterService.toggleDoNotDisturb()
-        }
     }
 
     // ── Card 8: Night Light ──────────────────────────────────────────
@@ -969,7 +825,7 @@ PopupWindow {
             selected: ControlCenterService.nightLightActive
         }
         offsetTop: 399
-        offsetRight: 17
+        offsetRight: 249
         cardRadius: 17
         cardWidth: 224
         cardHeight: 56
@@ -1036,26 +892,15 @@ PopupWindow {
         }
     }
 
-    // Utility toggles share the row between the quick actions and brightness.
-    ControlParts.StageModeCard {
-        id: stageModeCard
-        offsetTop: 463
-        offsetRight: 249
-        cardRadius: 17
-        cardWidth: panel.halfControlWidth
-        cardHeight: 56
-        stageMode: StageModeService
-    }
-
-    // Caffeine is held by the resident service, never the popup lifetime.
-    ControlParts.KeepAwakeCard {
-        id: keepAwakeCard
-        offsetTop: 463
+    // ── Card 7: Airplane mode ────────────────────────────────────────
+    ControlParts.UnavailableControlCard {
+        title: I18n.tr("Airplane mode")
+        iconName: "airplane-mode"
+        offsetTop: 399
         offsetRight: 17
         cardRadius: 17
-        cardWidth: panel.halfControlWidth
+        cardWidth: 224
         cardHeight: 56
-        service: ControlCenterService
     }
 
     // ── Card 9: Display brightness ───────────────────────────────────

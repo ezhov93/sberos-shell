@@ -242,6 +242,9 @@ Item {
     Component {
         id: integratedBarStatus
         Item {
+            // Keep native StatusNotifierItems in their own island immediately
+            // to the left of the clock island. Shell-owned status controls
+            // remain grouped with the clock.
             implicitWidth: statusArea.implicitWidth + 24
             implicitHeight: 72
             FrostedSurface {
@@ -253,7 +256,8 @@ Item {
                 anchors.centerIn: parent
                 dockHosted: true
                 dockEdge: ConfigService.position
-                controlCenterPlacement: "without-control-center"
+                controlCenterPlacement: "native-tray-only"
+                notificationToggleVisible: false
             }
         }
     }
@@ -285,16 +289,32 @@ Item {
         id: integratedOska
         Item {
             id: oskaIsland
+            signal notificationRequested(Item sourceItem)
+            readonly property bool appSearchOpen: quickSearch.appSearchEmbedded && quickSearch.open && quickSearch.mode === "app"
+            readonly property int maximumHeight: 653
             width: 456
-            height: 72
+            height: appSearchOpen ? maximumHeight : 72
             implicitWidth: 456
-            implicitHeight: 72
-            activeFocusOnTab: true
-            Accessible.role: Accessible.Button
-            Accessible.name: I18n.tr("Search installed apps")
+            implicitHeight: height
+            clip: true
+            Behavior on height {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
+
             FrostedSurface {
                 anchors.fill: parent
                 radius: 24
+            }
+            OpaqueSurface {
+                anchors {
+                    fill: parent
+                    margins: 7
+                }
+                radius: 17
+                visible: !oskaIsland.appSearchOpen
             }
             Rectangle {
                 anchors.fill: parent
@@ -302,38 +322,76 @@ Item {
                 color: "transparent"
                 border.width: oskaIsland.activeFocus ? 2 : 0
                 border.color: AppearanceTokens.colors.primary
+                visible: !oskaIsland.appSearchOpen
+            }
+            OskaNotificationBanner {
+                anchorItem: oskaIsland
+            }
+            QuickSearchIslandContent {
+                id: quickSearchContent
+                x: 0
+                y: oskaIsland.height - height
+                active: oskaIsland.appSearchOpen
+                query: quickSearch.query
+                visible: oskaIsland.appSearchOpen
+                z: 1
+                onQueryEdited: value => quickSearch.query = value
+                onCloseRequested: quickSearch.hide()
             }
             Row {
                 anchors.fill: parent
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
                 spacing: 12
-                Image {
+                visible: !oskaIsland.appSearchOpen
+                Item {
+                    id: oskaAvatarButton
                     anchors.verticalCenter: parent.verticalCenter
                     width: 40
                     height: 40
-                    source: Qt.resolvedUrl("assets/oska-avatar.svg")
-                    fillMode: Image.PreserveAspectFit
-                    Accessible.ignored: true
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: I18n.tr("Notifications")
+                    Image {
+                        anchors.fill: parent
+                        source: Qt.resolvedUrl("assets/oska-avatar.svg")
+                        fillMode: Image.PreserveAspectFit
+                        Accessible.ignored: true
+                    }
+                    TapHandler {
+                        onTapped: oskaIsland.notificationRequested(oskaAvatarButton)
+                    }
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                            oskaIsland.notificationRequested(oskaAvatarButton);
+                            event.accepted = true;
+                        }
+                    }
                 }
-                ThemeText {
-                    width: parent.width - 44
+                Item {
+                    id: oskaSearchButton
+                    width: parent.width - 92
                     height: parent.height
-                    text: I18n.tr("Найду документ или приложение")
-                    color: AppearanceTokens.colors.surfaceVariantForeground
-                    font.pixelSize: 16
-                    verticalAlignment: Text.AlignVCenter
-                    Accessible.ignored: true
-                }
-            }
-            TapHandler {
-                acceptedButtons: Qt.LeftButton
-                onTapped: quickSearch.show("app", "")
-            }
-            Keys.onPressed: function(event) {
-                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                    quickSearch.show("app", "");
-                    event.accepted = true;
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: I18n.tr("Search installed apps")
+                    ThemeText {
+                        anchors.fill: parent
+                        text: I18n.tr("Найду документ или приложение")
+                        color: AppearanceTokens.colors.surfaceVariantForeground
+                        font.pixelSize: 16
+                        verticalAlignment: Text.AlignVCenter
+                        Accessible.ignored: true
+                    }
+                    TapHandler {
+                        onTapped: quickSearch.show("app", "")
+                    }
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                            quickSearch.show("app", "");
+                            event.accepted = true;
+                        }
+                    }
                 }
             }
         }
@@ -726,6 +784,7 @@ Item {
 
     QuickSearch {
         id: quickSearch
+        appSearchEmbedded: shell.barIntegratedWithDock && ConfigService.position === "bottom"
     }
     AppLauncher {}
     Overview {}

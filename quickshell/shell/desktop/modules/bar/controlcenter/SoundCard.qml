@@ -12,79 +12,28 @@ ControlCenterCard {
     signal pageRequested(string page)
     signal volumePreviewRequested(real value)
     signal draggingVolumeRequested(bool value)
-    ControlCenterSelection {
-        pointer: soundPagePointer
-        cornerRadius: slotCard7.cardRadius
-        hovered: soundPagePointer.containsMouse || volumeSlider._hovered
-        pressed: soundPagePointer.pressed || volumeSlider._pressed
-    }
-    Row {
+    ThemeText {
         anchors {
             left: parent.left
             top: parent.top
-            leftMargin: 14
-            topMargin: 8
+            topMargin: 0
         }
-        spacing: 4
-        ThemeText {
-            text: I18n.tr("Sound")
-            color: ThemeService.foregroundColor
-            font {
-                pixelSize: 11
-                weight: Font.DemiBold
-                family: "Noto Sans CJK SC"
-            }
-        }
-    }
-    ThemeText {
-        anchors {
-            right: parent.right
-            top: parent.top
-            rightMargin: 30
-            topMargin: 8
-        }
-        text: Math.round(slotCard7.volumePreview) + "%"
+        text: I18n.tr("Sound")
         color: ThemeService.foregroundColor
-        opacity: 0.50
         font {
-            pixelSize: 9
+            pixelSize: 14
+            weight: Font.Medium
             family: "Noto Sans CJK SC"
         }
-    }
-    ThemeText {
-        anchors {
-            right: parent.right
-            top: parent.top
-            rightMargin: 13
-            topMargin: 5
-        }
-        text: "›"
-        color: ThemeService.foregroundColor
-        font {
-            pixelSize: 15
-            weight: Font.Bold
-        }
-    }
-    MouseArea {
-        id: soundPagePointer
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-        }
-        height: 27
-        cursorShape: Qt.PointingHandCursor
-        hoverEnabled: true
-        onClicked: slotCard7.pageRequested("sound")
     }
     Canvas {
         id: volumeGlyph
         anchors {
             left: parent.left
-            leftMargin: 12
+            leftMargin: 8
             verticalCenter: volumeSlider.verticalCenter
         }
-        width: 19
+        width: 16
         height: 16
         renderTarget: Canvas.Image
 
@@ -172,13 +121,14 @@ ControlCenterCard {
     ControlCenterSlider {
         id: volumeSlider
         objectName: "volumeSlider"
+        accessibleName: I18n.tr("Volume")
         anchors {
             left: parent.left
             right: parent.right
             bottom: parent.bottom
-            leftMargin: 36
-            rightMargin: 17
-            bottomMargin: 8
+            leftMargin: 48
+            rightMargin: 0
+            bottomMargin: 0
         }
         value: slotCard7.volumePreview / 100
         onPreviewChanged: function (v) {

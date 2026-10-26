@@ -128,6 +128,7 @@ KWin 插件及桌面接管需注销登录/重启。浅版本切换不下载旧�
 
 核心安装 `org.kos.desktop`，保存旧 ShellPackage，再选只绘壁纸的 Plasma 桌面；DeskCenter 负责文件，避免面板/文件视图重复。
 下次登录生效，卸载恢复旧 Shell。其他通知守护可能抢占 D-Bus 名称，通知为空检查所报告的持有者。
+收到的通知也会在奥斯卡岛上方短暂显示标题横幅。横幅遵循通知和免打扰设置；点击奥斯卡头像仍可查看通知历史。
 
 ```sh
 ./tools/kosctl install lockscreen

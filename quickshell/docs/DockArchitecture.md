@@ -593,16 +593,18 @@ Non-negotiable invariants:
 ### Integrated SberOS panel islands
 
 The Shell uses one bottom `DockWindow` layer surface and presents separate opaque islands for the Sber
-menu, app Dock, centered app search, status controls, and clock. The search island
-has a fixed 340×52 size and uses the existing `QuickSearch` app mode. The Dock app
-area is width-limited by the free space before the screen-centered search; the
-right islands stay anchored to the output edge. Their hover and input regions join
+menu, app Dock, centered app search, native system tray, and clock. The tray island
+sits immediately left of the clock. The clock island keeps the shell-owned quick
+settings control and date/time together. The search island has a fixed 340×52 size
+and uses the existing `QuickSearch` app mode. The Dock app area is width-limited
+by the free space before the screen-centered search; the right islands stay anchored
+to the output edge. Their hover and input regions join
 the Dock mask and auto-hide state, while gaps remain click-through. The standalone
 top Bar is not instantiated.
 
-The clock island currently displays date and time only. A calendar popup and the full
-Oska result states are separate follow-up work; the current layout does not claim
-those behaviors.
+The clock island displays quick settings and date/time. A calendar popup and the
+full Oska result states are separate follow-up work; the current layout does not
+claim those behaviors.
 
 1. Collision judgement always uses the **static rectangle the Dock would
    occupy at full reveal**, computed from screen geometry and configured

@@ -45,6 +45,10 @@ JsonlClient {
     logName: "PlatformClient"
     daemonName: "platform daemon"
     timeoutName: "platform"
+    // Keep panel state from waiting on an unresponsive backend for the
+    // generic transport default (30 s). Operations with a longer legitimate
+    // duration keep their explicit overrides below.
+    requestTimeoutMs: 5000
     readOperations: ({
             "session.visibility": true,
             "appmenu.active": true,

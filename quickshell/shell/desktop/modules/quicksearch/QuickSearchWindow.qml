@@ -7,8 +7,9 @@ import qs.desktop.modules.common
 import qs.desktop.modules.dock
 import "../../../Kos/Ui"
 import "ClipboardPlacement.mjs" as ClipboardPlacement
+import org.kde.baloo as Baloo
 
-// Focusable full-screen layer containing search or anchored clipboard history.
+// Focusable full-screen layer for window search and anchored clipboard history.
 PanelWindow {
     id: root
 
@@ -96,6 +97,7 @@ PanelWindow {
         }
         return matches;
     }
+    readonly property var appPreviewResults: appResults.slice(0, 4)
     readonly property var clipboardResults: {
         ClipboardService.revision;
         ClipboardService.pinnedRevision;
@@ -310,19 +312,25 @@ PanelWindow {
             popupMotion.close();
         if (open) {
             reset(initialQuery);
+            if (mode === "app")
+                documentSearchTimer.restart();
             if (mode === "clipboard") {
                 ClipboardService.refresh();
                 ClipboardService.refreshPinned();
             }
-        }
+        } else
+            documentSearchTimer.stop();
     }
     Component.onCompleted: {
         if (open)
             popupMotion.open();
     }
     onModeChanged: {
-        if (open)
+        if (open) {
             reset(initialQuery);
+            if (mode === "app")
+                documentSearchTimer.restart();
+        }
     }
     onInitialQueryChanged: if (open && query !== initialQuery)
         query = initialQuery
@@ -340,6 +348,31 @@ PanelWindow {
         }
     }
 
+    Baloo.Query {
+        id: documentQuery
+        searchString: root.mode === "app" ? root.query.trim() : ""
+        limit: 6
+    }
+
+    Baloo.QueryResultsModel {
+        id: documentResultsModel
+        query: documentQuery
+    }
+
+    Timer {
+        id: documentSearchTimer
+        interval: 180
+        repeat: false
+        onTriggered: {
+            if (root.open && root.mode === "app" && root.query.trim().length >= 2)
+                documentResultsModel.populateModel()
+        }
+    }
+
+    onQueryChanged: {
+        if (open && mode === "app")
+            documentSearchTimer.restart()
+    }
     // A copy can arrive while the palette is already open. Refreshing the
     // light-weight cliphist index here makes it appear without reopening.
     Timer {
@@ -926,10 +959,10 @@ PanelWindow {
         }
 
         ThemeText {
-            anchors.centerIn: resultView
+            anchors.centerIn: gridView
             text: I18n.tr("No apps found")
             color: AppearanceTokens.colors.surfaceVariantForeground
-            visible: root.mode === "app" && root.resultCount === 0
+            visible: root.mode === "app" && root.appPreviewResults.length === 0
         }
 
         ListView {
@@ -941,8 +974,8 @@ PanelWindow {
                 right: parent.right
                 topMargin: root.mode === "app" ? 7 : 4
                 bottomMargin: root.mode === "app" ? 8 : undefined
-                leftMargin: root.mode === "app" ? 23 : 8
-                rightMargin: root.mode === "app" ? 23 : 8
+                leftMargin: root.mode === "app" ? 7 : 8
+                rightMargin: root.mode === "app" ? 7 : 8
             }
             height: root.mode === "app" ? Math.max(0, parent.height - searchHeader.height - 24) : (root.mode === "clipboard" ? Math.min(root.visibleResultCount * 52, Math.max(0, root.placementBounds.height - 90)) : root.visibleResultCount * 52)
             clip: true
@@ -1203,11 +1236,12 @@ PanelWindow {
                 leftMargin: root.mode === "app" ? 23 : 8
                 rightMargin: root.mode === "app" ? 23 : 8
             }
-            height: root.mode === "app" ? Math.max(0, parent.height - 47 - searchHeader.height - 9) : (root.mode === "clipboard" ? Math.min(root.visibleGridRowCount * 94, Math.max(0, root.placementBounds.height - 90)) : root.visibleGridRowCount * 94)
+            height: root.mode === "app" ? 96 : (root.mode === "clipboard" ? Math.min(root.visibleGridRowCount * 94, Math.max(0, root.placementBounds.height - 90)) : root.visibleGridRowCount * 94)
             cellWidth: width / root.gridColumnCount
             cellHeight: root.mode === "app" ? 96 : 94
             clip: true
-            model: root.visible && visible ? root.results : null
+            model: root.visible && visible
+                ? (root.mode === "app" ? root.appPreviewResults : root.results) : null
             currentIndex: root.selectedIndex
 
             delegate: Item {
@@ -1391,6 +1425,129 @@ PanelWindow {
             KosKineticScroll {
                 flickable: gridView
             }
+        }
+
+        Rectangle {
+            x: 23
+            y: 151
+            width: parent.width - 46
+            height: 1
+            color: AppearanceTokens.colors.outlineVariant
+            opacity: 0.7
+            visible: root.mode === "app"
+        }
+
+        ThemeText {
+            x: 23
+            y: 161
+            text: I18n.tr("Documents")
+            font.pixelSize: 16
+            font.weight: Font.DemiBold
+            visible: root.mode === "app"
+        }
+
+        ListView {
+            id: documentList
+            x: 23
+            y: 190
+            width: parent.width - 46
+            height: Math.max(0, searchHeader.y - y - 8)
+            visible: root.mode === "app"
+            clip: true
+            model: root.open && root.query.trim().length >= 2
+                ? documentResultsModel : null
+
+            delegate: Item {
+                id: documentResult
+                required property var url
+                width: documentList.width
+                height: 54
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: fileName
+                readonly property string localPath: String(url?.toLocalFile?.() ?? url ?? "")
+                readonly property string fileName: localPath.split("/").filter(Boolean).slice(-1)[0] ?? ""
+                readonly property string folderName: localPath.split("/").filter(Boolean).slice(-2, -1)[0] ?? ""
+                readonly property string fileIcon: {
+                    const ext = fileName.split(".").pop().toLowerCase()
+                    if (ext === "pdf") return "application-pdf"
+                    if (["doc", "docx", "odt", "rtf"].includes(ext)) return "x-office-document"
+                    if (["xls", "xlsx", "ods", "csv"].includes(ext)) return "x-office-spreadsheet"
+                    if (["ppt", "pptx", "odp"].includes(ext)) return "x-office-presentation"
+                    if (["png", "jpg", "jpeg", "webp", "svg"].includes(ext)) return "image-x-generic"
+                    return "text-x-generic"
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 8
+                    color: documentMouse.containsMouse
+                        ? AppearanceTokens.state.hover : "transparent"
+                }
+
+                ResultIcon {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 20
+                    height: 20
+                    iconSource: SystemIconResolver.sourceFromCandidates(
+                        documentResult.fileIcon, "text-x-generic")
+                }
+
+                Column {
+                    anchors {
+                        left: parent.left
+                        leftMargin: 32
+                        right: parent.right
+                        rightMargin: 12
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 4
+
+                    ThemeText {
+                        width: parent.width
+                        text: documentResult.fileName
+                        color: ThemeService.foregroundColor
+                        elide: Text.ElideRight
+                        font.pixelSize: 16
+                    }
+
+                    ThemeText {
+                        width: parent.width
+                        text: documentResult.folderName
+                        color: AppearanceTokens.content.shellInk(0.62)
+                        elide: Text.ElideRight
+                        font.pixelSize: 12
+                    }
+                }
+
+                MouseArea {
+                    id: documentMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Qt.openUrlExternally(url)
+                }
+                Keys.onReturnPressed: Qt.openUrlExternally(url)
+                Keys.onEnterPressed: Qt.openUrlExternally(url)
+            }
+
+            KosKineticScroll {
+                flickable: documentList
+            }
+        }
+
+        ThemeText {
+            x: 23
+            y: 198
+            width: parent.width - 46
+            height: 54
+            visible: root.mode === "app" && root.query.trim().length >= 2
+                && documentList.count === 0
+            text: I18n.tr("No matching documents")
+            color: AppearanceTokens.content.shellInk(0.52)
+            font.pixelSize: 13
+            verticalAlignment: Text.AlignVCenter
         }
 
         ThemeText {

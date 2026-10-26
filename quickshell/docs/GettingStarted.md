@@ -20,7 +20,7 @@ Install Quickshell 0.3.x from an appropriate distribution source or its
 
 ```sh
 sudo pacman -S --needed \
-  git quickshell cmake ninja gcc qt6-base qt6-declarative \
+  git quickshell baloo cmake ninja gcc qt6-base qt6-declarative \
   qt6-tools qt6-translations qt6-quick3d qt6-svg qt6-imageformats qt6-5compat qt6-wayland \
   go curl extra-cmake-modules wayland kwindowsystem kiconthemes kglobalaccel \
   kio patchelf kwin kconfig ki18n kguiaddons kcmutils \
@@ -47,7 +47,7 @@ sudo apt install \
   git cmake ninja-build g++ golang-go curl patchelf \
   pkg-config extra-cmake-modules libwayland-dev wayland-protocols libxkbcommon-dev qt6-base-dev qt6-declarative-dev \
   qt6-tools-dev qt6-l10n-tools qt6-translations-l10n qt6-quick3d-dev qt6-svg-dev qt6-wayland-dev qt6-image-formats-plugins \
-  qt6-5compat-dev libqt6svg6 qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts qml6-module-qtquick-dialogs qml6-module-qtquick-window \
+  qt6-5compat-dev libqt6svg6 baloo6 qml6-module-org-kde-baloo qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts qml6-module-qtquick-dialogs qml6-module-qtquick-window \
   qml6-module-qtquick-effects qml6-module-qtqml-models qml6-module-qtqml-workerscript qml6-module-qt5compat-graphicaleffects libkf6windowsystem-dev libkf6iconthemes-dev libkf6globalaccel-dev \
   libkf6kio-dev libkf6calendarcore-dev kwin-dev libdrm-dev libgbm-dev libepoxy-dev libxkbcommon-x11-dev \
   libkf6config-dev libkf6i18n-dev libkf6guiaddons-dev libkf6kcmutils-dev libkf6coreaddons-dev libkdecorations3-dev libplasma-dev \
@@ -77,7 +77,7 @@ sudo dnf install \
   qt6-qtbase-private-devel \
   kf6-kwindowsystem-devel kf6-kiconthemes-devel kf6-kglobalaccel-devel \
   kf6-kio-devel kf6-kcalendarcore-devel kf6-kconfig-devel kf6-ki18n-devel \
-  kf6-kguiaddons-devel kf6-kcmutils-devel kf6-kcoreaddons-devel \
+  kf6-kguiaddons-devel kf6-kcmutils-devel kf6-kcoreaddons-devel kf6-baloo \
   libplasma-devel kdecoration-devel \
   kwin-devel libdrm-devel mesa-libgbm-devel libepoxy-devel \
   vulkan-headers vulkan-loader-devel zlib-devel libxcb-devel
@@ -85,6 +85,10 @@ sudo dnf install \
 
 Qt private headers are separate packages; add `qt6-qtdeclarative-private-devel` if QuickPrivate
 is missing. Fedora uses a single `libxcb-devel`, unlike Debian's split extension packages.
+
+The local document section uses KDE Baloo. Baloo indexing remains under the
+user's control: install does not enable indexing. Document results appear after
+the user enables file indexing in KDE System Settings.
 
 ### Optional integrations and spatial wallpaper
 
@@ -148,6 +152,8 @@ Core installs `org.kos.desktop` and saves Plasma's previous ShellPackage before 
 wallpaper-only desktop. DeskCenter owns files; Plasma no longer duplicates panels/folder view.
 Changes apply next login; uninstall restores the prior shell. KOS's notification owner can be
 blocked by another notification daemon, so inspect the reported D-Bus owner if notifications are empty.
+Accepted notifications also appear briefly as a compact title banner above the Oska island. The banner
+follows the notification and Do Not Disturb settings; notification history remains available from Oska.
 
 ```sh
 ./tools/kosctl install lockscreen

@@ -33,6 +33,7 @@ Item {
         ThemeText {
             id: timeText
             anchors.verticalCenter: parent.verticalCenter
+            visible: !root.smartPanelFormat
             text: Qt.formatDateTime(clock.date, "h:mm")
             // With the mac-style ground on, the clock takes the strip's own
             // ink and the readability edge goes away with it.

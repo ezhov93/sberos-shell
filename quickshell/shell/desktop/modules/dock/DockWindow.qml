@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import qs.desktop.modules.bar
 import qs.desktop.modules.applauncher
 import qs.desktop.modules.dock
 import qs.desktop.modules.common
@@ -32,7 +33,7 @@ PanelWindow {
     // itself to Top in the same frame.
     WlrLayershell.layer: (AppLauncherService.open && AppLauncherConfigService.displayMode === "fullscreen") ? WlrLayer.Overlay : WlrLayer.Top
 
-    WlrLayershell.keyboardFocus: dockContainer.statusCollectionExpanded || dockContainer.statusDragActive || (statusIslandLoader.item?.collectionExpanded ?? false) || (statusIslandLoader.item?.statusDragActive ?? false) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: dockContainer.statusCollectionExpanded || dockContainer.statusDragActive || (statusIslandLoader.item?.collectionExpanded ?? false) || (statusIslandLoader.item?.statusDragActive ?? false) || (centerIslandLoader.item?.appSearchOpen ?? false) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     // ── Position-aware anchoring ──
     // The surface clings directly to the configured screen edge (margins = 0);
@@ -98,12 +99,16 @@ PanelWindow {
     // so starting a bounce never resizes/repositions the Wayland surface.
     // dockHoverRegion below uses this same budget on all three edges.
     readonly property real hoverHeadroom: Magnification.visualHeadroom(dockContainer.iconSize, dockContainer.activeBackgroundGap, ConfigService.effectiveHoverScale, ConfigService.effectiveHoverLift, root.dockThickness, DockAnimation.launchBounceHeightRatio)
+    // The integrated Oska island can expand to the local-search card height.
+    // Reserve that transparent layer-shell headroom up front so the Wayland
+    // surface itself does not resize while the island animates.
+    readonly property real centerIslandHeadroom: root.panelIslandLayout && root.centerAccessory !== null ? Math.max(0, 653 - dockContainer.height) : 0
     // Label paint stays in this surface. Its additional space is deliberately
     // excluded from dockHoverRegion/input masks, so labels remain click-through.
     readonly property real nameHeadroom: DockAnimation.nameLabelGap + (root.vertical ? DockAnimation.nameLabelMaximumWidth : DockAnimation.nameLabelMaximumHeight)
     // Cross-edge thickness = glass + float. Length is forced by the anchors
     // (full screen along the anchored edge); these set the other dimension.
-    implicitHeight: root.vertical ? 0 : dockContainer.height + root.edgeMargin + root.workspaceMargin + root.hoverHeadroom + root.nameHeadroom
+    implicitHeight: root.vertical ? 0 : dockContainer.height + root.edgeMargin + root.workspaceMargin + root.hoverHeadroom + root.nameHeadroom + root.centerIslandHeadroom
     implicitWidth: root.vertical ? dockContainer.width + root.edgeMargin + root.workspaceMargin + root.hoverHeadroom + root.nameHeadroom : 0
 
     // ── Auto-hide controller ──
@@ -123,7 +128,7 @@ PanelWindow {
         pointerInsideDock: dockContainer.pointerInside || leadingIslandHover.hovered || centerIslandHover.hovered || statusIslandHover.hovered || clockIslandHover.hovered
         editing: dockContainer.editMode
         dragging: dockContainer.draggedPinnedLoader !== null || dockContainer.statusDragActive
-        popupOpen: DockModelService.activeDockPopup !== null || dockContainer.accessoryInteractionActive || (leadingIslandLoader.item?.menuOpen ?? false) || (statusIslandLoader.item?.keepBarOpen ?? false)
+        popupOpen: DockModelService.activeDockPopup !== null || dockContainer.accessoryInteractionActive || (leadingIslandLoader.item?.menuOpen ?? false) || (statusIslandLoader.item?.keepBarOpen ?? false) || (centerIslandLoader.item?.appSearchOpen ?? false)
         launcherOpen: AppLauncherService.open
     }
 
@@ -156,6 +161,13 @@ PanelWindow {
 
     readonly property real restingDockWidth: root.vertical ? dockContainer.computedDockHeight : dockContainer.restingComputedWidth
     readonly property real restingDockHeight: root.vertical ? dockContainer.restingComputedWidth : dockContainer.computedDockHeight
+
+    function toggleOskaNotificationHistory(anchorItem) {
+        const statusArea = statusIslandLoader.item;
+        if (!oskaNotificationPanel.requestedOpen)
+            statusArea?.closeForExternalNotificationHistory?.();
+        oskaNotificationPanel.toggle(anchorItem);
+    }
     readonly property rect workspaceDockRect: Qt.rect(root.surfaceGlobalX + (root.vertical ? (root.position === "right" ? root.width - root.edgeMargin - root.restingDockWidth : root.edgeMargin) : (root.panelIslandLayout ? root.restX : (root.stretched ? root.stretchInset : (root.width - root.restingDockWidth) / 2))), root.surfaceGlobalY + (root.vertical ? (root.stretched ? root.reservedTop + root.stretchInset : root.reservedTop + (root.height - root.reservedTop - root.restingDockHeight) / 2) : root.height - root.edgeMargin - root.restingDockHeight), root.restingDockWidth, root.restingDockHeight)
 
     function publishWorkspaceLayout() {
@@ -249,8 +261,9 @@ PanelWindow {
         }
     }
 
-    // A unified SberOS panel uses five frosted islands in this one transparent
-    // layer surface. The gaps remain outside the input mask and pass clicks through.
+    // The mock-aligned SberOS panel uses separate menu, app, Oska, tray and
+    // clock islands in this transparent layer surface. Gaps remain
+    // click-through outside the input mask.
     Loader {
         id: leadingIslandLoader
         active: root.panelIslandLayout && root.leadingAccessory !== null
@@ -271,7 +284,7 @@ PanelWindow {
         active: root.panelIslandLayout && root.centerAccessory !== null
         sourceComponent: root.centerAccessory
         x: (root.width - width) / 2
-        y: hide.offsetY + root.restY + (dockContainer.height - height) / 2
+        y: hide.offsetY + root.restY + dockContainer.height - height
         opacity: hide.dockOpacity
         visible: active && item !== null
         HoverHandler {
@@ -303,6 +316,19 @@ PanelWindow {
         HoverHandler {
             id: statusIslandHover
         }
+    }
+
+    Connections {
+        target: centerIslandLoader.item
+        function onNotificationRequested(sourceItem) {
+            root.toggleOskaNotificationHistory(sourceItem);
+        }
+    }
+
+    NotificationHistoryPanel {
+        id: oskaNotificationPanel
+        dockHosted: true
+        dockEdge: root.position
     }
 
     // Input mask for the dock body. Invisible; its geometry equals

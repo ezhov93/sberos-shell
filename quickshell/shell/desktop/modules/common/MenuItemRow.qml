@@ -25,6 +25,7 @@ Item {
     property bool checked: false
     property bool separator: false
     property bool iconOnly: false
+    property real iconOnlyHeight: 46
     signal clicked
 
     readonly property bool _hasIcon: BundledIcons.has(row.icon) || row.iconSource.length > 0
@@ -36,7 +37,7 @@ Item {
     readonly property bool _hover: pointer.containsMouse
     readonly property color _hi: (itemEnabled ? AppearanceTokens.state.hover : AppearanceTokens.state.disabled)
 
-    height: row.separator ? 1 : (row.iconOnly ? 46 : 38)
+    height: row.separator ? 1 : (row.iconOnly ? row.iconOnlyHeight : 38)
     visible: row.separator || (row.iconOnly ? row._hasIcon : label.length > 0)
     width: parent ? parent.width : 0
     Accessible.role: Accessible.Button
@@ -59,8 +60,10 @@ Item {
     // Hover and checked states use the standard theme state colors.
     Rectangle {
         id: bg
-        anchors.fill: parent
-        radius: AppearanceTokens.shape.medium
+        x: row.iconOnly ? (row.width - 46) / 2 : 0
+        width: row.iconOnly ? 46 : parent.width
+        height: parent.height
+        radius: row.iconOnly ? 11 : AppearanceTokens.shape.medium
         visible: row.itemEnabled && !row.separator && (row._hover || row.checked || pointer.pressed)
         color: row.checked ? AppearanceTokens.state.selected : pointer.pressed ? AppearanceTokens.state.pressed : row._hi
         Behavior on color {
@@ -72,10 +75,11 @@ Item {
     }
 
     Row {
-        anchors.left: parent.left
-        anchors.leftMargin: row.iconOnly ? Math.max(0, (row.width - 22) / 2) : 12
-        anchors.right: parent.right
-        anchors.rightMargin: row.iconOnly ? Math.max(0, (row.width - 22) / 2) : 10
+        anchors.horizontalCenter: row.iconOnly ? parent.horizontalCenter : undefined
+        anchors.left: row.iconOnly ? undefined : parent.left
+        anchors.leftMargin: row.iconOnly ? 0 : 12
+        anchors.right: row.iconOnly ? undefined : parent.right
+        anchors.rightMargin: row.iconOnly ? 0 : 10
         anchors.verticalCenter: parent.verticalCenter
         spacing: row.iconOnly ? 0 : (row._hasIcon ? 9 : 0)
         visible: !row.separator
@@ -86,9 +90,9 @@ Item {
         // theme or glyph font.
         BundledIcon {
             visible: BundledIcons.has(row.icon)
-            width: visible ? (row.iconOnly ? 22 : 18) : 0
-            height: row.iconOnly ? 22 : 18
-            size: row.iconOnly ? 22 : 18
+            width: visible ? (row.iconOnly ? 24 : 18) : 0
+            height: row.iconOnly ? 24 : 18
+            size: row.iconOnly ? 24 : 18
             name: row.icon
             color: row.foregroundColor
             anchors.verticalCenter: parent.verticalCenter
@@ -100,12 +104,12 @@ Item {
         // provider can reach KIconEngine, which is not thread-safe.
         Image {
             visible: !BundledIcons.has(row.icon) && row.iconSource.length > 0
-            width: visible ? (row.iconOnly ? 22 : 18) : 0
-            height: row.iconOnly ? 22 : 18
+            width: visible ? (row.iconOnly ? 24 : 18) : 0
+            height: row.iconOnly ? 24 : 18
             source: row.iconSource
             asynchronous: false
-            sourceSize.width: row.iconOnly ? 22 : 18
-            sourceSize.height: row.iconOnly ? 22 : 18
+            sourceSize.width: row.iconOnly ? 24 : 18
+            sourceSize.height: row.iconOnly ? 24 : 18
             anchors.verticalCenter: parent.verticalCenter
             opacity: row.itemEnabled ? 0.9 : 0.5
         }

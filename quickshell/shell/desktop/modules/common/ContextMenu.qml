@@ -36,7 +36,10 @@ PopupWindow {
     readonly property color effectiveForegroundColor: {
         if (!root.adaptiveForeground)
             return root.foregroundColor;
-        return root.adaptiveForeground ? surface.foregroundColor : root.foregroundColor;
+        // FrostedSurface owns blur and tint but does not expose a foreground
+        // property. Use the same panel foreground token as OpaqueSurface so
+        // adaptive menus do not bind an undefined color.
+        return AppearanceTokens.colors.surfaceForeground;
     }
     // Some anchors receive their opening press through the compositor's
     // global-pointer bridge slightly after this popup is mapped.
@@ -384,6 +387,7 @@ PopupWindow {
                                 readonly property var submenuItems: root.childrenFor(modelData)
                                 width: parent.width
                                 iconOnly: root.iconOnlyRoot && root.sideSubmenuVisible ? true : root.iconOnlyRoot && root.atRoot
+                                iconOnlyHeight: root.iconMenuItemHeight
                                 foregroundColor: root.effectiveForegroundColor
                                 icon: modelData.icon || ""
                                 iconSource: entry ? (entry.icon || "") : (modelData.iconSource || "")

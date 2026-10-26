@@ -58,6 +58,28 @@ Item {
                 label: I18n.tr("Power and session"),
                 children: [
                     {
+                        icon: "system-log-out",
+                        label: I18n.tr("Log Out"),
+                        cmd: "logout",
+                        enabled: sessionReady
+                    },
+                    {
+                        icon: "system-reboot",
+                        label: I18n.tr("Restart"),
+                        cmd: "reboot",
+                        enabled: sessionReady
+                    },
+                    {
+                        icon: "system-shutdown",
+                        label: I18n.tr("Power Off"),
+                        cmd: "poweroff",
+                        enabled: sessionReady
+                    },
+                    {
+                        separator: true,
+                        label: ""
+                    },
+                    {
                         icon: "system-lock-screen",
                         label: I18n.tr("Lock Screen"),
                         cmd: "lock",
@@ -68,24 +90,6 @@ Item {
                         label: I18n.tr("Sleep"),
                         cmd: "suspend",
                         enabled: sessionReady && ControlCenterService.canSuspend
-                    },
-                    {
-                        icon: "system-log-out",
-                        label: I18n.tr("Log Out %1…").replace("%1", ControlCenterService.currentUserName),
-                        cmd: "logout",
-                        enabled: sessionReady
-                    },
-                    {
-                        icon: "system-reboot",
-                        label: I18n.tr("Restart…"),
-                        cmd: "reboot",
-                        enabled: sessionReady
-                    },
-                    {
-                        icon: "system-shutdown",
-                        label: I18n.tr("Shut Down…"),
-                        cmd: "poweroff",
-                        enabled: sessionReady
                     }
                 ]
             },
@@ -105,15 +109,12 @@ Item {
         color: (pointer.containsMouse || root.menuOpen) ? Qt.rgba(root.color.r, root.color.g, root.color.b, 0.16) : "transparent"
     }
 
-    Text {
+    BundledIcon {
         anchors.centerIn: parent
         visible: !root.menuOpen
-        text: "С"
+        size: root.size + 2
+        name: "sber"
         color: root.color
-        font {
-            pixelSize: root.size
-            weight: Font.DemiBold
-        }
     }
 
     MouseArea {
@@ -133,7 +134,8 @@ Item {
         anchorItem: root.menuAnchorItem || root
         iconOnlyRoot: true
         sideBySideSubmenu: true
-        iconMenuWidth: 68
+        iconMenuWidth: 72
+        iconMenuItemHeight: 48
         macosPopupMotion: false
         customAnchorEdges: Edges.Bottom | Edges.Left
         customGravity: Edges.Top | Edges.Right

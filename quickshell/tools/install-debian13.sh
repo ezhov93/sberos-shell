@@ -551,6 +551,7 @@ debian_core_build_packages=(
     extra-cmake-modules libwayland-dev wayland-protocols libxkbcommon-dev
     qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-l10n-tools qt6-translations-l10n qt6-quick3d-dev qt6-svg-dev qt6-wayland-dev
     qt6-image-formats-plugins qt6-5compat-dev libqt6svg6
+    baloo6 qml6-module-org-kde-baloo
     qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
     qml6-module-qtquick-dialogs qml6-module-qtquick-window qml6-module-qtquick-effects
     qml6-module-qtqml-models qml6-module-qtqml-workerscript

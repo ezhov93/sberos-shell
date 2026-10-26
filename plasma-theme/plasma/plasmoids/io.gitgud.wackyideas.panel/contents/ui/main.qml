@@ -321,14 +321,16 @@ ContainmentItem {
                 required property int index
                 property Item dragging
                 property bool isAppletContainer: true
+                property bool isApplicationIsland: applet?.plasmoid?.pluginName === "org.kde.plasma.icontasks"
                 property bool isMarginSeparator: ((applet.plasmoid?.constraintHints & Plasmoid.MarginAreasSeparator) == Plasmoid.MarginAreasSeparator)
                 property int appletIndex: index // To make sure it's always readable even inside other models
                 property bool inThickArea: false
                 visible: applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus || (!Plasmoid.immutable && Plasmoid.userConfiguring) || Containment.corona.editMode;
 
                 Rectangle {
+                    id: appletBackground
                     anchors.fill: parent
-                    anchors.margins: Kirigami.Units.smallSpacing
+                    anchors.margins: parent.isApplicationIsland ? 0 : Kirigami.Units.smallSpacing
                     radius: 24
                     color: Kirigami.Theme.backgroundColor
                     opacity: 0.72
@@ -342,6 +344,15 @@ ContainmentItem {
                         && applet?.plasmoid?.pluginName !== "io.gitgud.wackyideas.sbermenu"
                         && !(dropArea.hasSharedSystemIsland
                              && dropArea.systemIslandAppletNames.indexOf(applet?.plasmoid?.pluginName) !== -1)
+                }
+
+                Rectangle {
+                    anchors.fill: appletBackground
+                    anchors.margins: 7
+                    radius: 16
+                    color: Kirigami.Theme.backgroundColor
+                    opacity: 0.92
+                    visible: root.isHorizontal && parent.isApplicationIsland
                 }
 
                 //when the applet moves caused by its resize, don't animate.
@@ -362,9 +373,9 @@ ContainmentItem {
                     return ((layout[side] || returnAllMargins) && !fillArea) ? Math.round(Math.min(dropArea.spacingAtMinSize, (inThickArea ? thickPanelSvg.fixedMargins[side] : panelSvg.fixedMargins[side]))) : 0;
                 }
 
-                Layout.topMargin: getMargins('top')
-                Layout.bottomMargin: getMargins('bottom')
-                Layout.leftMargin: 0//getMargins('left')
+                Layout.topMargin: isApplicationIsland ? 4 : getMargins('top')
+                Layout.bottomMargin: isApplicationIsland ? 4 : getMargins('bottom')
+                Layout.leftMargin: isApplicationIsland ? 8 : 0//getMargins('left')
                 Layout.rightMargin: 0//getMargins('right')
 
                 // Always fill width/height, in order to still shrink the applet when there is not enough space.
@@ -384,10 +395,14 @@ ContainmentItem {
                 function findPositive(first, second) {return first > 0 ? first : second}
 
     // BEGIN BUG 454095: do not combine these expressions to a function or the bindings won't work
-                Layout.minimumWidth: root.isHorizontal ? findPositive(applet?.Layout.minimumWidth, availHeight) : availWidth
+                Layout.minimumWidth: root.isHorizontal
+                    ? Math.max(isApplicationIsland ? 168 : 0, findPositive(applet?.Layout.minimumWidth, availHeight))
+                    : availWidth
                 Layout.minimumHeight: !root.isHorizontal ? findPositive(applet?.Layout.minimumHeight, availWidth) : availHeight
 
-                Layout.preferredWidth: root.isHorizontal ? findPositive(applet?.Layout.preferredWidth, Layout.minimumWidth) : availWidth
+                Layout.preferredWidth: root.isHorizontal
+                    ? Math.max(Layout.minimumWidth, findPositive(applet?.Layout.preferredWidth, Layout.minimumWidth))
+                    : availWidth
                 Layout.preferredHeight: !root.isHorizontal ? findPositive(applet?.Layout.preferredHeight, Layout.minimumHeight) : availHeight
 
                 Layout.maximumWidth: root.isHorizontal ? (wantsToFillWidth ? findPositive(applet?.Layout.maximumWidth, root.width) : Math.min(findPositive(applet?.Layout.maximumWidth, Layout.preferredWidth), Layout.preferredWidth)) : availWidth

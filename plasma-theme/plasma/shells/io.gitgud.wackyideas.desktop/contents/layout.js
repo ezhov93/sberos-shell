@@ -29,7 +29,9 @@ if (panel.formFactor === "horizontal") {
 }
 
 panel.addWidget("io.gitgud.wackyideas.sbermenu")
-panel.addWidget("org.kde.plasma.icontasks")
+var applications = panel.addWidget("org.kde.plasma.icontasks")
+applications.currentConfigGroup = ["General"]
+applications.writeConfig("launchers", "preferred://filemanager,preferred://browser")
 
 /* Next up is determining whether to add the Input Method Panel
  * widget to the panel or not. This is done based on whether

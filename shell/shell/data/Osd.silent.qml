@@ -1,7 +1,6 @@
 /*
-    Silent on-screen display: installed by `sirca-shell-switch on`. Sirca Shell shows volume / brightness inside its top
-    bar (it listens to plasmashell's osdService signals, which are only emitted while the OSD is enabled), so the popup
-    itself must exist but never appear. Same properties as Osd.qml, which plasmashell sets.
+    Silent Plasma OSD window: installed by `sirca-shell-switch on` so Plasma's own popup stays hidden while Sirca
+    presents the same system events in its panel. The window must still map briefly to receive the OSD role.
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 import QtQuick

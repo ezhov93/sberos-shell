@@ -2,8 +2,8 @@
 // org.kde.osdService, the interface volume / brightness / layout … changes are announced on (by
 // plasma-pa, PowerDevil, KWin, the keyboard daemon). Plasma serves it from plasmashell under the
 // bus name org.kde.plasmashell. When Sirca Shell runs WITHOUT plasmashell (config
-// "withoutPlasmashell": true) it serves the same interface itself and shows the values in the top
-// bar's clock pill. It must never hold that name otherwise: plasmashell refuses to start while it
+// "withoutPlasmashell": true) it serves the same interface itself and the shell presents events
+// in its passive on-screen display. It must never hold that name otherwise: plasmashell refuses to start while it
 // is taken.
 #include <QDBusArgument>
 #include <QObject>

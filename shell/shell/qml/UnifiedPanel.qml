@@ -393,7 +393,7 @@ Dock {
                     qs: panel.nativeControl
                     anchors.verticalCenter: parent.verticalCenter
                     onOpenPage: page => panel.openPage(page)
-                    onOsd: (icon, value) => osd.show(icon, value)
+                    onOsd: (icon, value) => osd.showProgress(icon, value * 100, 100, "")
                 }
             }
             Repeater {
@@ -631,7 +631,7 @@ Dock {
                     panel.openLobe = "";
                 }
                 function onOsdRequested(icon, fraction) {
-                    osd.show(icon, fraction);
+                    osd.showProgress(icon, fraction * 100, 100, "");
                 }
             }
         }
@@ -679,36 +679,102 @@ Dock {
             }
         }
     }
-    // Passive OSD stays inside the panel and never requests keyboard focus.
+    // Passive OSD is drawn by Sirca when it owns org.kde.osdService without plasmashell.
     Rectangle {
         id: osd
         property string symbol: ""
         property real fraction: 0
-        function show(icon, value) {
+        property string message: ""
+        property bool progressVisible: true
+        function showProgress(icon, value, maximum, additionalText) {
             symbol = icon;
-            fraction = value;
+            fraction = maximum > 0 ? Math.max(0, Math.min(1, value / maximum)) : 0;
+            message = additionalText || "";
+            progressVisible = true;
+            hideOsd.restart();
+        }
+        function showText(icon, text) {
+            symbol = icon;
+            message = text;
+            progressVisible = false;
             hideOsd.restart();
         }
         visible: hideOsd.running
-        x: clockButton.mapToItem(panel.contentItem, 0, 0).x - 8
-        y: panel.barRect.y + 4
-        width: 112
-        height: panel.dockH - 8
-        radius: Theme.Sizes.BorderRadius.S
+        z: 1000
+        x: (panel.width - width) / 2
+        y: panel.barRect.y - height - 12
+        width: 320
+        height: 76
+        radius: Theme.Sizes.BorderRadius.L
         color: Theme.Palette.Background.Default.Secondary
+        border.width: 1
+        border.color: Theme.Palette.Outline.Default.SolidSecondary
+        opacity: visible ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation { duration: 140 }
+        }
         Timer {
             id: hideOsd
-            interval: 1600
+            interval: 1800
         }
-        Sber.Label {
-            anchors.centerIn: parent
-            text: Math.round(osd.fraction * 100) + "%"
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            spacing: 16
+            Kirigami.Icon {
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 28
+                source: osd.symbol
+                isMask: true
+                color: Theme.Palette.Text.Default.Primary
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                RowLayout {
+                    Layout.fillWidth: true
+                    Sber.Label {
+                        Layout.fillWidth: true
+                        visible: osd.message !== ""
+                        text: osd.message
+                        elide: Text.ElideRight
+                        color: Theme.Palette.Text.Default.Primary
+                        font: Theme.Fonts.BodySB
+                    }
+                    Sber.Label {
+                        Layout.alignment: Qt.AlignRight
+                        visible: osd.progressVisible
+                        text: Math.round(osd.fraction * 100) + "%"
+                        color: Theme.Palette.Text.Default.Primary
+                        font: Theme.Fonts.BodySB
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 6
+                    visible: osd.progressVisible
+                    radius: height / 2
+                    color: Theme.Palette.Background.Default.Primary
+                    Rectangle {
+                        width: parent.width * osd.fraction
+                        height: parent.height
+                        radius: parent.radius
+                        color: Theme.Palette.Surface.Default.Accent
+                        Behavior on width { NumberAnimation { duration: 120 } }
+                    }
+                }
+            }
         }
         Connections {
             target: Shell
             function onDbusSignal(iface, member, args) {
-                if (iface === "org.kde.osdService" && member === "osdProgress" && args.length >= 2)
-                    osd.show(String(args[0]), Number(args[1]) / 100);
+                if (iface !== "org.kde.osdService")
+                    return;
+                if (member === "osdProgress" && args.length >= 3)
+                    osd.showProgress(String(args[0]), Number(args[1]), Number(args[2]), args.length >= 4 ? String(args[3]) : "");
+                else if (member === "osdText" && args.length >= 2)
+                    osd.showText(String(args[0]), String(args[1]));
             }
         }
     }

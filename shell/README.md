@@ -91,7 +91,7 @@ Keep the source folder if you install the light/dark switch. `glass-mode` and th
 | Several screens | wallpaper and panel on all connected screens by default; individual panels can be disabled. Tested with two virtual screens only |
 | NVIDIA | yes, developed on it |
 | AMD, Intel | untested. Please tell me how it goes |
-| Without plasmashell | yes: `sirca-shell-switch plasma off` masks it and the shell takes over the desktop, the OSD and notifications (this is how I run it now). `plasma on` brings it back |
+| Without plasmashell | yes: `sirca-shell-switch plasma off` masks it and the shell takes over the desktop, a passive system OSD and notifications (this is how I run it now). Volume, microphone and brightness changes show an icon, level and progress bar; other system OSD events show their text. `plasma on` brings it back |
 
 **How heavy is it?** On my machine (7800X3D, RTX 5080, one 5120x1440 screen), from systemd's own accounting of
 whole-day sessions: plasmashell with its panels averaged 1.4–1.6 % of one core, Sirca Shell doing the same job 0.2–0.4 %,

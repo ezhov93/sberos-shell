@@ -62,7 +62,7 @@ Surface {
 
     readonly property int gap: Config.dockGap
     readonly property int dockH: Config.dockHeight
-    readonly property int headroom: 44            // room above the bar for hover magnification / the future shelf
+    readonly property int headroom: 108           // room above the bar for hover magnification and the passive OSD
     readonly property int pad: 12
     readonly property int sidePad: 32
     strut: gap + dockH + gap

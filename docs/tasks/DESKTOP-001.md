@@ -248,3 +248,17 @@ Wayland/живой Plasma, popup и blur этой проверкой не под
 Постановка: `8ce8f24`. Первый этап: `git log -- shell/desktop/tools/gen_sber_theme.py`.
 
 По анализу 2026-10-23 `tools/ensure_session.sh` удалён: ссылок на вызов и unit-файла нет, а скрипт восстанавливал удалённую Glass-декорацию. Устаревшие обещания оформления Spotify и приложений удалены из актуальных инструкций; записи в архивных отчётах сохранены как история.
+
+### Установка Kvantum, 2026-10-26
+
+По просьбе пользователя установлена обновлённая тема в профиль
+`~/.config/Kvantum/SberOS/`. Прежний каталог и selector `kvantum.kvconfig`
+сохранены в `~/.local/state/sberos-kvantum-20261026-before-ui-kit-palette/`.
+Selector по-прежнему выбирает `SberOS`; `kdeglobals` использует
+`widgetStyle=kvantum` и `ColorScheme=SberOSLight`. Все четыре установленных
+файла совпадают с `desktop/Kvantum/SberOS/`.
+
+`kvantumpreview` открылся в текущем Wayland-сеансе с установленным
+`Kvantum::Style`; снимок: [светлая тема](../../desktop/docs/checks/2026-10-26/kvantum-wayland.png).
+Тёмная тема проверена в изолированном offscreen-предпросмотре, без смены текущей
+схемы Plasma. Сценарий `09-02`; popup, blur и другие приложения не проверялись.

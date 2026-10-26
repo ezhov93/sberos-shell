@@ -13,8 +13,16 @@ system color scheme.
 - [Light theme](kvantum-light.png)
 - [Dark theme](kvantum-dark.png)
 
-The screenshots confirm rendering of the copied Kvantum configs and SVG theme
-assets, including green selected rows. They use the `offscreen` platform and do
-not verify Wayland integration, popup windows, blur, or the appearance of the
-whole Plasma desktop. No user configuration or installed theme files were
-changed.
+The offscreen screenshots confirm rendering of the copied Kvantum configs and
+SVG theme assets, including green selected rows. For these captures, a Qt
+`QPalette` matching the generated SberOS color schemes was set explicitly; the
+temporary profile did not install KDE color schemes.
+
+After the preview, the user requested installation. The updated theme is now in
+the user's `~/.config/Kvantum/SberOS/`; its previous copy and selector are backed
+up under
+`~/.local/state/sberos-kvantum-20261026-before-ui-kit-palette/`. The installed
+light theme was opened in Kvantum Preview under the current Wayland session and
+captured here: [installed light theme](kvantum-wayland.png). The live session
+uses `SberOSLight`. The dark theme was rendered offscreen; Wayland dark mode,
+popup windows, blur, and other Plasma surfaces remain unchecked.

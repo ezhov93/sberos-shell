@@ -245,63 +245,67 @@ Window {
         id: keys
         anchors.fill: parent
         Keys.onPressed: event => menu.handleKey(event)
-        Rectangle {
+        Item {
+            id: revealClip
             x: menu.menuRect.x
-            y: menu.menuRect.y
-            width: menu.menuRect.width
-            height: menu.menuRect.height
-            radius: 20
-            color: Theme.Palette.Background.Default.Primary
-            opacity: menu.revealProgress
-            transform: Scale {
-                origin.x: 0
-                origin.y: menu.menuRect.height
-                yScale: (1 + 2 * menu.revealProgress) / 3
-            }
-            Column {
-                x: 16
-                y: menu.menuPadding
-                width: menu.cellSize
-                spacing: menu.menuSpacing
-                Repeater {
-                    id: buttons
-                    model: menu.entries
-                    Sber.Button {
-                        id: entry
-                        required property int index
-                        required property var modelData
-                        width: menu.cellSize
-                        height: menu.cellSize
-                        focusPolicy: Qt.NoFocus
-                        Accessible.name: modelData.text
-                        backgroundType: Sber.Widget.Clear
-                        background: Rectangle {
-                            anchors.fill: parent
-                            radius: Theme.Sizes.BorderRadius.S
-                            color: entry.hovered || (menu.child !== "" && menu.childOrigin === entry.index) ? Theme.Palette.Background.Default.Secondary : "transparent"
-                            border.width: entry.activeFocus ? 2 : 0
-                            border.color: Theme.Palette.Surface.Default.Accent
-                        }
-                        contentItem: Item {
-                            Kirigami.Icon {
-                                anchors.centerIn: parent
-                                width: 24
-                                height: 24
-                                source: entry.modelData.icon
-                                isMask: true
-                                color: Theme.Palette.Text.Default.Primary
+            y: menu.menuRect.y + menu.menuHeight - height
+            width: menu.menuWidth
+            height: menu.menuHeight * menu.revealProgress
+            clip: true
+            Item {
+                y: revealClip.height - menu.menuHeight
+                width: revealClip.width
+                height: menu.menuHeight
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 20
+                    color: Theme.Palette.Background.Default.Primary
+                }
+                Column {
+                    x: 16
+                    y: menu.menuPadding
+                    width: menu.cellSize
+                    spacing: menu.menuSpacing
+                    Repeater {
+                        id: buttons
+                        model: menu.entries
+                        Sber.Button {
+                            id: entry
+                            required property int index
+                            required property var modelData
+                            width: menu.cellSize
+                            height: menu.cellSize
+                            focusPolicy: Qt.NoFocus
+                            Accessible.name: modelData.text
+                            backgroundType: Sber.Widget.Clear
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: Theme.Sizes.BorderRadius.S
+                                color: entry.hovered || (menu.child !== "" && menu.childOrigin === entry.index) ? Theme.Palette.Background.Default.Secondary : "transparent"
+                                border.width: entry.activeFocus ? 2 : 0
+                                border.color: Theme.Palette.Surface.Default.Accent
                             }
-                        }
-                        Keys.onPressed: event => menu.handleKey(event)
-                        onClicked: menu.activate(index, false)
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.RightButton
-                            onClicked: {
-                                if (menu.child !== "")
-                                    menu.closeChild();
-                                else if (entry.index === 1 && menu.terminalId !== "")
-                                    menu.openChild("terminal", 1, false);
+                            contentItem: Item {
+                                Kirigami.Icon {
+                                    anchors.centerIn: parent
+                                    width: 24
+                                    height: 24
+                                    source: entry.modelData.icon
+                                    isMask: true
+                                    color: Theme.Palette.Text.Default.Primary
+                                }
+                            }
+                            Keys.onPressed: event => menu.handleKey(event)
+                            onClicked: menu.activate(index, false)
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.RightButton
+                                onClicked: {
+                                    if (menu.child !== "")
+                                        menu.closeChild();
+                                    else if (entry.index === 1 && menu.terminalId !== "")
+                                        menu.openChild("terminal", 1, false);
+                                }
                             }
                         }
                     }

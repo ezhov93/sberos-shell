@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="669" viewBox="0 0 456 669">
+  <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+  <g id="center" fill="white">
+    <rect width="456" height="589" rx="24"/>
+    <rect y="597" width="456" height="72" rx="24"/>
+  </g>
+  <rect id="hint-left-margin" width="0.001" height="0.001"/>
+  <rect id="hint-top-margin" width="0.001" height="0.001"/>
+  <rect id="hint-right-margin" width="0.001" height="0.001"/>
+  <rect id="hint-bottom-margin" width="0.001" height="0.001"/>
+</svg>

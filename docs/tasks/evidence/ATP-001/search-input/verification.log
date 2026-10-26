@@ -1,0 +1,15 @@
+SEARCH_FIELD TextField_QMLTYPE_245(0x558f95fbbfb0, id="searchInput", parent=0x558f95e23240, geometry=52,8 343x56) true true true true QPointF(1120,1368)
+SEARCH_FOCUS_ITEM QQuickItem(nullptr)
+SEARCH_NATIVE_FOCUS PlasmaQuick::AppletPopup_QML_191(0x558f9608d6f0 active exposed, visibility=QWindow::Windowed, flags=QFlags<Qt::WindowType>(Dialog|FramelessWindowHint|WindowStaysOnTopHint), name="popupWindow", transientParent=0x558f95735f40, geometry=1052,763 456x669) PanelView(0x558f95735f40 active exposed, visibility=QWindow::Windowed, flags=QFlags<Qt::WindowType>(FramelessWindowHint|WindowDoesNotAcceptFocus), geometry=0,1352 2560x88) PlasmaQuick::AppletPopup_QML_191(0x558f9608d6f0 active exposed, visibility=QWindow::Windowed, flags=QFlags<Qt::WindowType>(Dialog|FramelessWindowHint|WindowStaysOnTopHint), name="popupWindow", transientParent=0x558f95735f40, geometry=1052,763 456x669) true QFlags<Qt::WindowType>(FramelessWindowHint|WindowDoesNotAcceptFocus)
+SEARCH_NATIVE_MASK true
+SEARCH_GEOMETRY QRect(1052,763 456x669) QPointF(1052,1360) true
+SEARCH_BEFORE_KEYS TextField_QMLTYPE_245(0x558f95fbbfb0, id="searchInput", parent=0x558f95e23240, geometry=52,8 343x56)
+SEARCH_TYPED true QVariant(QString, "sberos-input-probe")
+SEARCH_MODEL_QUERY true
+SEARCH_EDITED true
+SEARCH_PERSISTENT_CONTROLS 2
+SEARCH_ESCAPE true
+SEARCH_REOPEN true
+SEARCH_NOTIFICATIONS true QRect(1052,1070 456x282)
+SEARCH_RETURN_FROM_NOTIFICATIONS true
+SEARCH_POPUP_OK true

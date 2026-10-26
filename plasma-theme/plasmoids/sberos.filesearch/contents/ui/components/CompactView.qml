@@ -21,6 +21,8 @@ Item {
     required property color accentColor
     required property int searchTextLength
     required property string searchText
+    property bool searchActive: false
+    property Item searchPopupHost: null
     required property int panelRadius
     required property bool showSearchButton
     required property bool showSearchButtonBackground
@@ -53,11 +55,13 @@ Item {
     property int notificationCount: 0
 
     onExpandedChanged: {
-        if (expanded && oskaMode) Qt.callLater(() => searchInput.forceActiveFocus());
-        else if (!expanded) compactRoot.searchCleared();
+        if (!expanded) compactRoot.searchCleared();
     }
-    Component.onCompleted: {
-        if (expanded && oskaMode) Qt.callLater(() => searchInput.forceActiveFocus());
+    onSearchPopupHostChanged: if (searchPopupHost) Qt.callLater(focusSearch)
+    function focusSearch() {
+        if (!searchActive || !searchPopupHost) return;
+        searchInput.forceActiveFocus();
+        searchInput.Window.window?.requestActivate();
     }
 
     // Button Mode - icon only (no background)
@@ -88,6 +92,8 @@ Item {
     // Main Button Container (for non-button modes)
     Rectangle {
         id: mainButton
+        // Share the popup's keyboard window while keeping the island's screen position.
+        parent: compactRoot.searchPopupHost ?? compactRoot
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
@@ -117,9 +123,11 @@ Item {
             Button {
                 id: notificationsButton
                 Layout.preferredWidth: Math.max(0, mainButton.height * 40 / 72)
+                Layout.minimumWidth: Layout.preferredWidth
+                Layout.maximumWidth: Layout.preferredWidth
                 Layout.preferredHeight: Layout.preferredWidth
                 padding: 0
-                visible: compactRoot.oskaMode && compactRoot.searchTextLength === 0
+                visible: compactRoot.oskaMode
                 Accessible.name: qsTr("Уведомления: %1").arg(compactRoot.notificationCount)
                 onClicked: compactRoot.openNotifications()
                 contentItem: OskaAvatar {}
@@ -169,7 +177,7 @@ Item {
                 id: searchInput
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
-                visible: compactRoot.oskaMode && compactRoot.expanded
+                visible: compactRoot.oskaMode && compactRoot.searchActive
                 text: compactRoot.searchText
                 placeholderText: qsTr("Найду документ или приложение")
                 Accessible.name: qsTr("Поиск документов и приложений")
@@ -213,13 +221,17 @@ Item {
 
             Button {
                 id: layoutButton
-                visible: compactRoot.oskaMode && keyboardLayout.layoutsList.length > 0
+                visible: compactRoot.oskaMode
+                enabled: keyboardLayout.layoutsList.length > 0
                 Layout.preferredWidth: implicitContentWidth + 6
+                Layout.minimumWidth: Layout.preferredWidth
+                Layout.maximumWidth: Layout.preferredWidth
                 Layout.preferredHeight: 18
                 padding: 2
-                text: keyboardLayout.layoutsList.length > keyboardLayout.layout
-                    ? keyboardLayout.layoutsList[keyboardLayout.layout].shortName.toLocaleUpperCase() : ""
-                Accessible.name: qsTr("Переключить раскладку клавиатуры: %1").arg(text)
+                text: keyboardLayout.layout >= 0 && keyboardLayout.layoutsList.length > keyboardLayout.layout
+                    ? keyboardLayout.layoutsList[keyboardLayout.layout].shortName.toLocaleUpperCase() : "—"
+                Accessible.name: enabled ? qsTr("Переключить раскладку клавиатуры: %1").arg(text)
+                    : qsTr("Раскладка клавиатуры недоступна")
                 onClicked: keyboardLayout.switchToNextLayout()
                 contentItem: Text {
                     text: layoutButton.text

@@ -1,0 +1,21 @@
+[
+  {
+    "label": "search",
+    "x": 1052,
+    "y": 763,
+    "width": 456,
+    "height": 669,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  }
+]

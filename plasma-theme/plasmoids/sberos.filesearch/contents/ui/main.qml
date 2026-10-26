@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
+import org.kde.ksvg as KSvg
 import "components" as Components
 import org.kde.notificationmanager as NotificationManager
 
@@ -13,6 +14,7 @@ PlasmoidItem {
     property string searchText: ""
     property alias logic: controller
     property bool notificationsOpen: false
+    readonly property bool editingSmartSearch: isExtraWideMode && expanded && !notificationsOpen
     onExpandedChanged: if (!expanded) notificationsOpen = false
     NotificationManager.WatchedNotificationsModel { id: notificationModel }
     Instantiator {
@@ -163,6 +165,8 @@ PlasmoidItem {
         isUltraWideMode: root.isUltraWideMode
         expanded: root.expanded
         searchText: root.searchText
+        searchActive: root.editingSmartSearch
+        searchPopupHost: root.editingSmartSearch ? (root.fullRepresentationItem?.inputHost ?? null) : null
         truncatedText: root.truncatedText
         responsiveFontSize: root.responsiveFontSize
         maxChars: root.maxChars
@@ -202,8 +206,9 @@ PlasmoidItem {
         id: smartPanelRepresentation
         FocusScope {
             id: panelPopup
+            property alias inputHost: popupInputHost
             implicitWidth: 456
-            implicitHeight: root.notificationsOpen ? 282 : 653
+            implicitHeight: root.notificationsOpen ? 282 : 669
             Layout.minimumWidth: implicitWidth
             Layout.maximumWidth: implicitWidth
             Layout.preferredWidth: implicitWidth
@@ -214,13 +219,33 @@ PlasmoidItem {
                 content: panelPopup
                 anchorItem: root.compactRepresentationItem ?? root
                 screenGeometry: Plasmoid.containment.screenGeometry
-                overlapPanel: false
+                overlapPanel: !root.notificationsOpen
+                frameSource: root.notificationsOpen ? Qt.resolvedUrl("../assets/smart-panel/popup-frame.svg")
+                    : Qt.resolvedUrl("../assets/smart-panel/search-popup-frame.svg")
+                frameBorders: root.notificationsOpen ? KSvg.FrameSvg.AllBorders : 0
             }
             Loader {
                 id: representationLoader
-                anchors.fill: parent
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: root.notificationsOpen ? parent.height : 589
                 active: root.expanded
                 sourceComponent: root.notificationsOpen ? notificationsRepresentation : smartSearchRepresentation
+                onLoaded: {
+                    if (root.notificationsOpen) {
+                        item.forceActiveFocus();
+                        panelPopup.Window.window?.requestActivate();
+                    } else Qt.callLater(() => root.compactRepresentationItem.focusSearch());
+                }
+            }
+            Item {
+                id: popupInputHost
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 72
+                visible: !root.notificationsOpen
             }
             Keys.onEscapePressed: root.expanded = false
             function activateFirst() {

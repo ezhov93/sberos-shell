@@ -10,6 +10,8 @@ Item {
     required property rect screenGeometry
     property string alignment: "center"
     property bool overlapPanel: false
+    property url frameSource: Qt.resolvedUrl("../assets/smart-panel/popup-frame.svg")
+    property int frameBorders: KSvg.FrameSvg.AllBorders
     readonly property var popupWindow: content.Window.window
     property bool updatingFrame: false
 
@@ -42,12 +44,12 @@ Item {
             child.opacity = 0;
             for (const frame of child.children) {
                 if (frame.imagePath === undefined || frame.fixedMargins === undefined) continue;
-                frame.imagePath = decodeURIComponent(Qt.resolvedUrl("../assets/smart-panel/popup-frame.svg")
+                frame.imagePath = decodeURIComponent(placement.frameSource
                     .toString().replace(/^file:\/\//, ""));
                 // Window borders also select the native theme's shadow tiles.
                 // Remove those tiles, then retain all corners in our blur mask.
                 w.borders = 0;
-                frame.enabledBorders = KSvg.FrameSvg.AllBorders;
+                frame.enabledBorders = placement.frameBorders;
             }
         }
         updatingFrame = false;
@@ -71,6 +73,9 @@ Item {
         });
     }
     onPopupWindowChanged: Qt.callLater(apply)
+    onOverlapPanelChanged: Qt.callLater(apply)
+    onFrameSourceChanged: Qt.callLater(apply)
+    onFrameBordersChanged: Qt.callLater(apply)
     Component.onCompleted: Qt.callLater(apply)
     Connections {
         target: placement.popupWindow

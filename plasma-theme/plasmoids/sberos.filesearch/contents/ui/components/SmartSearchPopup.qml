@@ -21,13 +21,13 @@ FocusScope {
     readonly property var applications: entries.filter(item => item.application).slice(0, 4)
     readonly property var documents: entries.filter(item => !item.application)
     implicitWidth: 456
-    implicitHeight: 653
+    implicitHeight: 589
     Layout.minimumWidth: 456
     Layout.maximumWidth: 456
     Layout.preferredWidth: 456
-    Layout.minimumHeight: 653
-    Layout.maximumHeight: 653
-    Layout.preferredHeight: 653
+    Layout.minimumHeight: 589
+    Layout.maximumHeight: 589
+    Layout.preferredHeight: 589
     focus: false
 
     onSearchQueryChanged: {
@@ -106,11 +106,8 @@ FocusScope {
         border.color: smartTheme.edge
     }
     Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
+        anchors.fill: parent
         anchors.margins: 8
-        height: 573
         radius: 20
         color: smartTheme.inner
     }

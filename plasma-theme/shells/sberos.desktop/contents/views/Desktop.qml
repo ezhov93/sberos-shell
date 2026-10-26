@@ -62,64 +62,10 @@ Item {
     }
 
 
-    readonly property rect editModeRect: {
-        if (!containment) {
-            return Qt.rect(0,0,0,0);
-        }
-        let screenRect = containment.plasmoid.availableScreenRect;
-        let panelConfigRect = Qt.rect(0,0,0,0);
-
-        if (containment.plasmoid.corona.panelBeingConfigured
-            && containment.plasmoid.corona.panelBeingConfigured.screenToFollow === desktop.screenToFollow) {
-            panelConfigRect = containment.plasmoid.corona.panelBeingConfigured.relativeConfigRect;
-        }
-
-        if (panelConfigRect.width <= 0) {
-            ; // Do nothing
-        } else if (panelConfigRect.x > width - (panelConfigRect.x + panelConfigRect.width)) {
-            screenRect = Qt.rect(screenRect.x, screenRect.y, panelConfigRect.x - screenRect.x, screenRect.height);
-        } else {
-            const diff = Math.max(0, panelConfigRect.x + panelConfigRect.width - screenRect.x);
-            screenRect = Qt.rect(Math.max(screenRect.x, panelConfigRect.x + panelConfigRect.width), screenRect.y, screenRect.width - diff, screenRect.height);
-        }
-
-        /*if (sidePanel.visible) {
-            if (Qt.application.layoutDirection === Qt.RightToLeft) {
-                screenRect = Qt.rect(screenRect.x, screenRect.y, screenRect.width - sidePanel.width, screenRect.height);
-            } else {
-                screenRect = Qt.rect(screenRect.x + sidePanel.width, screenRect.y, screenRect.width - sidePanel.width, screenRect.height);
-            }
-        }*/
-        return screenRect;
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: containment.plasmoid.corona.editMode = false
-    }
-
-    MouseArea {
+    Item {
         id: containmentParent
-        x: editModeLoader.active ? editModeLoader.item.centerX - width / 2 : 0
-        y: editModeLoader.active ? editModeLoader.item.centerY - height / 2 : 0
         width: root.width
         height: root.height
-        readonly property real extraScale: desktop.configuredPanel || sidePanel.visible ? 0.95 : 0.9
-        property real scaleFactor: Math.min(editModeRect.width/root.width, editModeRect.height/root.height) * extraScale
-        scale: containment?.plasmoid.corona.editMode ? scaleFactor : 1
-    }
-
-    Loader {
-        id: editModeLoader
-        anchors.fill: parent
-        sourceComponent: DesktopEditMode {}
-        active: containment?.plasmoid.corona.editMode || editModeUiTimer.running
-        Timer {
-            id: editModeUiTimer
-            property bool editMode: containment?.plasmoid.corona.editMode || false
-            onEditModeChanged: restart()
-            interval: Kirigami.Units.longDuration
-        }
     }
 
     Loader {

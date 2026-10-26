@@ -563,8 +563,6 @@ Item {
                 MouseArea {
                     id: toolTipMA
                     anchors.fill: parent
-                    enabled: !Plasmoid.containment.corona.editMode
-
                     hoverEnabled: true
                     onPositionChanged: {
                         if (containsMouse) {

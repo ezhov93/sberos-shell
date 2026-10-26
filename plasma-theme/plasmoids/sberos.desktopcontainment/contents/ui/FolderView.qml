@@ -161,12 +161,6 @@ FocusScope {
 
     Connections {
         target: dir
-        function onPopupMenuAboutToShow(dropJob, mimeData, x, y) {
-            if (root.isContainment && !Plasmoid.immutable) {
-                root.processMimeData(mimeData, x, y, dropJob);
-            }
-        }
-
         // Create drag images before dragging
         // Due to async operations we can't call this before dragging starts,
         // but we have to call it after a selection is done
@@ -231,23 +225,8 @@ FocusScope {
         id: eventGenerator
     }
 
-    Watermark {
-        id: watermark
-
-        anchors {
-            right: parent.right
-            bottom: parent.bottom
-
-            rightMargin: 5
-            bottomMargin: 5
-        }
-
-        width: Math.floor(parent.width/4)
-    }
-
     MouseEventListener {
         id: listener
-        enabled: !Plasmoid.containment.corona.editMode
 
         anchors {
             topMargin: backButton !== null ? backButton.height : undefined

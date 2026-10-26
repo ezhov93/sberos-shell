@@ -19,6 +19,7 @@ Item {
     property bool isInPanel: true // Default to true, overridden by Main
 
     onExpandedChanged: {
+        focusSection = 0;
         if (expanded) {
             // Force focus when popup opens
             if (isButtonMode) {
@@ -258,18 +259,44 @@ Item {
     function cycleFocusSection(forward) {
         if (forward) {
             if (focusSection === 0) {
-                focusSection = 1;
-                if (isTileView && searchText.length > 0 && tileResultsLoader.item) {
-                    tileResultsLoader.item.forceActiveFocus();
-                } else if (searchText.length === 0 && logic.searchHistory.length > 0) {
-                     if (isTileView && historyTileLoader.item) historyTileLoader.item.forceActiveFocus();
+                if (filterChipsWrapper.isVisible && filterChipsLoader.status === Loader.Ready) {
+                    focusSection = 1;
+                    filterChipsLoader.item.focusFirstChip();
+                } else {
+                    focusSection = 2;
+                    focusResults();
                 }
+            } else if (focusSection === 1) {
+                focusSection = 2;
+                focusResults();
             }
         } else {
-            if (focusSection === 1) {
+            if (focusSection === 2) {
+                if (filterChipsWrapper.isVisible && filterChipsLoader.status === Loader.Ready) {
+                    focusSection = 1;
+                    filterChipsLoader.item.focusLastChip();
+                } else {
+                    focusSection = 0;
+                    focusSearchInput();
+                }
+            } else if (focusSection === 1) {
                 focusSection = 0;
-                hiddenSearchInput.forceActiveFocus();
+                focusSearchInput();
             }
+        }
+    }
+
+    function focusSearchInput() {
+        if (isButtonMode) searchBar.focusInput();
+        else hiddenSearchInput.forceActiveFocus();
+    }
+
+    function focusResults() {
+        if (isTileView && searchText.length > 0 && tileResultsLoader.status === Loader.Ready) {
+            tileResultsLoader.item.forceActiveFocus();
+        } else if (searchText.length === 0 && logic.searchHistory.length > 0
+                   && isTileView && historyTileLoader.status === Loader.Ready) {
+            historyTileLoader.item.forceActiveFocus();
         }
     }
 
@@ -648,7 +675,7 @@ Item {
         }
 
         anchors.topMargin: isVisible ? 10 : 0
-        height: isVisible ? 32 : 0
+        height: isVisible ? 40 : 0
         opacity: isVisible ? 1 : 0
         clip: true
         visible: height > 0 || opacity > 0
@@ -657,7 +684,15 @@ Item {
         Behavior on anchors.topMargin { NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic } }
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic } }
 
+        onIsVisibleChanged: {
+            if (!isVisible && popupRoot.focusSection === 1) {
+                popupRoot.focusSection = 0;
+                popupRoot.focusSearchInput();
+            }
+        }
+
         Loader {
+            id: filterChipsLoader
             anchors.fill: parent
             active: filterChipsWrapper.visible
             sourceComponent: FilterChips {
@@ -671,6 +706,14 @@ Item {
                     popupRoot.activeFilter = name;
                     queryDebouncer.restart();
                     tileData.startSearch();
+                }
+                onNextFocusRequested: {
+                    popupRoot.focusSection = 2;
+                    popupRoot.focusResults();
+                }
+                onPreviousFocusRequested: {
+                    popupRoot.focusSection = 0;
+                    popupRoot.focusSearchInput();
                 }
             }
         }

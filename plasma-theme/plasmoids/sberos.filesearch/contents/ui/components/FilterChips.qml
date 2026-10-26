@@ -1,6 +1,5 @@
 import QtQuick
-import QtQuick.Layouts
-import QtQuick.Controls
+import QtQuick.Controls.Basic
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -11,13 +10,16 @@ Item {
     property color bgColor
     property string activeFilter: "All"
     property bool breezeStyle: false
+    readonly property bool dark: Kirigami.Theme.textColor.hsvValue > Kirigami.Theme.backgroundColor.hsvValue
+    readonly property color selectedFill: dark ? accentColor : "#287d78"
+    readonly property color selectedText: dark ? "#202830" : "#ffffff"
 
     signal filterSelected(string filterName)
+    signal nextFocusRequested()
+    signal previousFocusRequested()
 
-    implicitHeight: 32
+    implicitHeight: 40
 
-    // Internal keys → Display names mapping
-    // Internal keys are always English, UI display uses i18nd()
     readonly property var filterModel: [
         { key: "All",     label: i18nd("plasma_applet_com.mcc45tr.filesearch", "All") },
         { key: "Apps",    label: i18nd("plasma_applet_com.mcc45tr.filesearch", "Apps") },
@@ -28,62 +30,97 @@ Item {
         { key: "RSS",     label: "RSS" }
     ]
 
+    function focusChip(index) {
+        const chip = chipRepeater.itemAt(index);
+        if (!chip) return;
+        chip.forceActiveFocus();
+
+        const chipX = rowLayout.x + chip.x;
+        if (chipX < chipList.contentX) {
+            chipList.contentX = chipX;
+        } else if (chipX + chip.width > chipList.contentX + chipList.width) {
+            chipList.contentX = chipX + chip.width - chipList.width;
+        }
+    }
+
+    function focusFirstChip() { focusChip(0); }
+    function focusLastChip() { focusChip(filterModel.length - 1); }
+
     Flickable {
+        id: chipList
         anchors.fill: parent
         contentWidth: rowLayout.width
         contentHeight: height
         clip: true
         interactive: contentWidth > width
+        boundsBehavior: Flickable.StopAtBounds
 
         Row {
             id: rowLayout
             spacing: 8
             padding: 4
-            x: (rowLayout.width < parent.width) ? (parent.width - rowLayout.width) / 2 : 0
-
-            Behavior on x { NumberAnimation { duration: 150 } }
+            x: width < parent.width ? (parent.width - width) / 2 : 0
 
             Repeater {
+                id: chipRepeater
                 model: filterChipsRoot.filterModel
-                delegate: Rectangle {
+
+                delegate: Button {
                     id: chip
-                    width: chipText.implicitWidth + 24
-                    height: 24
-                    radius: 12
+                    required property var modelData
+                    required property int index
 
-                    property bool isActive: modelData.key === filterChipsRoot.activeFilter
-                    property bool isHovered: chipMouseArea.containsMouse
+                    height: 32
+                    padding: 0
+                    leftPadding: 12
+                    rightPadding: 12
+                    text: modelData.label
+                    checkable: true
+                    checked: modelData.key === filterChipsRoot.activeFilter
+                    activeFocusOnTab: true
+                    Accessible.name: modelData.label
 
-                    color: filterChipsRoot.breezeStyle ?
-                           (isHovered ? Qt.rgba(filterChipsRoot.accentColor.r, filterChipsRoot.accentColor.g, filterChipsRoot.accentColor.b, 0.1) : "transparent") :
-                           (isActive ? filterChipsRoot.accentColor :
-                                   (isHovered ? Qt.rgba(filterChipsRoot.accentColor.r, filterChipsRoot.accentColor.g, filterChipsRoot.accentColor.b, 0.2) :
-                                               Qt.rgba(filterChipsRoot.textColor.r, filterChipsRoot.textColor.g, filterChipsRoot.textColor.b, 0.1)))
-
-                    border.width: filterChipsRoot.breezeStyle ? 1 : 0
-                    border.color: filterChipsRoot.breezeStyle ?
-                                 (isActive ? filterChipsRoot.accentColor : Qt.rgba(filterChipsRoot.textColor.r, filterChipsRoot.textColor.g, filterChipsRoot.textColor.b, 0.3)) :
-                                 "transparent"
-
-                    Text {
-                        id: chipText
-                        anchors.centerIn: parent
-                        text: modelData.label
-                        color: filterChipsRoot.breezeStyle ?
-                               (chip.isActive ? filterChipsRoot.accentColor : filterChipsRoot.textColor) :
-                               (chip.isActive ? Kirigami.Theme.backgroundColor : filterChipsRoot.textColor)
-                        font.pixelSize: 12
-                        font.weight: chip.isActive ? Font.Bold : Font.Normal
+                    background: Rectangle {
+                        radius: height / 2
+                        color: chip.checked ? filterChipsRoot.selectedFill
+                              : chip.down ? Qt.rgba(filterChipsRoot.textColor.r, filterChipsRoot.textColor.g, filterChipsRoot.textColor.b, 0.16)
+                              : chip.hovered ? Qt.rgba(filterChipsRoot.textColor.r, filterChipsRoot.textColor.g, filterChipsRoot.textColor.b, 0.10)
+                              : filterChipsRoot.breezeStyle ? "transparent"
+                              : Qt.rgba(filterChipsRoot.textColor.r, filterChipsRoot.textColor.g, filterChipsRoot.textColor.b, 0.06)
+                        border.width: chip.visualFocus ? 2 : filterChipsRoot.breezeStyle && !chip.checked ? 1 : 0
+                        border.color: chip.visualFocus
+                                      ? (chip.checked ? filterChipsRoot.selectedText : filterChipsRoot.textColor)
+                                      : Qt.rgba(filterChipsRoot.textColor.r, filterChipsRoot.textColor.g, filterChipsRoot.textColor.b, 0.3)
                     }
 
-                    MouseArea {
-                        id: chipMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            filterChipsRoot.filterSelected(modelData.key)
-                        }
+                    contentItem: Text {
+                        text: chip.text
+                        color: chip.checked ? filterChipsRoot.selectedText : filterChipsRoot.textColor
+                        font.pixelSize: 16
+                        font.weight: chip.checked ? Font.Medium : Font.Normal
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    onClicked: filterChipsRoot.filterSelected(modelData.key)
+                    Keys.onTabPressed: event => {
+                        event.accepted = true;
+                        if (event.modifiers & Qt.ShiftModifier) moveFocus(-1);
+                        else moveFocus(1);
+                    }
+                    Keys.onBacktabPressed: event => {
+                        event.accepted = true;
+                        moveFocus(-1);
+                    }
+                    Keys.onLeftPressed: event => { event.accepted = true; moveFocus(-1); }
+                    Keys.onRightPressed: event => { event.accepted = true; moveFocus(1); }
+
+                    function moveFocus(direction) {
+                        const nextIndex = index + direction;
+                        if (nextIndex < 0) filterChipsRoot.previousFocusRequested();
+                        else if (nextIndex >= filterChipsRoot.filterModel.length) filterChipsRoot.nextFocusRequested();
+                        else filterChipsRoot.focusChip(nextIndex);
                     }
                 }
             }

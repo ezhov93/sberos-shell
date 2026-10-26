@@ -8,7 +8,7 @@ import org.kde.kirigami as Kirigami
 QtObject {
     property bool dark: Kirigami.Theme.textColor.hsvValue > Kirigami.Theme.backgroundColor.hsvValue
     readonly property color foreground: dark ? "#e5e8ed" : "#484c5b"
-    readonly property color muted: dark ? "#959ba8" : "#9296a6"
+    readonly property color muted: dark ? "#959ba8" : "#707585"
     readonly property color shell: dark ? Qt.rgba(45/255, 62/255, 58/255, .85) : Qt.rgba(247/255, 249/255, 251/255, .72)
     readonly property color edge: Qt.rgba(1, 1, 1, dark ? .22 : .52)
     readonly property color inner: dark ? "#2b323b" : Qt.rgba(1, 1, 1, .92)
@@ -18,7 +18,7 @@ QtObject {
     readonly property color focus: "#14a996"
     readonly property color active: "#54b7b1"
     readonly property color separator: dark ? "#49515d" : "#e4e6eb"
-    readonly property color searchText: dark ? "#a5aebb" : "#6d7e92"
+    readonly property color searchText: dark ? "#a5aebb" : "#64758a"
     readonly property int radius: 24
     readonly property int inset: 8
 }

@@ -143,7 +143,7 @@ FocusScope {
         anchors.horizontalCenter: parent.horizontalCenter
         width: appsGrid.columns * cellWidth
         cellWidth: 184
-        cellHeight: 196
+        cellHeight: 208
         model: appsGrid.apps
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -174,7 +174,7 @@ FocusScope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 width: 168
-                height: 148
+                height: 176
 
                 Rectangle {
                     anchors.fill: parent
@@ -198,13 +198,14 @@ FocusScope {
                     anchors.top: appIcon.bottom
                     anchors.topMargin: 10
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: 144
+                    width: 168
                     text: appCell.display
                     color: drawerTheme.textColor
-                    font.pixelSize: 14
+                    font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
                     elide: Text.ElideRight
-                    maximumLineCount: 1
+                    maximumLineCount: 2
                 }
             }
 

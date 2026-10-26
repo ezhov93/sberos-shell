@@ -18,7 +18,7 @@ Item {
     property color innerColor: dark ? "#2b323b" : Qt.rgba(1, 1, 1, 0.92)
     property color hoverColor: dark ? "#363e48" : "#ebedf2"
     property color foregroundColor: dark ? "#e5e8ed" : "#484c5b"
-    property color mutedColor: dark ? "#959ba8" : "#9296a6"
+    property color mutedColor: dark ? "#959ba8" : "#707585"
 
     signal activated()
 

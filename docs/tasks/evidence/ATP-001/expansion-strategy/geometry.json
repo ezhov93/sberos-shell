@@ -1,0 +1,1265 @@
+[
+  {
+    "time": 1793057181799,
+    "label": "baseline",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "qmlHeight": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057181646,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057178756,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057178747,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 88
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    }
+  },
+  {
+    "time": 1793057183423,
+    "label": "thickness",
+    "thickness": 168,
+    "window": {
+      "x": 0,
+      "y": 912,
+      "width": 1920,
+      "height": 168
+    },
+    "qmlHeight": 168,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 912,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 912
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057183246,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 912,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057182094,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 912
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057181916,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 912,
+          "width": 1920,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 912,
+      "width": 1920,
+      "height": 168
+    }
+  },
+  {
+    "time": 1793057185060,
+    "label": "restore-thickness",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "qmlHeight": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057185046,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057183484,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 88
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    }
+  },
+  {
+    "time": 1793057186676,
+    "label": "window-height",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 168
+    },
+    "qmlHeight": 168,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057186646,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057185078,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 168
+    }
+  },
+  {
+    "time": 1793057188294,
+    "label": "window-position",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 912,
+      "width": 1920,
+      "height": 168
+    },
+    "qmlHeight": 168,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057188247,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057185078,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 168
+    }
+  },
+  {
+    "time": 1793057189907,
+    "label": "geometry-refresh",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 168
+    },
+    "qmlHeight": 168,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057189846,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057185078,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 168
+    }
+  },
+  {
+    "time": 1793057191524,
+    "label": "restore-height",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "qmlHeight": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057191446,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057189926,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 88
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    }
+  },
+  {
+    "time": 1793057193135,
+    "label": "extra-padding",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 912,
+      "width": 1920,
+      "height": 168
+    },
+    "qmlHeight": 168,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 912,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 912
+    },
+    "topPadding": 80,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057193046,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057191553,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 912,
+          "width": 1920,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 912,
+      "width": 1920,
+      "height": 168
+    }
+  },
+  {
+    "time": 1793057194750,
+    "label": "restore-padding",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "qmlHeight": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057194646,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057193155,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 88
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    }
+  },
+  {
+    "time": 1793057196378,
+    "label": "overlay",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "qmlHeight": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": true,
+    "popup": {
+      "x": 152,
+      "y": 904,
+      "width": 504,
+      "height": 168
+    },
+    "clients": {
+      "time": 1793057196246,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057193155,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 88
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057194810,
+        "id": "{3b0e4453-53da-4a46-8249-a7507c903040}",
+        "caption": "plasmashell",
+        "resourceClass": "org.kde.plasmashell",
+        "geometry": {
+          "x": 152,
+          "y": 904,
+          "width": 504,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    }
+  },
+  {
+    "time": 1793057197993,
+    "label": "close-overlay",
+    "thickness": 88,
+    "window": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "qmlHeight": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 1080
+    },
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "topPadding": 0,
+    "expanded": false,
+    "popup": null,
+    "clients": {
+      "time": 1793057197847,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992,
+        "visibility": 4
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "visibility": 5
+      }
+    },
+    "nativeWindows": [
+      {
+        "time": 1793057177664,
+        "id": "{fed155a1-ebdb-4d68-af0b-e489a14204d3}",
+        "caption": "Sber expansion probe - fullscreen",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": true
+      },
+      {
+        "time": 1793057183681,
+        "id": "{5f2ca6b9-fa5d-4ca8-a3d0-3ef1bfd34b30}",
+        "caption": "Sber expansion probe - maximized",
+        "resourceClass": "org.qt-project.qml",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 992
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057177948,
+        "id": "{5085336f-5fba-4bcb-b77d-49c6eb619afd}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057193155,
+        "id": "{e2404de6-d576-46b5-80a2-6e4bfeb0eb10}",
+        "caption": "",
+        "resourceClass": "plasmashell",
+        "geometry": {
+          "x": 0,
+          "y": 992,
+          "width": 1920,
+          "height": 88
+        },
+        "fullscreen": false
+      },
+      {
+        "time": 1793057194810,
+        "id": "{3b0e4453-53da-4a46-8249-a7507c903040}",
+        "caption": "plasmashell",
+        "resourceClass": "org.kde.plasmashell",
+        "geometry": {
+          "x": 152,
+          "y": 904,
+          "width": 504,
+          "height": 168
+        },
+        "fullscreen": false
+      }
+    ],
+    "nativePanel": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    }
+  }
+]

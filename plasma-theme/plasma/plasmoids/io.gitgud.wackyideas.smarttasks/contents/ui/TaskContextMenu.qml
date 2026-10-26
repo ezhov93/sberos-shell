@@ -64,7 +64,7 @@ FocusScope {
                     height: modelData.separator ? 9 : 40
 
                     Rectangle {
-                        visible: actionDelegate.modelData.separator
+                        visible: Boolean(actionDelegate.modelData.separator)
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width
                         height: 1
@@ -72,7 +72,7 @@ FocusScope {
                     }
 
                     Rectangle {
-                        visible: !actionDelegate.modelData.separator
+                        visible: !Boolean(actionDelegate.modelData.separator)
                         anchors.fill: parent
                         radius: 9
                         color: rowMouse.containsMouse
@@ -87,7 +87,7 @@ FocusScope {
                             elide: Text.ElideRight
                             color: Kirigami.Theme.textColor
                             font.pixelSize: 14
-                            text: actionDelegate.modelData.label
+                            text: String(actionDelegate.modelData.label || "")
                         }
 
                         MouseArea {

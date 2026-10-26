@@ -1,0 +1,10 @@
+{
+    "base": "#0f0f10",
+    "highlight": "#04a922",
+    "highlightedText": "#161d17",
+    "platform": "wayland",
+    "qt": "6.11.2",
+    "style": "Darkly::Style",
+    "text": "#ededed",
+    "window": "#232329"
+}

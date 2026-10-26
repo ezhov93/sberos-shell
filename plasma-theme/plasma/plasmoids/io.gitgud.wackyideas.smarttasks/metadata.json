@@ -2,7 +2,7 @@
     "KPackageStructure": "Plasma/Applet",
     "KPlugin": {
         "Id": "io.gitgud.wackyideas.smarttasks",
-        "Name": "Приложения",
+        "Name": "SberOS Task Manager",
         "Description": "Плашка закреплённых и запущенных приложений SberOS",
         "Icon": "view-app-grid-symbolic",
         "Category": "Application Launchers",
@@ -12,7 +12,8 @@
             {
                 "Name": "SberOS Shell contributors"
             }
-        ]
+        ],
+        "Name[ru]": "Диспетчер задач SberOS"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

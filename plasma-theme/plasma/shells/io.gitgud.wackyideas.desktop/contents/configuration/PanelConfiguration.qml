@@ -118,32 +118,6 @@ ColumnLayout {
             }
 
             Item { Layout.fillWidth: true }
-
-            QQC2.Button {
-                text: i18nd("plasma_shell_org.kde.plasma.desktop", "Add Spacer")
-                icon.name: "distribute-horizontal-x"
-                Layout.bottomMargin: Kirigami.Units.smallSpacing / 2
-
-                QQC2.ToolTip.text: i18nd("plasma_shell_org.kde.plasma.desktop", "Add spacer widget to the panel")
-                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-                QQC2.ToolTip.visible: hovered
-                onClicked: configDialog.addPanelSpacer()
-            }
-
-            QQC2.Button {
-                text: i18nd("plasma_shell_org.kde.plasma.desktop", "Add Widgets…")
-                icon.name: "list-add"
-                Layout.bottomMargin: Kirigami.Units.smallSpacing / 2
-
-                QQC2.ToolTip.text: i18nd("plasma_shell_org.kde.plasma.desktop", "Open the widget selector to drag and drop widgets to the panel")
-                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-                QQC2.ToolTip.visible: hovered
-                onClicked: {
-                    configDialog.close()
-                    configDialog.showAddWidgetDialog()
-                }
-            }
-
         }
     }
 

@@ -7,8 +7,9 @@
         "Icon": "start-here-kde",
         "Id": "io.gitgud.wackyideas.sbermenu",
         "License": "GPL-2.0-or-later",
-        "Name": "Sber Menu",
-        "Version": "1.0"
+        "Name": "SberOS Menu",
+        "Version": "1.0",
+        "Name[ru]": "Меню SberOS"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

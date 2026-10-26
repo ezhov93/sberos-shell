@@ -41,16 +41,6 @@ Item {
         }
     }
 
-    function toggleWidgetExplorer(containment) {
-
-        if (sidePanelStack.state == "widgetExplorer") {
-            sidePanelStack.state = "closed";
-        } else {
-            sidePanelStack.state = "widgetExplorer";
-            sidePanelStack.setSource(Qt.resolvedUrl("../explorer/WidgetExplorer.qml"), {"containment": containment, "sidePanel": sidePanel});
-        }
-    }
-
     function toggleActivityManager() {
         if (sidePanelStack.state == "activityManager") {
             sidePanelStack.state = "closed";

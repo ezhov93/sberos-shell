@@ -69,15 +69,8 @@ Item {
             spacing: Kirigami.Units.smallSpacing
 
             GenericButton {
-                id: addWidgetButton
-                property QtObject qAction: containment?.plasmoid.internalAction("add widgets") || null
-                text: qAction?.text
-                onClicked: qAction.trigger()
-            }
-
-            GenericButton {
                 id: addPanelButton
-                height: addWidgetButton.height
+                height: configureButton.implicitHeight
                 property QtObject qAction: containment?.plasmoid.corona.action("add panel") || null
                 text: qAction?.text
                 Accessible.role: Accessible.ButtonMenu
@@ -112,17 +105,6 @@ Item {
             }
         }
 
-        GenericButton {
-            Layout.alignment: Qt.AlignTop
-
-            visible: Kirigami.Settings.hasTransientTouchInput || Kirigami.Settings.tabletMode
-
-            text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "More")
-
-            onClicked: {
-                containment.openContextMenu(mapToGlobal(0, height));
-            }
-        }
         GenericButton {
             Layout.alignment: Qt.AlignTop
             text: i18nd("plasma_shell_org.kde.plasma.desktop", "Exit Edit Mode")

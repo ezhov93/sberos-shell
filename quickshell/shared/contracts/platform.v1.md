@@ -1,0 +1,206 @@
+# KOS platform IPC v1
+
+The platform daemon listens on `$XDG_RUNTIME_DIR/kos-platform.sock`. The
+socket is a per-user Unix socket with mode `0600`; it is not a network API.
+Messages are UTF-8 JSON objects separated by newlines.
+
+Every request contains `version`, `requestId`, `operation`, and an optional
+`payload`. A response echoes `version` and `requestId`, and contains `ok` plus
+either `result` or an `error` object. Long-lived subscriptions receive event
+objects independently of request responses.
+
+```json
+{"version":1,"requestId":"42","operation":"platform.ping","payload":{}}
+{"version":1,"requestId":"42","ok":true,"result":{"ready":true}}
+```
+
+Errors use stable machine-readable codes:
+
+```json
+{"version":1,"requestId":"42","ok":false,"error":{"code":"permission-denied","message":"操作被系统拒绝","retryable":true}}
+```
+
+Current operation groups are:
+
+- `application.launch` (KDE-native desktop-entry launch; accepts a desktop ID
+  and optional URLs, never an arbitrary command)
+- `clipboard.set`, `clipboard.read`, `clipboard.save-image`,
+  `clipboard.history.watch-images`,
+  `clipboard.history.list`, `clipboard.history.copy`,
+  `clipboard.history.delete`, `clipboard.history.clear`
+- `input.clipboard-anchor` (`expectedWindowId`: original KWin window UUID;
+  read once before mapping the clipboard panel). Returns `available`, `source`
+  (`caret` or `pointer`), `x/y/width/height`, and
+  `areaX/areaY/areaWidth/areaHeight` in global logical pixels. The effect uses
+  enabled text-input-v3/v2 geometry only while the requested window owns both
+  keyboard and text-input focus; otherwise it samples the current pointer.
+  No surrounding text is accessed. The area excludes reserved panels on the
+  selected output. Missing/older effects return `available: false`, preserving
+  centered placement. Queries are asynchronous, uncached, and bounded to 150 ms.
+- `input.paste` (`expectedWindowId`: KWin window UUID, required; the effect
+  injects Ctrl+V only if that window still owns keyboard focus. Missing targets,
+  changed focus and an older effect without the guarded method fail without
+  injection. This is a desktop action, never a clipboard data operation.)
+- `clipboard.thumb`, `clipboard.pinned.list`, `clipboard.pinned.add`,
+  `clipboard.pinned.remove`, `clipboard.pinned.copy` (entry previews and a pin
+  store under `$XDG_STATE_HOME/quickshell/<shell id>/clipboard`; every file is
+  content-addressed and removed together with the entry that owns it, so
+  deleting never leaves state behind)
+- `file.open`, `file.copy`, `file.launch`, `file.rename`, `file.create-folder`,
+  `file.create-file`, `file.transfer`, `file.trash`, `file.trash-state`,
+  `file.empty-trash`, `file.open-trash`, `file.open-with`, `file.set-default`,
+  `file.open-kde`
+- `kwin.subscribe`, `kwin.command`, `kwin.layout.update`
+- `kwin.animation.update-targets`, `kwin.animation.prepare-launch`
+- `wallpaper.plasma.proxy` (replace every screen's Plasma wallpaper with a KOS
+  backdrop package whose metadata carries the accent sampled from the Shell's
+  wallpaper, so Plasma keeps painting a matching colour behind it; each
+  screen's pre-takeover plugin and configuration are saved once, when the first
+  takeover records them) and `wallpaper.plasma.restore` (put those wallpapers
+  back per screen; `imagePath` is the fallback for screens the saved set does
+  not cover). Non-image Plasma wallpapers -- Picture of the Day, slideshow,
+  solid colour -- are stored as their plugin plus configuration, not as an
+  image path.
+- `wallpaper.preview.desktop` (KWin show-desktop; payload `{showing}`, result
+  `{previous}`)
+- `depth.generate` (CPU depth inference for an absolute local `imagePath`;
+  set `prepareSpatial: true` to request optional scene assets;
+  returns `{depthPath,width,height,cached,model,contract}` and, when scene
+  preparation succeeds, `backgroundPath`, `mattePath`, `influencePath`, and
+  `spatialContract`. Empty scene paths mean the depth-only renderer should be
+  used. The optional worker
+  downloads the pinned model to the user's cache on first use, verifies its
+  SHA256, and keeps the ONNX session warm for up to one idle minute. Inference
+  runs asynchronously and may take up to five minutes on the first request;
+  worker failures are request-local and do not affect unrelated platform
+  operations. Images remain local. This operation, the `spatial.*` group and
+  the `spatial.resources` capability exist only when `KOS_BUILD_SPATIAL` resolved
+  to a build: the worker is the one part of the daemon that links OpenCV and the
+  ONNX Runtime, and a build without it reports `platform.ping` without that
+  capability, which is what keeps the Shell's spatial wallpaper switched off.)
+- `settings.open` (allow-listed KDE System Settings modules) and
+  `settings.launch` (launch the `kos-settings` app with a fixed argv; the
+  only accepted payload field is `shellDir`, an optional absolute path that
+  must canonicalise to an existing directory and is exported to the child as
+  `KOS_SHELL_DIR` so a development Settings session reconnects to the Shell
+  that launched it; no caller-supplied arguments)
+- `state.read`, `state.write` (bounded read/write of UTF-8 state files under
+  `$XDG_STATE_HOME/quickshell`; payload `{dir, file[, data]}` where `dir` is a
+  relative sub-path -- or an absolute path that must stay under the state root
+  -- and `file` is a bare file name (`dir` <=512 chars, `file` <=255 chars).
+  Paths are canonicalized and must remain under the root (`..` and symlink
+  escapes are rejected); payloads are capped at 1 MiB. `state.write` commits
+  rename. `state.read` returns `{data, exists}` and reports `exists:false`
+  with an empty `data` for a missing file)
+- `notify` (freedesktop notification; payload `{summary, body?, icon?,
+  appName?, urgency?}` with `urgency` one of `low`/`normal`/`critical` and
+  `appName` (<=128 chars) the notification's grouping/app label, defaulting
+  to `"KOS Shell"`. The daemon calls `org.freedesktop.Notifications.Notify`
+  when the service is registered and otherwise spawns `notify-send` with a
+  fixed argv; fields are length-capped and never reach a shell)
+- `keepawake.get`, `keepawake.set` (KDE caffeine toggle; `set` requires a
+  boolean `enabled`, returns `{available, enabled}`; `get` also returns
+  `pending`). Availability requires PowerDevil and ScreenSaver. Both inhibitors
+  must succeed before reporting enabled; partial failure rolls back. Each
+  client socket owns a separate D-Bus connection and its inhibition cookies.
+  Disabling, socket disconnect (including Shell reload/crash), daemon exit,
+  or either KDE service changing owner releases the lease. State is transient
+  and defaults to off after reconnect. The toggle does not intercept
+  manual session actions or write power configuration.
+- `nightlight.get`, `nightlight.toggle` (KWin Night Color; `toggle` writes
+  `NightColor/Active` to kwinrc and applies through the NightLight D-Bus
+  interface. Once the config write has committed, a failure to uninhibit /
+  inhibit / reconfigure is partial application, not a failed toggle: the
+  response stays `ok:true` with `result.applied:false` and a `warning`
+  string, so callers align their UI to the persisted `enabled` state rather
+  than rolling back to a value that no longer matches kwinrc)
+- `shortcuts.apply`, `shortcuts.uninstall` (kglobalaccel-owned global
+  shortcuts; the Shell composes each Exec line, the daemon validates,
+  persists, and registers)
+- `tray.identify` (friendly names for StatusNotifierItem entries whose `Id` is
+  a generated token such as an Electron `chrome_status_icon_*`; the daemon
+  reads the SNI watcher's registration list, each item's `Id`/`Title`, and the
+  owning connection's PID -- then `/proc/<pid>/comm` and `cmdline` -- on its
+  worker pool, so the Shell never spawns a helper process to resolve them.
+  Returns `{"names": {"<itemId>": "<friendly name>"}}`; an item whose name
+  cannot be derived is omitted rather than mapped to an empty string, and the
+  Shell keeps its own fallback for those)
+- `network.*` (including `network.traffic` for read-only interface counters),
+  `audio.*` (including `audio.applications`,
+  `audio.application.set-volume`, and `audio.application.set-mute` for
+  per-application PipeWire/PulseAudio sink-input control), `bluetooth.*`, `display.*`, `session.*`,
+  `theme.*`, and `screenshot.*`
+
+KWin events are sent to subscribers as `window.snapshot`, `desktops`,
+`thumbnail`, `animation.started`, and related event names. KWin's internal script-to-daemon channel
+continues to use the session D-Bus service `org.kos.Platform` at `/Platform`;
+clients must not call that private interface directly.
+
+`kwin.layout.update` is an internal Shell-to-compositor layout update. Its
+payload is
+`{outputName, outputRect, barReservedHeight, dockPosition, dockRect, workspaceGap}`.
+Rectangles use global logical coordinates; `dockPosition` is one of `bottom`,
+`left`, or `right`. The daemon bounds and validates every field before
+forwarding an `update-layout` command to the KWin script. A new normal main
+window may use the latest layout for its one-time initial placement; existing,
+maximized, fullscreen, dialog, transient, and special windows are not moved.
+`workspaceGap` remains accepted for v1 compatibility, but initial placement
+meets the Bar/Dock safe edges directly and does not create an invisible gap.
+
+On `kwin.subscribe`, the daemon replays both its latest `window.snapshot` and
+latest `desktops` event when available. Consumers may explicitly request a
+fresh desktop event with `kwin.command {action: "desktops"}` during startup.
+
+Platform adapters validate all paths and operation names before executing a
+system action. Existing paths are canonicalized and new targets are resolved
+through a canonical existing parent. Passwords and raw command output
+containing secrets must never be logged.
+
+Global shortcuts are registered by the platform daemon through the
+KGlobalAccel client library (the plasma powerdevil mechanism): every KOS
+shortcut is a QAction under the single `org.kos.Platform` component, so the
+Shortcuts KCM shows ONE "KOS" entry and no service desktop files exist at
+all. `shortcuts.apply` carries `{shortcuts:[{id,description,combo,exec}]}`;
+the daemon allow-lists each exec — it must parse (shell quoting rules, no
+metacharacters) into `qs|quickshell [-c name] [-p|--path dir] ipc call
+<target> <action>...` and is spawned as an argv array, never through a
+shell; anything else is rejected and logged. On activation the daemon runs
+the validated command the Shell supplied, so it always addresses the live
+Shell instance (dev `-p` or installed `-c kos`).
+`shortcuts.uninstall` unregisters the actions and removes leftover files
+from superseded layouts.
+
+`kwin.animation.*` accepts a JSON string payload produced by the Dock animation
+model and forwards it only to the project-owned KWin effect. `theme.apply-system`,
+`theme.sync-glass`, and `theme.sync-dock-animation` accept bounded values and
+own the KDE configuration writes; Shell and Settings never invoke `qdbus6` or
+`kwriteconfig6`. `theme.apply-system` and `theme.toggle` change only the KDE
+color scheme when that tool is available; applying a complete Look-and-Feel
+package is a compatibility fallback, because replacing icons and workspace
+defaults is outside the light/dark toggle contract.
+
+### Audio output selection
+
+- `audio.outputs` takes `{}` and returns `{available: true, outputs: [{name,
+  description, isDefault}]}`. The daemon reads PulseAudio-compatible `pactl`
+  JSON (including PipeWire-Pulse); names are stable sink names, not PipeWire
+  numeric node IDs. Missing tools/server or malformed replies return an error.
+- `audio.output.set-default` takes `{name}` and sets the default sink through
+  `pactl set-default-sink`. An unavailable/removed sink returns an error; the
+  client re-reads the outputs and default volume after completion. Routing of
+  streams explicitly pinned to a device remains owned by the audio server.
+- The visible output list refreshes while the control centre is open, including
+  device hotplug. Errors remain visible with a click-to-retry action.
+
+`file.launch` and `file.open-kde` use the same KDE `KIO::ApplicationLauncherJob`
+launcher as `application.launch`. A desktop-file path is resolved and parsed by
+`KService`; optional file arguments are passed as URLs. Launch failure is
+reported through the common response envelope.
+
+### Status panel operations
+
+- `network.applications` (read): returns `{scope: "user-tcp", sockets: [{id, name, pid, rxBytes, txBytes}]}` from `ss -tinpeOH`. Visible-owner TCP counters are sampled per socket before grouping by process name. Local proxy connections may count the same traffic twice. UDP/QUIC, inaccessible owners, and connections closed between samples are excluded. These totals are independent of interface totals.
+- `power.profiles` (read): returns `{profiles, activeProfile, degraded}` from `powerprofilesctl list`.
+- `power.profile.set` (write): accepts `{profile: "power-saver" | "balanced" | "performance"}`. System authorization is retained; success is followed by a readback before confirming the selected profile.
+
+The optional `ss` and `powerprofilesctl` helpers must be installed for these operations. Missing helpers report unavailable states. The independent Power settings page also uses `powerprofilesctl` and observes system D-Bus profile changes; it is available without a battery or running shell.

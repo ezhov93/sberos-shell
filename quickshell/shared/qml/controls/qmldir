@@ -1,0 +1,10 @@
+module kos.shared.controls
+ColorRampSlider 1.0 ColorRampSlider.qml
+ThemeButton 1.0 ThemeButton.qml
+ThemeSwitch 1.0 ThemeSwitch.qml
+ThemeSelect 1.0 ThemeSelect.qml
+ThemeSegmentedControl 1.0 ThemeSegmentedControl.qml
+ThemeSlider 1.0 ThemeSlider.qml
+ThemeTextField 1.0 ThemeTextField.qml
+
+VectorIcon 1.0 VectorIcon.qml

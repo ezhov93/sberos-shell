@@ -1,0 +1,465 @@
+pragma Singleton
+
+import QtQuick
+import QtCore
+import Quickshell
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.common
+import qs.desktop.modules.platform
+import "DesktopOutputs.mjs" as DesktopOutputs
+
+// Presentation-facing desktop file model. All filesystem, MIME, clipboard,
+// and launcher work is delegated to the two resident services; this object
+// only keeps UI state and validates user-facing names before sending requests.
+QtObject {
+    id: service
+
+    property var entries: []
+    property string directory: ""
+    property bool ready: false
+    property string lastError: ""
+    property bool desktopSubscriptionEnabled: true
+    property var openWith: ({
+            loading: false,
+            mime: "",
+            defaultId: "",
+            handlers: []
+        })
+    property int _openWithSerial: 0
+    property string clipboardMode: ""
+    property var clipboardPaths: []
+    property var availableOutputs: DesktopOutputs.outputNames(ScreenLifecycle.usableScreens)
+    readonly property string defaultOutput: ScreenLifecycle.activeScreen?.name ?? ""
+
+    // One writer for the existing module settings. Multiple desktop windows
+    // must not hold independent caches of the same Settings file.
+    property Settings layout: Settings {
+        location: "file://" + Quickshell.stateDir + "/deskcenter-desktop-files.ini"
+        category: "DesktopFiles"
+        property string orderJson: "[]"
+        property string slotLayoutsJson: "{}"
+        property int iconSize: 56
+        property string iconSpacing: "comfortable"
+        property bool showExtensions: true
+        property string folderCustomJson: "{}"
+    }
+
+    function entriesForOutput(output) {
+        return DesktopOutputs.entriesForOutput(entries, output, availableOutputs, defaultOutput);
+    }
+
+    function slotLayouts() {
+        try {
+            const value = JSON.parse(layout.slotLayoutsJson);
+            return value && typeof value === "object" && !Array.isArray(value) ? value : ({});
+        } catch (_) {
+            return ({});
+        }
+    }
+
+    function slotsForOutput(output) {
+        return slotLayouts()[output] || ({});
+    }
+
+    function saveSlots(output, slots) {
+        if (!output)
+            return;
+        const maps = slotLayouts();
+        maps[output] = slots;
+        const encoded = JSON.stringify(maps);
+        if (layout.slotLayoutsJson === encoded)
+            return;
+        layout.slotLayoutsJson = encoded;
+        layout.sync();
+    }
+
+    function migrateLayoutPath(oldPath, newPath) {
+        const maps = slotLayouts();
+        for (const output of Object.keys(maps)) {
+            const slots = maps[output];
+            if (slots && Number.isInteger(slots[oldPath])) {
+                slots[newPath] = slots[oldPath];
+                delete slots[oldPath];
+            }
+        }
+        layout.slotLayoutsJson = JSON.stringify(maps);
+        try {
+            const order = JSON.parse(layout.orderJson);
+            if (Array.isArray(order))
+                layout.orderJson = JSON.stringify(order.map(path => path === oldPath ? newPath : path));
+        } catch (_) {}
+        layout.sync();
+    }
+
+    function configureOutputs() {
+        const outputs = availableOutputs;
+        const selectedDefault = outputs.indexOf(defaultOutput) >= 0 ? defaultOutput : (outputs[0] ?? "");
+        DataClient.request("desktop.outputs", {
+            outputs: outputs,
+            defaultOutput: selectedDefault
+        }, function (response) {
+            if (response?.ok)
+                service.applySnapshot(response.result?.desktop);
+        });
+    }
+
+    function applySnapshot(desktop) {
+        if (!desktop)
+            return;
+        entries = Array.isArray(desktop.entries) ? desktop.entries : [];
+        directory = desktop.directory ?? "";
+        ready = true;
+    }
+
+    function placeEntries(paths, output, callback) {
+        if (!paths.length)
+            return;
+        DataClient.request("desktop.place", {
+            paths: paths,
+            output: output || defaultOutput
+        }, function (response) {
+            _result(response, function (result) {
+                service.applySnapshot(result.desktop);
+                if (callback)
+                    callback();
+            }, function (message) {
+                service.lastError = message;
+                service.requestDesktopRefresh();
+            });
+        });
+    }
+
+    onAvailableOutputsChanged: configureOutputs()
+    onDefaultOutputChanged: configureOutputs()
+
+    function _result(response, success, failure) {
+        if (response?.ok) {
+            if (success)
+                success(response.result || ({}));
+        } else if (failure) {
+            failure(response?.error?.message || I18n.tr("Operation did not complete"));
+        }
+    }
+
+    function requestDesktopRefresh() {
+        DataClient.request("desktop.refresh", {}, function (response) {
+            _result(response, function () {
+                reload();
+            }, function (message) {
+                service.lastError = message;
+            });
+        });
+    }
+
+    function reload() {
+        DataClient.request("desktop.snapshot", {}, function (response) {
+            if (!response?.ok)
+                return;
+            applySnapshot(response.result?.desktop ?? response.result);
+        });
+    }
+
+    function validName(name) {
+        const trimmed = (name ?? "").trim();
+        return trimmed.length > 0 && trimmed !== "." && trimmed !== ".." && !trimmed.includes("/") && !trimmed.includes("\u0000");
+    }
+
+    function _platform(operation, payload, callback) {
+        PlatformClient.request(operation, payload, function (response) {
+            _result(response, callback, function (message) {
+                service.lastError = message;
+            });
+        });
+    }
+
+    function openEntry(entry) {
+        if (!entry?.path)
+            return;
+        _platform(entry.kind === "launcher" ? "file.launch" : "file.open", entry.kind === "launcher" ? {
+            desktopFile: entry.path
+        } : {
+            path: entry.path
+        });
+    }
+
+    function emptyFileMimeFromSuffix(path) {
+        const suffix = (path ?? "").split(".").pop().toLowerCase();
+        const textSuffixes = ["txt", "text", "log", "md", "markdown", "rst", "csv", "tsv", "json", "xml", "yaml", "yml", "ini", "conf", "js", "ts", "jsx", "tsx", "qml", "py", "go", "rs", "c", "cc", "cpp", "h", "hpp", "java", "sh", "zsh", "bash", "html", "css"];
+        if (["md", "markdown"].indexOf(suffix) >= 0)
+            return "text/markdown";
+        return textSuffixes.indexOf(suffix) >= 0 ? "text/plain" : "";
+    }
+
+    function queryOpenWith(entry, callback) {
+        if (!entry?.path)
+            return;
+        const serial = ++service._openWithSerial;
+        const path = String(entry.path);
+        openWith = ({
+                loading: true,
+                mime: "",
+                defaultId: "",
+                handlers: []
+            });
+        PlatformClient.request("file.open-with", {
+            path: path
+        }, function (response) {
+            let info = ({
+                    loading: false,
+                    mime: "",
+                    defaultId: "",
+                    handlers: []
+                });
+            if (response?.ok) {
+                const result = response.result || ({});
+                const mime = result.mime === "application/x-zerosize" ? emptyFileMimeFromSuffix(path) : result.mime;
+                info = ({
+                        loading: false,
+                        mime: mime || result.mime || "",
+                        defaultId: result.defaultId || "",
+                        handlers: Array.isArray(result.handlers) ? result.handlers : []
+                    });
+            }
+            // Keep the shared menu state on the latest right-click, while
+            // each caller receives the result for the file it requested.
+            if (serial === service._openWithSerial)
+                service.openWith = info;
+            if (callback)
+                callback(info);
+        });
+    }
+
+    function launchWith(entry, desktopId) {
+        if (entry?.path && desktopId)
+            _platform("file.launch", {
+                path: entry.path,
+                desktopId: desktopId
+            });
+    }
+
+    function setDefaultOpenWith(mime, desktopId) {
+        if (mime && desktopId)
+            _platform("file.set-default", {
+                mime: mime,
+                desktopId: desktopId
+            });
+    }
+
+    function showKdeOpenWith(entry) {
+        if (entry?.path)
+            _platform("file.open-kde", {
+                path: entry.path
+            });
+    }
+
+    function openDirectory() {
+        if (directory)
+            _platform("file.open", {
+                path: directory
+            });
+    }
+
+    function createUntitledFolder(callback, output) {
+        if (!directory)
+            return;
+        _platform("file.create-folder", {
+            directory: directory
+        }, function (result) {
+            placeEntries([result.path], output, function () {
+                if (callback)
+                    callback(result.path);
+            });
+        });
+    }
+
+    function createUntitledFile(callback, output) {
+        if (!directory)
+            return;
+        _platform("file.create-file", {
+            directory: directory
+        }, function (result) {
+            placeEntries([result.path], output, function () {
+                if (callback)
+                    callback(result.path);
+            });
+        });
+    }
+
+    function renameEntry(entry, name, onSuccess) {
+        if (!entry?.path || !directory || !validName(name)) {
+            lastError = I18n.tr("Name cannot be empty and cannot contain /");
+            return false;
+        }
+        const target = directory + "/" + name.trim();
+        if (target === entry.path)
+            return true;
+        lastError = "";
+        _platform("file.rename", {
+            source: entry.path,
+            target: target
+        }, function (result) {
+            service.migrateLayoutPath(entry.path, result.path || target);
+            if (onSuccess)
+                onSuccess(result.path || target);
+            requestDesktopRefresh();
+        });
+        return true;
+    }
+
+    function transfer(paths, mode, callback, output) {
+        if (!paths.length || !directory)
+            return false;
+        // Cutting and pasting between desktop surfaces moves the icon, not
+        // the backing file. Copy/paste still explicitly creates a new copy.
+        if (mode === "move") {
+            const local = paths.filter(function (path) {
+                return DesktopOutputs.isDesktopPath(path, service.directory);
+            });
+            if (local.length > 0)
+                placeEntries(local, output, local.length === paths.length ? callback : undefined);
+            paths = paths.filter(function (path) {
+                return !DesktopOutputs.isDesktopPath(path, service.directory);
+            });
+            if (!paths.length)
+                return true;
+        }
+        _platform("file.transfer", {
+            paths: paths,
+            destination: directory,
+            mode: mode
+        }, function (result) {
+            placeEntries(result.paths || [], output, callback);
+        });
+        return true;
+    }
+
+    function moveEntriesToFolder(entries, folder, onSuccess) {
+        const paths = (entries ?? []).map(function (entry) {
+            return entry?.path;
+        }).filter(function (path, index, source) {
+            return !!path && path !== folder?.path && source.indexOf(path) === index;
+        });
+        if (paths.length === 0 || !folder?.path || folder.kind !== "folder") {
+            lastError = I18n.tr("Cannot move to that folder");
+            return false;
+        }
+        if (paths.some(function (path) {
+            return folder.path.indexOf(path + "/") === 0;
+        })) {
+            lastError = I18n.tr("Cannot move into its own subfolder");
+            return false;
+        }
+        _platform("file.transfer", {
+            paths: paths,
+            destination: folder.path,
+            mode: "move"
+        }, function () {
+            requestDesktopRefresh();
+            if (onSuccess)
+                onSuccess();
+        });
+        return true;
+    }
+
+    function trashEntries(entries, onSuccess) {
+        const paths = (entries ?? []).map(function (entry) {
+            return entry?.path;
+        }).filter(function (path) {
+            return !!path;
+        });
+        if (!paths.length)
+            return;
+        _platform("file.trash", {
+            paths: paths
+        }, function () {
+            requestDesktopRefresh();
+            if (onSuccess)
+                onSuccess();
+        });
+    }
+
+    function trashEntry(entry) {
+        trashEntries(entry ? [entry] : []);
+    }
+
+    function copyEntries(entries, mode) {
+        const paths = (entries ?? []).map(function (entry) {
+            return entry?.path;
+        }).filter(function (path) {
+            return !!path;
+        });
+        if (!paths.length)
+            return;
+        const operation = mode === "cut" ? "cut" : "copy";
+        PlatformClient.request("clipboard.set", {
+            mode: operation,
+            paths: paths
+        }, function (response) {
+            if (response?.ok) {
+                service.clipboardMode = operation;
+                service.clipboardPaths = paths;
+            } else {
+                service.clipboardMode = "";
+                service.clipboardPaths = [];
+                service.lastError = I18n.tr("Failed to write the file clipboard");
+            }
+        });
+    }
+
+    function pasteIntoDesktop(output) {
+        if (!directory)
+            return;
+        PlatformClient.request("clipboard.read", {}, function (response) {
+            const result = response?.ok ? response.result || ({}) : ({});
+            const paths = Array.isArray(result.paths) ? result.paths : [];
+            if (!paths.length) {
+                service.lastError = I18n.tr("No files to paste in the clipboard");
+                return;
+            }
+            const mode = result.mode === "cut" ? "move" : "copy";
+            service.transfer(paths, mode, function () {
+                if (mode === "move") {
+                    service.clipboardMode = "";
+                    service.clipboardPaths = [];
+                }
+            }, output);
+        });
+    }
+
+    function importExternalUrls(urls, action, output) {
+        const paths = DesktopOutputs.localPaths(urls);
+        if (!paths.length) {
+            lastError = I18n.tr("Only local files can be dropped");
+            return;
+        }
+        const local = paths.filter(function (path) {
+            return DesktopOutputs.isDesktopPath(path, service.directory);
+        });
+        const incoming = paths.filter(function (path) {
+            return !DesktopOutputs.isDesktopPath(path, service.directory);
+        });
+        if (local.length)
+            placeEntries(local, output);
+        if (incoming.length)
+            transfer(incoming, action === Qt.MoveAction ? "move" : "copy", undefined, output);
+    }
+
+    property Connections dataConnection: Connections {
+        target: DataClient
+        function onEventReceived(eventName, payload) {
+            if (eventName === "desktop.changed")
+                service.reload();
+        }
+        function onTransportChanged(connected) {
+            if (connected) {
+                service.configureOutputs();
+                service.reload();
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        configureOutputs();
+        reload();
+    }
+}

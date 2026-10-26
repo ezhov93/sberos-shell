@@ -1,0 +1,318 @@
+import QtQuick
+import Quickshell
+import qs.desktop
+import qs.desktop.modules.common
+import qs.desktop.modules.dock
+import qs.desktop.modules.platform
+import "../../../Kos/Ui"
+
+// Native renderer for the active KDE AppMenu. The platform daemon translates
+// the DBusMenu wire format to plain QML data; this keeps D-Bus parsing and
+// trust boundaries out of the visual shell.
+Item {
+    id: root
+
+    property int maximumWidth: 0
+    readonly property string service: AppMenuService.dbusService
+    readonly property string path: AppMenuService.dbusPath
+    readonly property var items: AppMenuService.items
+    property int popupRootId: 0
+    property int visibleCount: 0
+    property Item popupAnchorItem: null
+
+    readonly property bool available: service.length > 0 && path.length > 0
+    readonly property bool menuOpen: menuPopup.visible
+    readonly property var shownItems: items.slice(0, visibleCount)
+    readonly property var overflowItems: items.slice(visibleCount)
+    property int activeOpeningId: 0
+    property int _openingSerial: 0
+    property bool _changingAnchor: false
+    implicitHeight: 28
+    implicitWidth: available && items.length > 0 ? Math.min(maximumWidth, menuRow.implicitWidth + (overflowItems.length > 0 ? 34 : 0)) : 0
+    width: implicitWidth
+    visible: true
+
+    FontMetrics {
+        id: labelMetrics
+        font.family: "SF Pro Display, Noto Sans CJK SC, sans-serif"
+        font.pixelSize: 13
+        font.weight: Font.DemiBold
+    }
+
+    function itemWidth(item) {
+        return Math.max(32, labelMetrics.advanceWidth(item?.label || "") + 18);
+    }
+
+    function updateVisibleCount() {
+        let used = 0;
+        let count = 0;
+        const reserve = items.length > 0 ? 34 : 0;
+        for (let i = 0; i < items.length; ++i) {
+            const next = itemWidth(items[i]) + (count > 0 ? 1 : 0);
+            if (used + next + reserve > maximumWidth)
+                break;
+            used += next;
+            count++;
+        }
+        // Avoid an orphaned overflow button: if all entries fit, show them all.
+        if (count === items.length)
+            visibleCount = count;
+        else
+            visibleCount = Math.max(0, count);
+    }
+
+    // ContextMenu has a synchronous page stack. Hydrate children before it is
+    // shown, with a small depth limit to keep malformed menus bounded.
+    function hydrate(itemsToHydrate, depth, done, serial) {
+        if (serial !== _openingSerial)
+            return;
+        if (depth >= 4 || !itemsToHydrate || itemsToHydrate.length === 0) {
+            done(itemsToHydrate || []);
+            return;
+        }
+        // Count before dispatch: disconnected requests and populated children
+        // can complete synchronously, including from inside this loop.
+        let pending = itemsToHydrate.filter(item => item?.hasChildren).length;
+        if (pending === 0) {
+            for (const item of itemsToHydrate)
+                item.children = [];
+            done(itemsToHydrate);
+            return;
+        }
+        const finish = function () {
+            pending--;
+            if (pending === 0 && serial === root._openingSerial)
+                done(itemsToHydrate);
+        };
+        for (let i = 0; i < itemsToHydrate.length; ++i) {
+            const item = itemsToHydrate[i];
+            if (!item?.hasChildren) {
+                item.children = [];
+                continue;
+            }
+            if (item.children && item.children.length > 0) {
+                hydrate(item.children, depth + 1, function (result) {
+                    item.children = result;
+                    finish();
+                }, serial);
+                continue;
+            }
+            AppMenuService.requestLayout(item.id, function (children) {
+                hydrate(children, depth + 1, function (result) {
+                    item.children = result;
+                    finish();
+                }, serial);
+            }, 2);
+        }
+    }
+
+    function presentMenu(rootId, anchorItem, result, serial) {
+        const anchorChanging = menuPopup.visible && root.popupAnchorItem !== anchorItem;
+        const openNew = function () {
+            if (serial !== root._openingSerial)
+                return;
+            popupRootId = rootId;
+            popupAnchorItem = anchorItem;
+            menuPopup.anchorItem = anchorItem;
+            menuPopup.setItems(result);
+            console.info("[GlobalMenu] popup items=" + result.length);
+            menuPopup.show();
+            Qt.callLater(function () {
+                menuPopup.anchor.updateAnchor();
+            });
+        };
+        if (anchorChanging) {
+            root._changingAnchor = true;
+            menuPopup.visible = false;
+            root._changingAnchor = false;
+            Qt.callLater(openNew);
+        } else {
+            openNew();
+        }
+    }
+
+    function openItem(item, clickedItem) {
+        if (!item || !item.enabled)
+            return;
+        const serial = ++_openingSerial;
+        console.info("[GlobalMenu] click id=" + item.id + " children=" + item.hasChildren);
+        if (!item.hasChildren) {
+            PlatformClient.request("appmenu.trigger", {
+                service,
+                path,
+                id: item.id
+            });
+            return;
+        }
+        popupRootId = item.id;
+        activeOpeningId = item.id;
+        PlatformClient.request("appmenu.open", {
+            service,
+            path,
+            id: item.id
+        });
+        AppMenuService.requestLayout(item.id, function (children) {
+            if (serial !== root._openingSerial)
+                return;
+            hydrate(children, 0, function (result) {
+                if (serial !== root._openingSerial)
+                    return;
+                root.presentMenu(item.id, clickedItem, result, serial);
+            }, serial);
+        }, 2);
+    }
+
+    function openOverflow(anchor) {
+        const serial = ++_openingSerial;
+        popupRootId = 0;
+        activeOpeningId = 0;
+        hydrate(overflowItems, 0, function (result) {
+            root.presentMenu(0, anchor, result, serial);
+        }, serial);
+    }
+
+    onMaximumWidthChanged: updateVisibleCount()
+    onServiceChanged: {
+        _openingSerial++;
+        if (menuPopup.visible)
+            menuPopup.hide();
+    }
+    onPathChanged: {
+        _openingSerial++;
+        if (menuPopup.visible)
+            menuPopup.hide();
+    }
+    onItemsChanged: updateVisibleCount()
+
+    Row {
+        id: menuRow
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 1
+
+        Repeater {
+            model: root.shownItems
+            delegate: Item {
+                id: menuItem
+                required property int index
+                required property var modelData
+                width: root.itemWidth(modelData)
+                height: 28
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 8
+                    visible: modelData.enabled !== false && (pointer.containsMouse || pointer.pressed || (menuPopup.visible && root.popupRootId === modelData.id))
+                    color: (menuPopup.visible && root.popupRootId === modelData.id) ? AppearanceTokens.state.selected : pointer.pressed ? AppearanceTokens.state.pressed : AppearanceTokens.state.hover
+                    z: -1
+                }
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.label || ""
+                    color: ThemeService.barInk
+                    font: labelMetrics.font
+                    renderType: Text.NativeRendering
+                    elide: Text.ElideRight
+                    width: parent.width - 14
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                MouseArea {
+                    id: pointer
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    enabled: modelData.enabled !== false
+                    onClicked: {
+                        if (menuPopup.visible && root.popupRootId === modelData.id) {
+                            menuPopup.hide();
+                        } else {
+                            root.openItem(modelData, menuItem);
+                        }
+                    }
+                    onEntered: {
+                        if (menuPopup.visible && root.popupRootId !== modelData.id) {
+                            root.openItem(modelData, menuItem);
+                        }
+                    }
+                }
+            }
+        }
+        Item {
+            id: overflowButton
+            visible: root.overflowItems.length > 0
+            width: visible ? 33 : 0
+            height: 28
+            Rectangle {
+                anchors.fill: parent
+                radius: 8
+                visible: morePointer.containsMouse || morePointer.pressed || (menuPopup.visible && root.popupRootId === 0)
+                color: (menuPopup.visible && root.popupRootId === 0) ? AppearanceTokens.state.selected : morePointer.pressed ? AppearanceTokens.state.pressed : AppearanceTokens.state.hover
+                z: -1
+            }
+            Text {
+                anchors.centerIn: parent
+                text: "››"
+                color: ThemeService.barInk
+                font.pixelSize: 16
+                renderType: Text.NativeRendering
+            }
+            MouseArea {
+                id: morePointer
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: {
+                    if (menuPopup.visible && root.popupRootId === 0) {
+                        menuPopup.hide();
+                    } else {
+                        root.openOverflow(overflowButton);
+                    }
+                }
+                onEntered: {
+                    if (menuPopup.visible && root.popupRootId !== 0) {
+                        root.openOverflow(overflowButton);
+                    }
+                }
+            }
+        }
+    }
+
+    ContextMenu {
+        id: menuPopup
+        anchorItem: root.popupAnchorItem
+        foregroundColor: ThemeService.foregroundColor
+        position: "bottom"
+        centerBelowAnchor: false
+        centerBelowOffset: root.popupAnchorItem ? root.popupAnchorItem.height + Math.max(0, (root.parent?.height ?? root.height) - root.height) / 2 + 4 : root.height + 4
+        customAnchorEdges: Edges.Top | Edges.Left
+        customGravity: Edges.Bottom | Edges.Right
+        customMarginsTop: 0
+        macosPopupMotion: true
+        globalDismissGraceMs: 250
+        // An outside press anywhere on the output closes the app menu, the same
+        // contract as every other ContextMenu. This used to be opted out with
+        // `dismissOnGlobalPointerPress: false`, which meant the menu survived a
+        // click on the desktop or a window. The grace period above covers the
+        // race with the press that opened this menu.
+        dismissOnGlobalPointerPress: true
+        onAction: function (cmd, item) {
+            console.info("[GlobalMenu] trigger id=" + item.id);
+            PlatformClient.request("appmenu.trigger", {
+                service: root.service,
+                path: root.path,
+                id: item.id
+            }, function (response) {
+                console.info("[GlobalMenu] trigger result=" + (response?.ok ? "ok" : (response?.error?.code || "failed")));
+            });
+        }
+        onAboutToHide: {
+            if (!root._changingAnchor)
+                root._openingSerial++;
+            PlatformClient.request("appmenu.close", {
+                service: root.service,
+                path: root.path,
+                id: root.popupRootId
+            });
+            root.popupRootId = 0;
+            root.activeOpeningId = 0;
+        }
+        onVisibleChanged: console.info("[GlobalMenu] popup visible=" + visible)
+    }
+}

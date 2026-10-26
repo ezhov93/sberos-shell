@@ -1,0 +1,1966 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# These commands must not create build directories or probe desktop processes.
+case "${1:-}" in
+    update|version)
+        command -v python3 >/dev/null 2>&1 || { echo "python3 is required" >&2; exit 1; }
+        if [[ "$1" == update ]]; then
+            (( $# <= 2 )) || { echo "Usage: kosctl update [stable|main|vX.Y.Z[-rc.N]]" >&2; exit 2; }
+            exec python3 "$project_dir/tools/source-release.py" --root "$project_dir" select "${2:-stable}"
+        fi
+        (( $# == 1 )) || { echo "Usage: kosctl version" >&2; exit 2; }
+        exec python3 "$project_dir/tools/source-release.py" --root "$project_dir" version \
+            --installed "${KOS_RELEASE_RECORD:-${KOS_PREFIX:-$HOME/.local}/share/kos/release.json}"
+        ;;
+esac
+build_dir=${KOS_BUILD_DIR:-"$project_dir/.build/kosctl"}
+ui_kit_dir="$project_dir/../ui-kit"
+ui_kit_build_dir="$build_dir/ui-kit"
+prefix=${KOS_PREFIX:-"$HOME/.local"}
+config_dir=${XDG_CONFIG_HOME:-"$HOME/.config"}
+runtime_unit_dir="$config_dir/systemd/user"
+glass_build_dir="$build_dir/kwin-effects-glass"
+kwin_system_prefix=/usr
+kwin_manifest="$prefix/share/kos/kwin-system-files.manifest"
+kwin_effect_state="$prefix/share/kos/kwin-effect-state"
+# KOS is the first-install default. Settings saves the previous decoration
+# before selecting it and preserves later opt-outs across upgrades.
+# KWin reads it from this legacy config group even though KDecoration3 plugins
+# install into an `org.kde.kdecoration3` directory.
+kwin_decoration_group=org.kde.kdecoration2
+kwin_plugin_api_stamp="$build_dir/kwin-plugin-api-version"
+kwin_plugin_api_version=""
+kwin_plugin_rebuild_required=0
+
+# Both compiler front-ends dump scratch into $TMPDIR, and on many systems that
+# is /tmp -- here a 10 MB tmpfs. Two moderately parallel translation units are
+# enough to fill it and fail the build with "设备上没有空间" partway through,
+# which is what makes raising the job count look unsafe. Redirect everything
+# into the build tree instead, where there is room. Go also defaults its compiler
+# cache under the user home, so keep that in the writable build tree by default.
+# Any caller-supplied paths still win.
+export TMPDIR="${TMPDIR:-$build_dir/tmp}"
+export GOTMPDIR="${GOTMPDIR:-$build_dir/tmp}"
+export GOCACHE="${GOCACHE:-$build_dir/go-cache}"
+mkdir -p -- "$build_dir/tmp"
+
+# How many compile jobs to ask for.
+#
+# The two cmake invocations below defaulted to two jobs, so an 18-thread machine
+# built with an effective parallelism of about 2.3 and a first `kosctl install`
+# took close to two minutes. nproc is the right basis, but not unbounded: past
+# roughly twelve the parallel steps contend for memory bandwidth and the wall
+# clock climbs back (measured -j8 59.7s, -j12 49.6s, -j16 53.2s), so cap rather
+# than matching a large machine. CMAKE_BUILD_PARALLEL_LEVEL overrides entirely.
+kos_build_jobs() {
+    local jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-}
+    if [[ -z "$jobs" ]]; then
+        jobs=$(nproc 2>/dev/null || printf '4')
+        (( jobs > 12 )) && jobs=12
+    fi
+    printf '%s' "$jobs"
+}
+
+qs_bin=$(command -v qs || command -v quickshell || true)
+qdbus_bin=$(command -v qdbus6 || command -v qdbus || true)
+
+# Arch package names are kept in one place so `doctor`, automatic dependency
+# installation, and the README describe the same default build. The KWin list
+# is needed only while compositor plugins are enabled.
+arch_core_build_packages=(
+    git python quickshell cmake ninja gcc qt6-base qt6-declarative qt6-tools qt6-translations qt6-quick3d qt6-svg qt6-imageformats qt6-5compat qt6-wayland go curl
+    extra-cmake-modules wayland
+    kwindowsystem kiconthemes kglobalaccel kio patchelf
+)
+# The depth engine and 3D wallpaper plugin follow KOS_BUILD_SPATIAL.
+# AUTO enables them when their build dependencies are available.
+arch_spatial_build_packages=(
+    opencv
+)
+arch_kwin_build_packages=(
+    kwin kconfig ki18n kguiaddons kcmutils
+    kcoreaddons kdecoration gettext libxcb vulkan-headers
+)
+arch_optional_runtime_packages=(
+    networkmanager wireplumber bluez-utils brightnessctl
+    wl-clipboard cliphist glib2 xdg-utils spectacle
+)
+# Debian and Ubuntu names for the same default build. The two families differ
+# most around KWin: Arch's `kwin` hard-depends on the Wayland, libdrm and libepoxy
+# development files, but Debian's `kwin-dev` only pulls libepoxy-dev. libdrm-dev
+# and libgbm-dev therefore have to be named explicitly or CMake stops with
+# "Could NOT find Libdrm". The xcb extension headers are the same story:
+# kwin-dev does not pull them and the KWinX11 export needs them.
+debian_core_build_packages=(
+    git python3 cmake ninja-build g++ golang-go curl patchelf pkg-config
+    quickshell
+    extra-cmake-modules libwayland-dev wayland-protocols libxkbcommon-dev
+    qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-l10n-tools qt6-translations-l10n qt6-quick3d-dev qt6-svg-dev qt6-wayland-dev
+    qt6-image-formats-plugins qt6-5compat-dev libqt6svg6
+    qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
+    qml6-module-qtquick-dialogs qml6-module-qtquick-window qml6-module-qtquick-effects
+    qml6-module-qtqml-models qml6-module-qtqml-workerscript
+    qml6-module-qt5compat-graphicaleffects
+    libkf6windowsystem-dev libkf6iconthemes-dev libkf6globalaccel-dev
+    libkf6kio-dev libkf6calendarcore-dev
+)
+debian_spatial_build_packages=(
+    libopencv-dev
+)
+debian_kwin_build_packages=(
+    kwin-dev libdrm-dev libgbm-dev libepoxy-dev
+    libxkbcommon-x11-dev
+    libkf6config-dev libkf6i18n-dev libkf6guiaddons-dev libkf6kcmutils-dev
+    libkf6coreaddons-dev libkdecorations3-dev libplasma-dev
+    gettext libvulkan-dev zlib1g-dev
+    libxcb1-dev libxcb-composite0-dev libxcb-randr0-dev libxcb-res0-dev
+    libxcb-shm0-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-damage0-dev
+    libxcb-render0-dev libxcb-shape0-dev libxcb-cursor-dev libxcb-keysyms1-dev
+    libxcb-icccm4-dev libxcb-image0-dev libxcb-util-dev
+)
+# The X11 Xlib headers are deliberately absent: the glass effect is configured
+# with -DGLASS_X11=OFF and looks for X11 with QUIET, so no Xlib-xcb bridge header
+# is ever compiled. Listing them would only make `doctor` report a false miss.
+# An element may list several names; the first one apt knows about wins. Debian
+# renames packages between releases — the time_t transition turned libglib2.0-0
+# into libglib2.0-0t64 in trixie — and a single hard-coded name would make the
+# whole `apt-get install` line fail on one side of that rename or the other.
+debian_optional_runtime_packages=(
+    network-manager wireplumber bluez brightnessctl
+    wl-clipboard cliphist xdg-utils kde-spectacle
+    "libglib2.0-0t64 libglib2.0-0"
+    libqt6sql6-sqlite
+)
+
+# Prints the first name apt actually knows about. Pass the array element
+# unquoted so a multi-name element expands into its alternatives.
+debian_resolve_package() {
+    local candidate
+    local -a candidates
+    # `read -ra` splits on whitespace without performing pathname expansion, so
+    # an element that happens to contain a glob character can never be replaced
+    # by a matching file in the current directory the way an unquoted `$1` would.
+    read -ra candidates <<< "$1"
+    for candidate in "${candidates[@]}"; do
+        if apt-cache show "$candidate" >/dev/null 2>&1; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    done
+    printf '%s' "${candidates[0]:-}"
+    return 1
+}
+
+# `apt-cache show` can only answer for packages the local lists already know, so
+# on a freshly installed system that has never run `apt-get update` every single
+# lookup fails and the whole dependency list is reported as missing. Detecting
+# that up front turns 60+ bogus `miss` lines into one actionable warning.
+debian_apt_lists_ready() {
+    compgen -G '/var/lib/apt/lists/*_Packages*' >/dev/null 2>&1
+}
+
+# Quickshell 0.3.x is in neither the Debian stable archives nor Ubuntu main, so
+# the build cannot rely on apt alone. The advice has to be per-distribution:
+# Debian ships it in trixie-backports, which needs no third-party source, while
+# an Ubuntu user must use a PPA (or build it) — telling them to add a Debian
+# backports suite would push them onto a foreign archive by mistake.
+debian_quickshell_hint() {
+    local id='' codename=''
+    if [[ -r /etc/os-release ]]; then
+        id=$(. /etc/os-release 2>/dev/null && printf '%s' "${ID:-}")
+        codename=$(. /etc/os-release 2>/dev/null && printf '%s' "${VERSION_CODENAME:-}")
+    fi
+    printf 'info %-12s Quickshell 0.3.x is not in the %s archive\n' \
+        quickshell "${codename:-${id:-Debian}}"
+    if [[ "${id:-debian}" == ubuntu ]]; then
+        printf '     %-12s options: the PPA named in README.md, or build it from source\n' ''
+    elif [[ -n "$codename" ]]; then
+        printf '     %-12s options: enable %s-backports (no third-party source), or build it from source\n' '' "$codename"
+    else
+        printf '     %-12s options: the backports suite, or build it from source\n' ''
+    fi
+    printf '     %-12s see README.md for the exact commands\n' ''
+}
+
+kwin_plugins_enabled() {
+    case "${KOS_BUILD_KWIN_PLUGINS:-ON}" in
+        0|OFF|off|FALSE|false|NO|no) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+# The depth engine is optional. AUTO, the default, builds it when OpenCV and the
+# ONNX Runtime are already installed and quietly leaves it out otherwise; ON
+# requires them; OFF never looks for them. Turning it off is what a machine that
+# does not want the spatial wallpaper uses to skip OpenCV entirely.
+spatial_requested() {
+    case "${KOS_BUILD_SPATIAL:-AUTO}" in
+        OFF|off|0|FALSE|false|NO|no) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+spatial_forced() {
+    case "${KOS_BUILD_SPATIAL:-AUTO}" in
+        1|ON|on|TRUE|true|YES|yes) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# AUTO resolves inside CMake, which records the answer in the build tree. Read
+# that instead of the option or a leftover binary: a worker built by an earlier
+# configuration stays on disk after the option is turned off.
+spatial_built() {
+    [[ -r "$build_dir/kos-spatial-enabled" ]] \
+        && [[ "$(<"$build_dir/kos-spatial-enabled")" == ON ]] \
+        && [[ -x "$build_dir/platform/kos-ai-worker" ]]
+}
+
+opencv_available() {
+    command -v pkg-config >/dev/null 2>&1 && pkg-config --exists opencv4
+}
+
+# KWin effect plugins do not have a stable ABI: their Qt plugin interface ID
+# includes KWIN_PLUGIN_VERSION_STRING. Distribution upgrades can retain the
+# timestamps of installed headers, which means Ninja may incorrectly reuse
+# effect objects compiled for the previous KWin patch release. Detect that
+# case explicitly and do one clean rebuild of both effect build trees.
+detect_kwin_plugin_api_version() {
+    kwin_plugins_enabled || return 0
+
+    local config_header=/usr/include/kwin/config-kwin.h
+    [[ -r "$config_header" ]] || return 0
+    kwin_plugin_api_version=$(sed -n \
+        's/^#define KWIN_PLUGIN_VERSION_STRING "\([^"]*\)"$/\1/p' \
+        "$config_header" | head -n 1)
+    [[ -n "$kwin_plugin_api_version" ]] || return 0
+
+    if [[ ! -f "$kwin_plugin_api_stamp" ]] \
+            || [[ $(<"$kwin_plugin_api_stamp") != "$kwin_plugin_api_version" ]]; then
+        kwin_plugin_rebuild_required=1
+        printf 'KWin plugin API is %s; rebuilding KWin effects for this ABI.\n' \
+            "$kwin_plugin_api_version"
+    fi
+}
+
+record_kwin_plugin_api_version() {
+    [[ -n "$kwin_plugin_api_version" ]] || return 0
+    mkdir -p "$(dirname "$kwin_plugin_api_stamp")"
+    printf '%s\n' "$kwin_plugin_api_version" > "$kwin_plugin_api_stamp"
+}
+
+usage() {
+    cat <<'EOF'
+Usage: ./tools/kosctl <update [stable|main|vX.Y.Z[-rc.N]]|version|doctor|build|install [lockscreen|apps]|start|dev [shell|settings]|run|uninstall [lockscreen]|glass-settings|shortcuts install|shortcuts uninstall>
+
+Source selection (does not install or restart anything):
+  ./tools/kosctl update             # latest official release; fails if none exists
+  ./tools/kosctl update main        # explicitly choose development
+  ./tools/kosctl update v0.1.0      # explicitly choose a version tag
+  ./tools/kosctl version            # deployed files and source checkout separately
+
+Optional components are installed by naming them:
+  ./tools/kosctl install lockscreen   # lock screen (user level, no root)
+  ./tools/kosctl install apps         # Calendar, Calculator, Todo, Weather
+  ./tools/kosctl install apps --with-listenfree # also build ListenFree + audio SDK
+  ./tools/kosctl uninstall lockscreen
+
+Plain `install` / `uninstall` cover the core desktop only -- no apps, no lock
+screen. The SDDM sign-in theme (apps/sddm) is not installed by kosctl while its
+greeter integration is being reworked; see the README for the status.
+
+Environment overrides: KOS_BUILD_DIR, KOS_PREFIX, KOS_BUILD_TYPE, KOS_BUILD_KWIN_PLUGINS, KOS_BUILD_SPATIAL, GOPROXY
+
+The first core install selects KOS window decoration and saves the previous choice.
+Later decoration choices are preserved. Change it in Settings > Window and animations;
+window buttons belong to KOS decoration and are drawn only while it is selected.
+EOF
+}
+
+doctor() {
+    local failed=0
+    for command_name in cmake ninja c++ go python3; do
+        if command -v "$command_name" >/dev/null 2>&1; then
+            printf 'ok   %-12s %s\n' "$command_name" "$(command -v "$command_name")"
+        else
+            printf 'miss %-12s\n' "$command_name"
+            failed=1
+        fi
+    done
+    if [[ -n "$qs_bin" ]]; then
+        local qs_version
+        qs_version=$("$qs_bin" --version 2>&1 | head -n 1 || true)
+        if [[ "$qs_version" =~ Quickshell\ 0\.3\. ]]; then
+            printf 'ok   %-12s %s (%s)\n' quickshell "$qs_bin" "$qs_version"
+        else
+            printf 'warn %-12s %s (expected Quickshell 0.3.x)\n' quickshell "$qs_version"
+        fi
+    else
+        printf 'miss %-12s install Quickshell 0.3.x\n' quickshell
+        failed=1
+    fi
+    for runtime_command in nmcli wpctl bluetoothctl systemctl; do
+        if command -v "$runtime_command" >/dev/null 2>&1; then
+            printf 'ok   %-12s %s\n' "$runtime_command" "$(command -v "$runtime_command")"
+        else
+            printf 'warn %-12s runtime integration unavailable\n' "$runtime_command"
+        fi
+    done
+    for runtime_command in wl-copy wl-paste cliphist; do
+        if command -v "$runtime_command" >/dev/null 2>&1; then
+            printf 'ok   %-12s %s\n' "$runtime_command" "$(command -v "$runtime_command")"
+        else
+            printf 'warn %-12s clipboard history unavailable\n' "$runtime_command"
+        fi
+    done
+    if kwin_plugins_enabled; then
+        for plugin_command in sudo kwriteconfig6; do
+            if command -v "$plugin_command" >/dev/null 2>&1; then
+                printf 'ok   %-12s %s\n' "$plugin_command" "$(command -v "$plugin_command")"
+            else
+                printf 'miss %-12s required for KWin plugin installation\n' "$plugin_command"
+                failed=1
+            fi
+        done
+        if [[ -n "$qdbus_bin" ]]; then
+            printf 'ok   %-12s %s\n' qdbus "$qdbus_bin"
+        else
+            printf 'warn %-12s effects will load after the next KWin restart\n' qdbus
+        fi
+    fi
+    if command -v pacman >/dev/null 2>&1; then
+        local package
+        local -a required_packages=("${arch_core_build_packages[@]}")
+        if kwin_plugins_enabled; then
+            required_packages+=("${arch_kwin_build_packages[@]}")
+        fi
+        if spatial_requested; then
+            required_packages+=("${arch_spatial_build_packages[@]}")
+        fi
+        for package in "${required_packages[@]}"; do
+            if pacman -Q "$package" >/dev/null 2>&1; then
+                printf 'ok   pkg:%-8s installed\n' "$package"
+            else
+                printf 'miss pkg:%-8s required to build the default configuration\n' "$package"
+                failed=1
+            fi
+        done
+        for package in "${arch_optional_runtime_packages[@]}"; do
+            if ! pacman -Q "$package" >/dev/null 2>&1; then
+                printf 'warn pkg:%-8s optional runtime integration unavailable\n' "$package"
+            fi
+        done
+    elif command -v apt-get >/dev/null 2>&1; then
+        local package resolved
+        local -a required_packages=("${debian_core_build_packages[@]}")
+        if kwin_plugins_enabled; then
+            required_packages+=("${debian_kwin_build_packages[@]}")
+        fi
+        if spatial_requested; then
+            required_packages+=("${debian_spatial_build_packages[@]}")
+        fi
+        if ! debian_apt_lists_ready; then
+            printf 'warn %-12s apt package lists are empty, dependency check skipped\n' packages
+            printf '     %-12s run: sudo apt-get update, then re-run ./tools/kosctl doctor\n' ''
+            failed=1
+        else
+            local quickshell_unavailable=0
+            for package in "${required_packages[@]}"; do
+                if ! resolved=$(debian_resolve_package "$package"); then
+                    printf 'miss pkg:%-8s not in the configured apt repositories\n' "$package"
+                    if [[ "$package" == quickshell ]]; then
+                        quickshell_unavailable=1
+                    fi
+                    failed=1
+                    continue
+                fi
+                if dpkg -s "$resolved" >/dev/null 2>&1; then
+                    printf 'ok   pkg:%-8s installed\n' "$resolved"
+                else
+                    printf 'miss pkg:%-8s required to build the default configuration\n' "$resolved"
+                    failed=1
+                fi
+            done
+            for package in "${debian_optional_runtime_packages[@]}"; do
+                if ! resolved=$(debian_resolve_package "$package"); then
+                    printf 'warn pkg:%-8s optional runtime integration not offered by this release\n' "$package"
+                    continue
+                fi
+                if ! dpkg -s "$resolved" >/dev/null 2>&1; then
+                    printf 'warn pkg:%-8s optional runtime integration unavailable\n' "$resolved"
+                fi
+            done
+            if (( quickshell_unavailable )); then
+                debian_quickshell_hint
+            fi
+        fi
+    else
+        printf 'info %-12s library/package checks are currently available on Arch and Debian\n' packages
+    fi
+    if [[ -n "${WAYLAND_DISPLAY:-}" || -n "${DISPLAY:-}" ]]; then
+        printf 'ok   %-12s graphical session detected\n' session
+    else
+        printf 'warn %-12s no graphical session (builds still work)\n' session
+    fi
+    local stale_units
+    stale_units=$(stale_kos_units)
+    if [[ -z "$stale_units" ]]; then
+        printf 'ok   %-12s running units match the deployed binaries\n' units
+    else
+        printf 'warn %-12s replaced binary still running: %s (./tools/kosctl start)\n' \
+            units "${stale_units//$'\n'/, }"
+    fi
+    return "$failed"
+}
+
+# Runs cmake configure only when it is actually needed.
+#
+# Re-running `cmake -S -B` on every build rewrites moc_predefs.h, and its mtime
+# then lands a few microseconds after AUTOMOC's timestamp. ninja reads that as
+# "the autogen step is stale", regenerates mocs_compilation.cpp and rebuilds 65
+# objects plus 21 links on every single build — the cached build never converges.
+# Skipping the redundant configure hands the job to ninja's own RERUN_CMAKE rule,
+# which still reconfigures when a CMakeLists.txt changes. The stamp carries the
+# KOS_BUILD_* inputs that ninja cannot see, so changing them reconfigures too.
+configure_if_needed() {
+    local source_dir=$1 target_dir=$2
+    shift 2
+
+    local stamp="$target_dir/kos-configure-inputs"
+    local inputs="$source_dir|$*"
+    if [[ -f "$target_dir/CMakeCache.txt" && -f "$stamp" \
+            && "$(<"$stamp")" == "$inputs" ]]; then
+        return 0
+    fi
+    cmake -S "$source_dir" -B "$target_dir" -G Ninja "$@"
+    printf '%s\n' "$inputs" > "$stamp"
+}
+
+configure_build() {
+    local build_type=${KOS_BUILD_TYPE:-Release}
+    local plugins=${KOS_BUILD_KWIN_PLUGINS:-ON}
+    local spatial=${KOS_BUILD_SPATIAL:-AUTO}
+    local ort_include="" ort_library=""
+    local -a spatial_flags=()
+    if spatial_forced; then
+        ensure_onnxruntime_paths || return 1
+    elif spatial_requested && opencv_available; then
+        ensure_onnxruntime_paths || { ort_include=""; ort_library=""; }
+    fi
+    if [[ -n "$ort_include" && -n "$ort_library" ]]; then
+        spatial_flags=(-DONNXRUNTIME_INCLUDE_DIR="$ort_include"
+            -DONNXRUNTIME_LIBRARY="$ort_library")
+    fi
+    prepare_cmake_build_dir "$build_dir" "$project_dir"
+    # include(CTest) turns BUILD_TESTING on unless it is told otherwise, and a
+    # bare `cmake --build` then compiles every registered test before deploying
+    # any of them -- `kosctl` never runs ctest from this directory, so that was
+    # pure overhead on every install.
+    #
+    # Turning it off here is safe for everything this directory produces:
+    #   - deploy_artifacts needs kos-platform, kos-settings and the Go-built
+    #     data service, none of which come from the BUILD_TESTING block;
+    #   - the KWin plugin components are governed by KOS_BUILD_KWIN_PLUGINS,
+    #     not BUILD_TESTING, so `cmake --install --component kwin_plugins`
+    #     still finds its binaries;
+    #   - `kosctl install apps` builds from its own .build/apps-release tree
+    #     (tools/install-apps.sh), so nothing here feeds that path.
+    # Tests now have one owner: ./tools/run-tests.sh, which keeps its own
+    # .build/tests directory.
+    configure_if_needed "$project_dir" "$build_dir" \
+        -DCMAKE_BUILD_TYPE="$build_type" \
+        -DCMAKE_INSTALL_PREFIX="$kwin_system_prefix" \
+        "${spatial_flags[@]}" \
+        -DKOS_BUILD_KWIN_PLUGINS="$plugins" \
+        -DKOS_BUILD_SPATIAL="$spatial" \
+        -DBUILD_TESTING=OFF
+}
+
+find_path_onnxruntime_header() {
+    for d in /usr/include/onnxruntime /usr/local/include/onnxruntime; do
+        [[ -f "$d/onnxruntime_cxx_api.h" ]] && { printf '%s' "$d"; return 0; }
+    done
+    return 1
+}
+
+find_lib_onnxruntime() {
+    local lib
+    lib=$(ls /usr/lib/*/libonnxruntime.so 2>/dev/null | head -n 1)
+    [[ -n "$lib" ]] && { printf '%s' "$lib"; return 0; }
+    return 1
+}
+
+# Keep the CPU runtime deterministic across machines. The SDK is a build
+# dependency only; the model remains a separately downloaded, hash-pinned user
+# Resolves ort_include/ort_library. x86_64 keeps the pinned SDK for a
+# deterministic CPU runtime across machines; other architectures fall back to
+# the distro's onnxruntime development package, which the kos-ai API
+# surface (basic Ort API) builds against just as well.
+ensure_onnxruntime_paths() {
+    if [[ "$(uname -m)" != "x86_64" ]]; then
+        ort_include=$(find_path_onnxruntime_header) || {
+            printf 'kosctl: no non-x86_64 onnxruntime headers; install libonnxruntime-dev\n' >&2
+            return 1
+        }
+        ort_library=$(find_lib_onnxruntime) || {
+            printf 'kosctl: no non-x86_64 onnxruntime library; install libonnxruntime-dev\n' >&2
+            return 1
+        }
+        return 0
+    fi
+    local root
+    root=$(ensure_onnxruntime_sdk) || return 1
+    ort_include="$root/include"
+    ort_library="$root/lib/libonnxruntime.so"
+}
+
+ensure_onnxruntime_sdk() {
+    local root="$build_dir/deps/onnxruntime-linux-x64-1.30.0"
+    local archive="$build_dir/deps/onnxruntime-linux-x64-1.30.0.tgz"
+    local sha="a5ed5a3cac51fbb2e90da632ae43d19212faaa20e76484e62bcb7c23ddb3b3fd"
+    if [[ -f "$root/include/onnxruntime_cxx_api.h" \
+            && -f "$root/lib/libonnxruntime.so" ]]; then
+        printf '%s' "$root"
+        return 0
+    fi
+    mkdir -p "$build_dir/deps"
+    if [[ ! -f "$archive" ]]; then
+        command -v curl >/dev/null 2>&1 || {
+            printf 'curl is required to fetch the pinned ONNX Runtime SDK.\n' >&2
+            return 1
+        }
+        if ! curl -fL --retry 3 --connect-timeout 30 --speed-limit 1024 --speed-time 60 \
+                -o "$archive.part" \
+                https://github.com/microsoft/onnxruntime/releases/download/v1.30.0/onnxruntime-linux-x64-1.30.0.tgz; then
+            rm -f -- "$archive.part"
+            return 1
+        fi
+        mv -f "$archive.part" "$archive"
+    fi
+    printf '%s  %s\n' "$sha" "$archive" | sha256sum --check --status || {
+        rm -f -- "$archive"
+        printf 'Pinned ONNX Runtime SDK archive SHA256 mismatch; retry install to download again.\n' >&2
+        return 1
+    }
+    tar -xzf "$archive" -C "$build_dir/deps"
+    [[ -f "$root/include/onnxruntime_cxx_api.h" \
+        && -f "$root/lib/libonnxruntime.so" ]] || {
+        printf 'Pinned ONNX Runtime SDK extracted without expected files.\n' >&2
+        return 1
+    }
+    printf '%s' "$root"
+}
+
+prepare_cmake_build_dir() {
+    local target_dir=$1
+    local source_dir=$2
+    local cache_file="$target_dir/CMakeCache.txt"
+    [[ -f "$cache_file" ]] || return 0
+
+    local cached_source
+    cached_source=$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "$cache_file" \
+        | head -n 1)
+    if [[ -n "$cached_source" && "$cached_source" != "$source_dir" ]]; then
+        printf 'Resetting moved CMake build cache (%s -> %s)\n' \
+            "$cached_source" "$source_dir"
+        rm -f -- "$cache_file"
+        rm -rf -- "$target_dir/CMakeFiles"
+    fi
+}
+
+ensure_build_dependencies() {
+    if command -v pacman >/dev/null 2>&1; then
+        local package
+        local -a missing_packages=()
+        local -a required_packages=("${arch_core_build_packages[@]}")
+        if kwin_plugins_enabled; then
+            required_packages+=("${arch_kwin_build_packages[@]}")
+        fi
+        if spatial_requested; then
+            required_packages+=("${arch_spatial_build_packages[@]}")
+        fi
+        for package in "${required_packages[@]}"; do
+            if ! pacman -Q "$package" >/dev/null 2>&1; then
+                missing_packages+=("$package")
+            fi
+        done
+        if (( ${#missing_packages[@]} > 0 )); then
+            printf 'KOS build dependencies require administrator permission:\n'
+            printf '  %s\n' "${missing_packages[*]}"
+            sudo pacman -S --needed -- "${missing_packages[@]}"
+        fi
+    elif command -v apt-get >/dev/null 2>&1; then
+        local package resolved
+        local -a missing_packages=()
+        local -a unavailable_packages=()
+        local -a required_packages=("${debian_core_build_packages[@]}")
+        if kwin_plugins_enabled; then
+            required_packages+=("${debian_kwin_build_packages[@]}")
+        fi
+        if spatial_requested; then
+            required_packages+=("${debian_spatial_build_packages[@]}")
+        fi
+        if ! debian_apt_lists_ready; then
+            printf 'The apt package lists are empty, so build dependencies cannot be resolved.\n'
+            printf 'Run: sudo apt-get update, then re-run ./tools/kosctl install\n'
+            return 1
+        else
+            local quickshell_unavailable=0
+            for package in "${required_packages[@]}"; do
+                if ! resolved=$(debian_resolve_package "$package"); then
+                    unavailable_packages+=("$package")
+                    [[ "$package" == quickshell ]] && quickshell_unavailable=1
+                elif ! dpkg -s "$resolved" >/dev/null 2>&1; then
+                    missing_packages+=("$resolved")
+                fi
+            done
+            if (( ${#unavailable_packages[@]} > 0 )); then
+                printf 'Not in the configured apt repositories:\n'
+                printf '  %s\n' "${unavailable_packages[*]}"
+                printf 'If the package lists are stale, try: sudo apt-get update\n'
+            fi
+            if (( quickshell_unavailable )); then
+                debian_quickshell_hint
+                printf 'warn %-12s the shell cannot start until quickshell is installed\n' quickshell
+            fi
+            if (( ${#missing_packages[@]} > 0 )); then
+                printf 'KOS build dependencies require administrator permission:\n'
+                printf '  %s\n' "${missing_packages[*]}"
+                sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing_packages[@]}"
+            fi
+        fi
+    fi
+}
+
+# The vendored glass tree produces three warnings that are nobody's here to fix:
+# `blur_config.ui` declares duplicate Designer object names (uic renames them to
+# widget1..widget6 by itself) and connections to kcfg_* widgets that only exist
+# once KConfigDialogManager injects them at runtime, and reconfigure() has to keep
+# the flags parameter that KWin's virtual signature declares. Drop those lines so
+# the build output only carries things a contributor can act on. `|| true` is
+# required because grep exits 1 when every line was filtered; with `pipefail` in
+# effect the pipeline still reports the build's own status.
+filter_vendored_warnings() {
+    grep -v -e 'blur_config\.ui: Warning: The name' \
+            -e 'blur_config\.ui: Warning: Invalid signal/slot connection' \
+            -e 'unused-parameter' \
+        || true
+}
+
+build_kwin_glass() {
+    local build_type=${KOS_BUILD_TYPE:-Release}
+    prepare_cmake_build_dir "$glass_build_dir" \
+        "$project_dir/kwin/glass-effect"
+    configure_if_needed "$project_dir/kwin/glass-effect" \
+        "$glass_build_dir" \
+        -DCMAKE_BUILD_TYPE="$build_type" \
+        -DCMAKE_INSTALL_PREFIX="$kwin_system_prefix" \
+        -DGLASS_WAYLAND=ON \
+        -DGLASS_X11=OFF
+    if (( kwin_plugin_rebuild_required )); then
+        cmake --build "$glass_build_dir" --target clean
+    fi
+    cmake --build "$glass_build_dir" \
+        --parallel "$(kos_build_jobs)" 2>&1 \
+        | filter_vendored_warnings
+}
+
+build() {
+    detect_kwin_plugin_api_version
+    configure_build
+    if (( kwin_plugin_rebuild_required )); then
+        cmake --build "$build_dir" --target clean
+    fi
+    cmake --build "$build_dir" --parallel "$(kos_build_jobs)"
+    if [[ ! -f "$ui_kit_dir/CMakeLists.txt" ]]; then
+        printf 'UI Kit source tree not found: %s\n' "$ui_kit_dir" >&2
+        return 1
+    fi
+    cmake -S "$ui_kit_dir" -B "$ui_kit_build_dir" \
+        -DBUILD_WITH_CTEST=OFF -DBUILD_EXAMPLES=OFF
+    cmake --build "$ui_kit_build_dir" --parallel "$(kos_build_jobs)"
+    if kwin_plugins_enabled; then
+        build_kwin_glass
+        record_kwin_plugin_api_version
+    fi
+    mkdir -p "$build_dir/bin"
+    (
+        cd "$project_dir/services/data-service"
+        # Use a reachable default mirror while preserving the standard
+        # GOPROXY override for CI, downstream packagers, and offline caches.
+        # -buildvcs=false matches services/data-service/CMakeLists.txt: Go's
+        # VCS stamping shells out to git, which fails on checkouts git refuses
+        # to read (dubious ownership, tarball exports) and aborts the build.
+        GOPROXY="${GOPROXY:-https://goproxy.cn,direct}" \
+            go build -trimpath -buildvcs=false \
+                -o "$build_dir/bin/kos-data-service" .
+    )
+    python3 "$project_dir/tools/source-release.py" --root "$project_dir" stamp "$build_dir/release.json"
+}
+
+# materialize_kos_ui — turn the repo's source-level Kos.Ui alias into real
+# files under the installed shell config.
+#
+# In the checkout, shell/Kos/Ui/{colorize,foundation,controls} are symlinks
+# into shared/qml so `qs -p shell` resolves `import "../../../Kos/Ui"` with no
+# build step and no environment variables. `cp -a` preserves those symlinks,
+# and their ../../../shared targets do not exist under
+# ~/.config/quickshell/kos, so the installed copy would dangle. This replaces
+# the alias with real copies of the same files.
+#
+#   $1: installed shell config dir
+#   $2: qmldir source from the checkout
+#   $3: the directory that directly contains colorize/, foundation/ and
+#       controls/ — the checkout's shared/qml, or
+#       the checkout shared/qml directory.
+materialize_kos_ui() {
+    local shell_config="$1" qmldir_src="$2" qml_root="$3"
+    if [[ ! -f "$qmldir_src" ]]; then
+        printf 'Kos.Ui alias qmldir not found: %s\n' "$qmldir_src" >&2
+        return 1
+    fi
+    local dir
+    for dir in colorize foundation controls wallpapers i18n; do
+        if [[ ! -d "$qml_root/$dir" ]]; then
+            printf 'Kos.Ui source dir not found: %s\n' "$qml_root/$dir" >&2
+            return 1
+        fi
+    done
+    rm -rf "$shell_config/Kos/Ui"
+    mkdir -p "$shell_config/Kos/Ui"
+    install -m 0644 "$qmldir_src" "$shell_config/Kos/Ui/qmldir"
+    for dir in colorize foundation controls wallpapers i18n; do
+        cp -rL --no-preserve=mode "$qml_root/$dir" "$shell_config/Kos/Ui/"
+    done
+}
+
+# Unit names whose process is still running an executable that was replaced
+# underneath it, one per line. Linux refuses to write a running executable
+# (ETXTBSY), so an in-place deploy cannot keep the inode alive and
+# /proc/<pid>/exe reads "<path> (deleted)". KWin resolves an application's
+# restricted D-Bus interfaces by exactly that path -- it matches the .desktop
+# whose Exec= names it and reads X-KDE-DBUS-Restricted-Interfaces -- so a stale
+# kos-platform silently loses org.kde.KWin.ScreenShot2 and every window
+# thumbnail fails with "The process is not authorized to take a screenshot"
+# until the unit is restarted. Read-only: it never restarts anything.
+stale_kos_units() {
+    command -v systemctl >/dev/null 2>&1 || return 0
+    local unit pid exe
+    for unit in kos-platform.service kos-data.service kos-shell.service; do
+        pid=$(systemctl --user show -p MainPID --value "$unit" 2>/dev/null || true)
+        if [[ -z "$pid" || "$pid" == "0" ]]; then
+            continue
+        fi
+        exe=$(readlink "/proc/$pid/exe" 2>/dev/null || true)
+        if [[ "$exe" == *"(deleted)"* ]]; then
+            printf '%s\n' "$unit"
+        fi
+    done
+}
+
+# deploy_artifacts — deploy from a CMake build output to ~/.local.
+#   $1: artifact root directory (normally "$build_dir")
+deploy_artifacts() {
+    local artifact_root="$1"
+    if [[ ! -d "$artifact_root" ]]; then
+        printf 'Artifact root not found: %s\n' "$artifact_root" >&2
+        return 1
+    fi
+
+    local required
+    local -a required_files
+    required_files=(platform/kos-platform bin/kos-data-service apps/settings/kos-settings)
+    spatial_built && required_files+=(platform/kos-ai-worker)
+    for required in "${required_files[@]}"; do
+        [[ -x "$artifact_root/$required" ]] || {
+            printf 'Missing build artifact: %s/%s\n' "$artifact_root" "$required" >&2
+            return 1
+        }
+    done
+    local ui_kit_module
+    for ui_kit_module in Core Theme Controls Utils Widgets; do
+        [[ -f "$artifact_root/ui-kit/qml/Sber/$ui_kit_module/qmldir" ]] || {
+            printf 'Missing UI Kit QML module: %s\n' \
+                "$artifact_root/ui-kit/qml/Sber/$ui_kit_module/qmldir" >&2
+            return 1
+        }
+    done
+    [[ -f "$ui_kit_dir/resources/theme/sdds_os.json" ]] || {
+        printf 'UI Kit theme resources not found: %s\n' "$ui_kit_dir/resources/theme/sdds_os.json" >&2
+        return 1
+    }
+    command -v patchelf >/dev/null 2>&1 || {
+        printf 'patchelf is required to deploy relocatable UI Kit plugins.\n' >&2
+        return 1
+    }
+
+    # Replace managed runtime trees rather than overlaying versions. Back up
+    # local runtime edits and kos settings before removing stale QML/plugins.
+    python3 "$project_dir/tools/deploy-runtime.py" \
+        --prefix "$prefix" --config "$config_dir" \
+        --state "${XDG_STATE_HOME:-$HOME/.local/state}"
+    mkdir -p "$prefix/libexec" "$prefix/bin" "$prefix/lib" \
+        "$prefix/share/kos/platform/kwin" "$prefix/share/kos/settings" \
+        "$prefix/share/kos/qml" "$prefix/share/kos/SberComponents" \
+        "$prefix/share/shared/qml" "$prefix/share/applications"
+    # --- Binaries ---
+    rm -f "$prefix/libexec/kos-platform" "$prefix/libexec/kos-ai-worker" \
+        "$prefix/libexec/kos-data-service" "$prefix/bin/kos-settings"
+    install -m 0755 "$artifact_root/platform/kos-platform"    "$prefix/libexec/kos-platform"
+    if spatial_built; then
+        install -m 0755 "$artifact_root/platform/kos-ai-worker" \
+            "$prefix/libexec/kos-ai-worker"
+        local ort_root="$build_dir/deps/onnxruntime-linux-x64-1.30.0"
+        if [[ -f "$ort_root/lib/libonnxruntime.so.1.30.0" ]]; then
+            install -m 0755 "$ort_root/lib/libonnxruntime.so.1.30.0" \
+                "$prefix/lib/libonnxruntime.so.1.30.0"
+            ln -sfn libonnxruntime.so.1.30.0 "$prefix/lib/libonnxruntime.so.1"
+            ln -sfn libonnxruntime.so.1 "$prefix/lib/libonnxruntime.so"
+            if [[ -f "$ort_root/lib/libonnxruntime_providers_shared.so" ]]; then
+                install -m 0755 "$ort_root/lib/libonnxruntime_providers_shared.so" \
+                    "$prefix/lib/libonnxruntime_providers_shared.so"
+            fi
+        fi
+    else
+        # The binaries above were just removed: a build without the depth
+        # engine must not leave its runtime library behind either.
+        rm -f "$prefix/lib/libonnxruntime.so" "$prefix/lib/libonnxruntime.so.1" \
+            "$prefix/lib/libonnxruntime.so.1.30.0" \
+            "$prefix/lib/libonnxruntime_providers_shared.so"
+    fi
+    install -m 0755 "$artifact_root/bin/kos-data-service"     "$prefix/libexec/kos-data-service"
+    install -m 0755 "$artifact_root/apps/settings/kos-settings" "$prefix/bin/kos-settings"
+    if command -v patchelf >/dev/null 2>&1; then
+        patchelf --set-rpath '$ORIGIN/../lib' "$prefix/libexec/kos-platform"
+        if spatial_built; then
+            patchelf --set-rpath '$ORIGIN/../lib' "$prefix/libexec/kos-ai-worker"
+        fi
+    fi
+
+    # --- KWin bridge script ---
+    install -m 0644 "$project_dir/kwin/window-bridge.js" \
+        "$prefix/share/kos/platform/kwin/window-bridge.js"
+
+    # --- Settings QML & shared controls ---
+    # Ship every runtime page; a missing local type prevents main.qml loading.
+    # Copy whole subdirectories instead of naming them: apps/settings/pages and
+    # components were added to main.qml's imports but never to this list, so the
+    # window died inside QQmlApplicationEngine on "no such directory" while the
+    # checkout it was built from looked perfectly fine.
+    local settings_src
+    settings_src="$project_dir/apps/settings"
+    install -m 0644 "$settings_src"/*.qml "$prefix/share/kos/settings/"
+    local settings_sub settings_name
+    for settings_sub in "$settings_src"/*/; do
+        [[ -d "$settings_sub" ]] || continue
+        settings_name=$(basename "$settings_sub")
+        # src/ and tests/ are build-time only; build/ is a local CMake tree.
+        case "$settings_name" in
+            src|tests|build|build-*) continue ;;
+        esac
+        cp -rL --no-preserve=mode "${settings_sub%/}" "$prefix/share/kos/settings/"
+    done
+    # The Settings window is a *separate process*, and it resolves its relative
+    # imports against its own installed directory, $prefix/share/kos/settings.
+    # So every shared/qml subdirectory it can reach has to land in
+    # $prefix/share/shared/qml, not just the ones the shell happens to use:
+    # deploying controls/ alone left apps/settings/main.qml's
+    # `import "../../shared/qml/colorize/MaterialColorScheme.mjs"` unresolvable,
+    # and the window died inside QQmlApplicationEngine before it was shown —
+    # clicking Settings simply did nothing. Copy the whole tree so a new
+    # subdirectory never needs another edit here.
+    local shared_qml_src="$project_dir/shared/qml"
+    if [[ -d "$prefix/share/shared/qml" ]]; then
+        find "$prefix/share/shared/qml" -type d -exec chmod u+w {} +
+    fi
+    rm -rf "$prefix/share/shared/qml"
+    mkdir -p "$prefix/share/shared/qml"
+    cp -rL --no-preserve=mode "$shared_qml_src/." "$prefix/share/shared/qml/"
+    # The checkout tree carries build/test files next to the runtime QML;
+    # the CMake install rule that used to run this copy carried the same EXCLUDEs.
+    # Shipping them put CMakeLists.txt and test_*.mjs into user prefixes.
+    find "$prefix/share/shared/qml" \
+        \( -name CMakeLists.txt -o -name 'test_*.mjs' \) -delete
+
+    # The UI Kit QML modules and their data are managed inside the KOS runtime
+    # tree, avoiding collisions with system or separately installed Sber modules.
+    rm -rf "$prefix/share/kos/qml/Sber"
+    cp -rL --no-preserve=mode "$artifact_root/ui-kit/qml/Sber" \
+        "$prefix/share/kos/qml/"
+    find "$prefix/share/kos/qml/Sber" -type f -name '*.so' -print0 \
+        | while IFS= read -r -d '' plugin; do
+            patchelf --set-rpath \
+                '$ORIGIN/../Core:$ORIGIN/../Theme:$ORIGIN/../Controls:$ORIGIN/../Utils:$ORIGIN/../Widgets' \
+                "$plugin"
+        done
+    cp -rL --no-preserve=mode "$ui_kit_dir/resources/." \
+        "$prefix/share/kos/SberComponents/"
+
+    # --- Shell QML → ~/.config/quickshell/kos ---
+    local shell_config="$config_dir/quickshell/kos"
+    mkdir -p "$shell_config"
+    find "$shell_config" -type d -exec chmod u+w {} +
+    find "$shell_config" -type f -exec chmod u+w {} +
+    # These source entries are symlinks in the checkout, but older releases
+    # installed them as directories. Remove only those known legacy targets
+    # before copying the shell tree; otherwise cp refuses to replace a
+    # directory with the symlink and the install aborts before materializing
+    # Kos.Ui below.
+    # Remove the obsolete facade shipped by an earlier source snapshot.
+    rm -f "$shell_config/desktop/modules/common/GlassPanel.qml"
+    rm -rf "$shell_config/Kos/Ui/colorize" \
+           "$shell_config/Kos/Ui/foundation" \
+           "$shell_config/Kos/Ui/controls" \
+           "$shell_config/Kos/Ui/wallpapers"
+    rm -rf "$shell_config/shared/qml/controls"
+    cp -rL --no-preserve=mode "$project_dir/shell/." "$shell_config/"
+    mkdir -p "$shell_config/shared/qml"
+    rm -rf "$shell_config/shared/qml/controls"
+    cp -rL --no-preserve=mode "$project_dir/shared/qml/controls" "$shell_config/shared/qml/"
+    # Kos.Ui alias: replace the checkout's symlinks with real files (see
+    # materialize_kos_ui above for why the symlinks cannot survive the copy).
+    # Installed aliases contain real files.
+    materialize_kos_ui "$shell_config" \
+        "$project_dir/shell/Kos/Ui/qmldir" "$project_dir/shared/qml"
+
+    # SurfaceShape native QML plugin: copy from build dir to user shell config
+    # so Quickshell finds `import Kos.SurfaceShape 1.0` without requiring root install to /usr
+    if [[ -d "$artifact_root/qml/Kos/SurfaceShape" ]]; then
+        rm -rf "$shell_config/Kos/SurfaceShape"
+        cp -rL --no-preserve=mode "$artifact_root/qml/Kos/SurfaceShape" "$shell_config/Kos/"
+    fi
+    # Optional Qt Quick 3D mesh geometry used by the spatial wallpaper layer.
+    if [[ -d "$artifact_root/qml/Kos/Spatial3D" ]]; then
+        rm -rf "$shell_config/Kos/Spatial3D"
+        cp -rL --no-preserve=mode "$artifact_root/qml/Kos/Spatial3D" "$shell_config/Kos/"
+    fi
+
+    # --- Systemd user services ---
+    mkdir -p "$runtime_unit_dir"
+    sed "s|%h/.local|$prefix|g" \
+        "$project_dir/packaging/systemd/kos-platform.service" \
+        > "$runtime_unit_dir/kos-platform.service"
+    # Single source of truth: the unit template lives next to the service
+    # it starts (services/data-service/systemd/kos-data.service.in). The
+    # apps install (tools/install-apps.sh) generates the same template
+    # through CMake configure_file, so a second copy under packaging/
+    # meant two writers for ~/.config/systemd/user/kos-data.service --
+    # whichever install ran last silently won.
+    sed "s|@CMAKE_INSTALL_FULL_LIBEXECDIR@|$prefix/libexec|g" \
+        "$project_dir/services/data-service/systemd/kos-data.service.in" \
+        > "$runtime_unit_dir/kos-data.service"
+    # 惰性重解析：脚本顶部的 qs_bin 在 ensure_build_dependencies 装
+    # quickshell 之前求值过（全新机器首装=空），写出的 unit 是
+    # ExecStart= --no-duplicate … 的坏 unit，下次登录桌面静默起不来
+    local qs_bin_now
+    qs_bin_now=$(command -v qs || command -v quickshell || true)
+    if [[ -z "$qs_bin_now" ]]; then
+        printf 'kosctl: quickshell not found -- install it (kosctl doctor) and re-run install\n' >&2
+        exit 1
+    fi
+    sed "s|@QS_EXEC@|$qs_bin_now|g" \
+        "$project_dir/packaging/systemd/kos-shell.service.in" \
+        > "$runtime_unit_dir/kos-shell.service"
+    chmod 0644 "$runtime_unit_dir/kos-platform.service" \
+        "$runtime_unit_dir/kos-data.service" \
+        "$runtime_unit_dir/kos-shell.service"
+
+    # --- Desktop entries ---
+    sed "s|^Exec=.*|Exec=$prefix/bin/kos-settings|" \
+        "$project_dir/packaging/desktop/kos-settings.desktop.in" \
+        > "$prefix/share/applications/kos-settings.desktop"
+    rm -f "$prefix/share/applications/kos-platform.desktop"
+    sed "s|@KOS_PLATFORM_EXEC@|$prefix/libexec/kos-platform|g" \
+        "$project_dir/packaging/desktop/org.kos.Platform.desktop.in" \
+        > "$prefix/share/applications/org.kos.Platform.desktop"
+    if command -v kbuildsycoca6 >/dev/null 2>&1; then
+        kbuildsycoca6 --noincremental >/dev/null
+    fi
+
+    # --- Enable systemd units ---
+    if [[ "${KOS_SKIP_SYSTEMD:-0}" != "1" ]] && command -v systemctl >/dev/null 2>&1; then
+        local -a kos_units=(
+            kos-platform.service kos-data.service kos-shell.service
+        )
+        # kos-pim-service is deliberately not enabled. It is D-Bus activated
+        # on demand (org.nextkde.Kos.Pim1.service) and tools/install-apps.sh
+        # keeps it non-resident; enabling it from the core install fought
+        # that policy -- which one won depended on the order the two
+        # installs happened to run in.
+        # install is non-disruptive: it registers the units for the next
+        # session (and login autostart) but leaves the running session alone.
+        # In-place updates of executables and QML only take effect after the
+        # services restart — either at next login/relogin or via `kosctl start`.
+        systemctl --user daemon-reload
+        systemctl --user enable "${kos_units[@]}"
+    fi
+
+    # `install` deliberately leaves the session alone, but a replaced binary
+    # does not merely wait for a restart here: the running kos-platform loses
+    # its KWin screenshot permission and every window thumbnail fails. Say so
+    # explicitly rather than leaving it to look like a permissions bug.
+    local stale_units
+    stale_units=$(stale_kos_units)
+    if [[ -n "$stale_units" ]]; then
+        printf '\n'
+        printf '  ⚠️  仍在运行刚被替换掉的旧二进制：%s\n' "${stale_units//$'\n'/, }"
+        printf '     Still running the replaced binary: %s\n' "${stale_units//$'\n'/, }"
+        printf '     症状：dock 预览与窗口缩略图报 The process is not authorized to take a screenshot\n'
+        printf '     Symptom: window thumbnails fail with that KWin authorization error.\n'
+        printf '  ⚡ 立即生效：./tools/kosctl start\n'
+        printf '     Apply now: ./tools/kosctl start\n'
+    fi
+}
+
+# org.freedesktop.Notifications goes to whoever claims it first, and the shell
+# cannot take the name back afterwards. plasmashell is not a contender while it
+# runs KOS's shell package: that package has no panel, so nothing ever
+# instantiates its notification applet and it never creates its server. A
+# third-party daemon is a contender -- autostarted at login, or activated by a
+# notification sent before the shell is up. Report these and nothing else: the
+# files are the user's, and disabling them is their call.
+warn_notification_claimers() {
+    local -a found=()
+    local name
+    for name in dunst mako swaync fnott; do
+        if command -v "$name" >/dev/null 2>&1; then
+            found+=("$(command -v "$name") 已安装 / installed")
+        fi
+    done
+    # An activation file for the name starts its daemon on the first
+    # notification request (including during login, before the shell is up).
+    # KDE ships one for the same name in /usr/share, but its Exec is
+    # plasma_waitforname, which serves nothing -- skip it instead of warning
+    # every KDE user about a stock file.
+    local IFS=:
+    local -a data_dirs=("${XDG_DATA_HOME:-$HOME/.local/share}")
+    local dir file exec_line
+    for dir in ${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do
+        data_dirs+=("$dir")
+    done
+    for dir in "${data_dirs[@]}"; do
+        for file in "$dir"/dbus-1/services/*.service; do
+            [[ -e "$file" ]] || continue
+            grep -qs '^Name=org\.freedesktop\.Notifications$' "$file" || continue
+            # grep -m1 rather than `sed | head`: under `set -o pipefail` a
+            # SIGPIPE from a closed pipe would fail the assignment and abort
+            # the whole install over a file it only wanted to read.
+            exec_line=$(grep -m1 '^Exec=' "$file" || true)
+            exec_line=${exec_line#Exec=}
+            if [[ "$exec_line" == *plasma_waitforname* ]]; then
+                continue
+            fi
+            # A leftover file for a daemon that is no longer installed cannot
+            # claim anything, so say so instead of alarming the user about it.
+            local exec_bin="${exec_line%% *}"
+            if [[ "$exec_bin" != /* ]]; then
+                exec_bin=$(command -v "$exec_bin" 2>/dev/null || true)
+            fi
+            local note=""
+            if [[ -z "$exec_bin" || ! -x "$exec_bin" ]]; then
+                note=" （未安装 / not installed）"
+            fi
+            found+=("$file → ${exec_line:-?}$note")
+        done
+    done
+    if (( ${#found[@]} == 0 )); then
+        return 0
+    fi
+    printf '\n'
+    printf '  ⚠️  检测到第三方通知服务，它可能先占住 org.freedesktop.Notifications：\n'
+    printf '     Third-party notification services found; they may claim the name first:\n'
+    for name in "${found[@]}"; do
+        printf '       %s\n' "$name"
+    done
+    printf '     被它们先占住的话，KOS 收不到通知，也无法抢回；请停用或卸载\n'
+    printf '     If one claims it first, KOS gets no notifications and cannot take it back.\n'
+}
+
+# The final, bilingual summary is the last thing `install` prints, so the user
+# always sees it as the takeaway — after all build/stage/kwin output above it.
+print_install_summary() {
+    local shell_config="$config_dir/quickshell/kos"
+    printf '\n'
+    printf '  ✅ KOS 已安装（未打断当前会话）\n'
+    printf '     KOS installed — your running session was left untouched.\n'
+    printf '\n'
+    printf '  🔄 要生效：注销并重新登录，或重启系统\n'
+    printf '     To apply: log out and back in, or reboot.\n'
+    printf '\n'
+    printf '  ⚡ 不想注销、立即生效：./tools/kosctl start\n'
+    printf '     Apply now without logging out: ./tools/kosctl start\n'
+    printf '\n'
+    printf '  ⚠️  注意：KWin 特效与桌面接管（plasmashell 换 shell）要到下次登录才生效\n'
+    printf '     Note: KWin effects and the desktop takeover apply at your next login.\n'
+    printf '\n'
+    if spatial_requested && ! spatial_built; then
+        printf '  ℹ️  景深/空间壁纸未构建（缺少 OpenCV 或 ONNX Runtime）\n'
+        printf '     Depth engine not built (OpenCV or ONNX Runtime missing).\n'
+        printf '     需要时安装依赖并用 KOS_BUILD_SPATIAL=ON 重新执行 install。\n'
+        printf '\n'
+    fi
+    printf '  📦 安装位置：%s\n' "$prefix"
+    printf '     (shell 配置：%s)\n' "$shell_config"
+    printf '\n'
+}
+
+# Verifies that the running kos-platform is executing the binary that is
+# currently on disk. A deploy that replaced the file without restarting the
+# process (interrupted install, or any path that copies without the restart
+# step) leaves /proc/PID/exe pointing at a "(deleted)" inode. KWin's
+# screenshot sandbox resolves the caller's authorization by matching that
+# executable path against the .desktop Exec entry of org.kos.Platform
+# (X-KDE-DBUS-Restricted-Interfaces), so the stale-exe state silently rejects
+# every window-thumbnail capture -- the Stage sidebar then shows no previews
+# at all (v91 field report: 97/97 captures failed over 13 minutes). Restarting
+# is idempotent and costs a few hundred milliseconds, so the check simply
+# restarts when it detects the mismatch.
+verify_platform_binary_currentness() {
+    local pid exe
+    pid=$(systemctl --user show -p MainPID --value kos-platform.service 2>/dev/null || true)
+    [[ -n "$pid" && "$pid" != "0" ]] || return 0
+    exe=$(readlink "/proc/$pid/exe" 2>/dev/null || true)
+    [[ "$exe" == *"(deleted)"* ]] || return 0
+    printf 'warn: kos-platform runs from a replaced binary (%s); restarting it' "$exe" >&2
+    printf ' so KWin screenshot authorization recovers\n' >&2
+    systemctl --user restart kos-platform.service
+}
+
+# start — make the latest installed revision take effect immediately.
+# Restarts the KOS user services. The KWin effects are only persisted to
+# kwinrc here; they load on the next KWin/session start, because hot-loading
+# effect binaries into a running compositor is the operation that has crashed
+# kwin_wayland before.
+start_all() {
+    if ! command -v systemctl >/dev/null 2>&1; then
+        echo "systemctl is unavailable; cannot start KOS services" >&2
+        return 1
+    fi
+    if [[ ! -x "$prefix/libexec/kos-platform" ]]; then
+        echo "kos-platform is not installed; run ./tools/kosctl install first" >&2
+        return 1
+    fi
+    if [[ ! -e "$runtime_unit_dir/kos-shell.service" ]]; then
+        echo "KOS systemd units are not installed; run ./tools/kosctl install first" >&2
+        return 1
+    fi
+    local -a kos_units=(
+        kos-platform.service kos-data.service kos-shell.service
+    )
+    # kos-pim-service is D-Bus activated on demand and is deliberately kept
+    # non-resident (see deploy_artifacts). It must not be enabled or restarted
+    # from `start` either, or `install apps`'s disable keeps fighting this.
+    # Replace a manually launched `kos` instance so systemd becomes its sole
+    # supervisor; the unit's --no-duplicate would otherwise exit repeatedly
+    # while that instance is alive.
+    if [[ -n "$qs_bin" ]]; then
+        "$qs_bin" -c kos kill >/dev/null 2>&1 || true
+    fi
+    local proxy_name
+    local -a proxy_names=()
+    for proxy_name in http_proxy https_proxy all_proxy no_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY; do
+        [[ -z "${!proxy_name:-}" ]] || proxy_names+=("$proxy_name")
+    done
+    if (( ${#proxy_names[@]} )); then
+        systemctl --user import-environment "${proxy_names[@]}"
+    fi
+    systemctl --user daemon-reload
+    systemctl --user enable --now "${kos_units[@]}"
+    systemctl --user restart "${kos_units[@]}"
+    verify_platform_binary_currentness
+    enable_kwin_effects
+    printf '\n'
+    printf '  🚀 KOS 已启动（platform / data / shell）\n'
+    printf '     KOS started — platform, data, and shell are running.\n'
+    printf '\n'
+    printf '  ⚠️  KWin 特效可能要到下次 KWin／会话启动（或重启）后才生效\n'
+    printf '     KWin effects may not apply until the next KWin/session start (or reboot).\n'
+    printf '\n'
+}
+
+# dev — run the source Shell against the normal systemd platform and data
+# services. It deliberately does not build, install, stop, or replace them;
+# all clients use the single standard runtime socket pair.
+# A per-machine graphics workaround, leaving other machines on Qt's default.
+# Respect an explicitly selected backend and never source arbitrary config code.
+configure_render_backend() {
+    local backend=""
+    if [[ -z "${QSG_RHI_BACKEND:-}" && -r "$config_dir/kos/render-backend" ]]; then
+        IFS= read -r backend < "$config_dir/kos/render-backend" || true
+        case "$backend" in
+            vulkan|opengl) export QSG_RHI_BACKEND="$backend" ;;
+            *) printf 'Ignoring unsupported KOS render backend: %s\n' "$backend" >&2 ;;
+        esac
+    fi
+}
+
+# Keep the optional native QML modules reachable in every supported launch
+# mode. Qt 6 uses QML_IMPORT_PATH; retain QML2_IMPORT_PATH for older launchers
+# and preserve caller-provided paths after this session's modules.
+configure_shell_imports() {
+    local mode="${1:-source}"
+    local imports="$config_dir/quickshell/kos:$prefix/lib/qt6/qml:$prefix/share/kos/qml"
+    if [[ "$mode" == source ]]; then
+        local ui_kit_qml_dir="$ui_kit_build_dir/qml"
+        [[ -d "$ui_kit_qml_dir" ]] || ui_kit_qml_dir="$ui_kit_dir/_build/qml"
+        imports="$build_dir/qml:$project_dir/shell"
+        if [[ -d "$ui_kit_qml_dir" ]]; then
+            imports="$imports:$ui_kit_qml_dir"
+        fi
+        imports="$imports:$config_dir/quickshell/kos:$prefix/lib/qt6/qml:$prefix/share/kos/qml"
+    fi
+    if [[ -z "${SBER_COMPONENTS_DATA_DIR:-}" ]]; then
+        if [[ "$mode" == source && -d "$ui_kit_dir/resources" ]]; then
+            export SBER_COMPONENTS_DATA_DIR="$ui_kit_dir/resources"
+        elif [[ -d "$prefix/share/kos/SberComponents" ]]; then
+            export SBER_COMPONENTS_DATA_DIR="$prefix/share/kos/SberComponents"
+        fi
+    fi
+    local extra_imports="${QML_IMPORT_PATH:-}"
+    if [[ -n "${QML2_IMPORT_PATH:-}" && "${QML2_IMPORT_PATH:-}" != "$extra_imports" ]]; then
+        extra_imports="${extra_imports:+$extra_imports:}$QML2_IMPORT_PATH"
+    fi
+    export QML_IMPORT_PATH="$imports${extra_imports:+:$extra_imports}"
+    export QML2_IMPORT_PATH="$QML_IMPORT_PATH"
+}
+
+dev_all() {
+    configure_render_backend
+    if [[ -z "$qs_bin" ]]; then
+        echo "Quickshell (qs) is required for dev mode" >&2
+        return 1
+    fi
+    local runtime_dir=${XDG_RUNTIME_DIR:-/tmp}
+    local -a missing_sockets=()
+    [[ -S "$runtime_dir/kos-platform.sock" ]] || missing_sockets+=(kos-platform.service)
+    [[ -S "$runtime_dir/kos-data.sock" ]] || missing_sockets+=(kos-data.service)
+    if (( ${#missing_sockets[@]} > 0 )); then
+        printf 'Missing system service socket(s): %s\n' "${missing_sockets[*]}" >&2
+        printf 'Start them first: ./tools/kosctl start\n' >&2
+        return 1
+    fi
+    configure_shell_imports source
+    "$qs_bin" -p "$project_dir/shell" kill >/dev/null 2>&1 || true
+    printf 'Starting source Shell with system platform and data services\n'
+    printf '  QML imports: %s\n' "$QML_IMPORT_PATH"
+    exec "$qs_bin" -p "$project_dir/shell"
+}
+
+# Runs the just-built Settings binary against this checkout's QML and source
+# Shell. This is the single supported wallpaper-settings development entry:
+# launching the desktop file would intentionally use the installed binary and
+# installed QML, while invoking a build artifact without KOS_SHELL_DIR could
+# connect to one tree and render another.
+dev_settings() {
+    local executable="$build_dir/apps/settings/kos-settings"
+    local runtime_dir=${XDG_RUNTIME_DIR:-/tmp}
+    if [[ ! -x "$executable" ]]; then
+        printf 'Settings build not found: %s\n' "$executable" >&2
+        printf 'Build it first: ./tools/kosctl build\n' >&2
+        return 1
+    fi
+    if [[ ! -S "$runtime_dir/kos-platform.sock" ]]; then
+        printf 'Missing platform socket: %s/kos-platform.sock\n' "$runtime_dir" >&2
+        printf 'Start it first: systemctl --user start kos-platform.service\n' >&2
+        return 1
+    fi
+    printf 'Starting Settings development session\n'
+    printf '  executable: %s\n' "$executable"
+    printf '  QML tree:   %s/apps/settings\n' "$project_dir"
+    printf '  Shell tree: %s/shell\n' "$project_dir"
+    printf '  platform:   %s/kos-platform.sock\n' "$runtime_dir"
+    configure_shell_imports source
+    KOS_SHELL_DIR="$project_dir/shell" exec "$executable"
+}
+
+remember_blur_state() {
+    [[ -e "$kwin_effect_state" ]] && return 0
+    local blur_enabled=true
+    if [[ -n "$qdbus_bin" ]] \
+            && "$qdbus_bin" org.kde.KWin /Effects \
+                org.kde.kwin.Effects.isEffectLoaded blur >/dev/null 2>&1; then
+        blur_enabled=$("$qdbus_bin" org.kde.KWin /Effects \
+            org.kde.kwin.Effects.isEffectLoaded blur 2>/dev/null || printf 'true')
+    elif command -v kreadconfig6 >/dev/null 2>&1; then
+        blur_enabled=$(kreadconfig6 --file kwinrc --group Plugins \
+            --key blurEnabled --default true --type bool)
+    fi
+    printf 'blurEnabled=%s\n' "$blur_enabled" > "$kwin_effect_state"
+}
+
+# Persist the KOS effect selection to kwinrc only. Never touches the running
+# compositor: reloading effects in-place after the plugin files were replaced
+# has crashed kwin_wayland, killing every Wayland client with it.
+enable_kwin_effects() {
+    remember_blur_state
+    # Glass is a fork of KWin Blur and cannot be active alongside it.
+    # kwriteconfig6 writes "false" when a bool key is given no value, so every
+    # key must carry an explicit value or install would silently disable the
+    # user's existing effect selections.
+    kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled \
+        false --type bool --notify false
+    local effect
+    # WindowSettings preserves the user's later choice and backs up decoration
+    # selection. No effect binary is loaded into the running compositor here.
+    for effect in kos_bridge kos_dock_window_animation kos_context_menu_input glass; do
+        # --notify false: only write kwinrc. --notify true would send a D-Bus
+        # signal asking the RUNNING compositor to re-read the config, which is
+        # exactly the disruption install must avoid.
+        kwriteconfig6 --file kwinrc --group Plugins --key "${effect}Enabled" \
+            true --type bool --notify false
+    done
+    if [[ -x "$prefix/bin/kos-settings" ]]; then
+        "$prefix/bin/kos-settings" --install-window-defaults
+    else
+        printf 'KOS decoration defaults require the installed kos-settings backend.\n' >&2
+        return 1
+    fi
+    printf 'KWin effects enabled in kwinrc; they load on the next KWin/session start.\n'
+}
+
+# Warn if a failed restoration leaves the removed decoration selected.
+warn_kos_decoration_selected() {
+    command -v kreadconfig6 >/dev/null 2>&1 || return 0
+    [[ "$(kreadconfig6 --file kwinrc --group "$kwin_decoration_group" \
+            --key library --default '')" == kos_decoration ]] || return 0
+    printf 'kwinrc still selects kos_decoration, whose plugin is being removed.\n'
+    printf 'Choose another one in System Settings > Window Decorations.\n'
+}
+
+# The Liquid Glass decoration is gone from the tree, so its plugin file is
+# removed as a stale entry. A kwinrc that still names it would then point at
+# nothing, and this is the only place that knows the name it used to have.
+warn_replaced_decoration_selected() {
+    command -v kreadconfig6 >/dev/null 2>&1 || return 0
+    [[ "$(kreadconfig6 --file kwinrc --group "$kwin_decoration_group" \
+            --key library --default '')" == kos_liquid_glass ]] || return 0
+    printf 'kwinrc still selects kos_liquid_glass, which no longer exists.\n'
+    printf 'Choose KOS or another one in System Settings > Window Decorations.\n'
+}
+
+install_kwin_plugins() {
+    kwin_plugins_enabled || return 0
+
+    local stage_dir="$build_dir/system-install-stage"
+    if [[ "$stage_dir" != "$build_dir/"* ]]; then
+        printf 'Refusing unsafe staging path: %s\n' "$stage_dir" >&2
+        return 1
+    fi
+    rm -rf -- "$stage_dir"
+    mkdir -p "$stage_dir" "$(dirname "$kwin_manifest")"
+
+    # Keep the previous manifest so files this install no longer ships can be
+    # removed. Without it a component that changes shape leaves orphans behind
+    # in /usr -- the QML Aurorae package that preceded the compiled decoration
+    # plugin would keep being discovered by KWin as a second theme, and the
+    # Liquid Glass decoration that was replaced by the KOS one would keep being
+    # offered in the decoration list.
+    local previous_manifest="$build_dir/kwin-system-files.manifest.previous"
+    if [[ -s "$kwin_manifest" ]]; then
+        sort -u "$kwin_manifest" > "$previous_manifest"
+    else
+        : > "$previous_manifest"
+    fi
+
+    DESTDIR="$stage_dir" cmake --install "$build_dir" \
+        --prefix "$kwin_system_prefix" --component kwin_plugins
+    # The window decoration is part of the KWin plugins, not an extra: the
+    # effect draws the window controls only on windows the KOS decoration is
+    # wearing, so a system with the effect and no decoration has no window
+    # buttons at all. Selecting it is still the user's, and nothing here does.
+    DESTDIR="$stage_dir" cmake --install "$build_dir" \
+        --prefix "$kwin_system_prefix" --component kwin_decoration
+    DESTDIR="$stage_dir" cmake --install "$glass_build_dir" \
+        --prefix "$kwin_system_prefix"
+
+    find "$stage_dir" \( -type f -o -type l \) -printf '/%P\n' \
+        | sort -u > "$kwin_manifest"
+    if [[ ! -s "$kwin_manifest" ]]; then
+        printf 'KWin plugin staging produced no files\n' >&2
+        return 1
+    fi
+
+    printf 'Installing KWin effects to %s requires administrator permission.\n' \
+        "$kwin_system_prefix"
+    # Replace each file via rm-then-cp (new inode), never by copying over the
+    # existing file in place: the running compositor keeps its mapping of the
+    # old plugin, while overwriting in place has crashed kwin_wayland.
+    local manifest_entry
+    local -a system_entries=()
+    local -a stale_entries=()
+    # rm-then-cp must only rm what this staged tree reinstalls. Entries carried
+    # forward into the manifest from an opt-in component (the decoration) are
+    # not staged here, so sourcing the list from the manifest itself would rm
+    # the installed binary and never copy it back.
+    while IFS= read -r manifest_entry; do
+        [[ -z "$manifest_entry" ]] && continue
+        case "$manifest_entry" in
+            "$kwin_system_prefix"/*) system_entries+=("$manifest_entry") ;;
+            *)
+                printf 'Refusing unsafe manifest entry: %s\n' "$manifest_entry" >&2
+                return 1
+                ;;
+        esac
+    done < <(find "$stage_dir" \( -type f -o -type l \) -printf '/%P\n' | sort -u)
+    # Entries the previous install shipped and this one does not.
+    while IFS= read -r manifest_entry; do
+        [[ -z "$manifest_entry" ]] && continue
+        case "$manifest_entry" in
+            "$kwin_system_prefix"/*) stale_entries+=("$manifest_entry") ;;
+            *) ;;  # A path outside the system prefix was never installed.
+        esac
+    done < <(comm -23 "$previous_manifest" "$kwin_manifest")
+    if (( ${#system_entries[@]} > 0 || ${#stale_entries[@]} > 0 )); then
+        sudo rm -f -- "${system_entries[@]}" "${stale_entries[@]}"
+    fi
+    # The staged tree is written by the invoking user, so a plain `cp -a` copies
+    # its ownership into the system prefix: the KWin plugins and the glass
+    # effect would end up user-writable while the compositor loads them, which
+    # is a local privilege escalation. `cp -a` also propagates the staged
+    # directories' umask-derived modes (0775 under umask 002) onto /usr,
+    # /usr/lib and /usr/share, leaving the system prefix group-writable. Drop
+    # group/other write from the staged tree and copy without preserving
+    # ownership, so every installed file lands root-owned with the modes the
+    # build intended and the system directories keep 0755.
+    #
+    # `cp -a` also carries the SELinux context over -- through its `context`
+    # attribute and through the `security.selinux` xattr. The staged tree is
+    # built under $HOME, so its files are labelled user_home_t; applying that
+    # to /usr relabels the system prefix, and confined helpers (unix_chkpwd
+    # used by sudo, pkla-check-authorization used by polkit) can no longer
+    # read their libraries. The user is then locked out of every way to regain
+    # root and can only recover from a rescue environment. Asking cp for the
+    # destination's default context fixes it; `--no-preserve=context` alone
+    # does not, because the xattr copy restores the label again (verified on
+    # coreutils 9.10). Only pass the flag when SELinux is active, since cp on
+    # non-SELinux systems is built without it and warns about the ignored one.
+    local -a selinux_context=()
+    if command -v getenforce >/dev/null 2>&1 &&
+        [[ "$(getenforce)" != Disabled ]]; then
+        selinux_context=(-Z)
+    fi
+    # Normalise the staged tree's modes before the copy. `cp -a` carries the
+    # *source* directory's permissions onto the destination -- including the
+    # staged root, which becomes the system prefix itself. A permissive umask
+    # is therefore not enough: running the installer under a restrictive one
+    # (e.g. `umask 077`, the usual habit while a secret is on disk) stages 0700
+    # directories, `chmod go-w` leaves them 0700, and /usr ends up 0700 --
+    # every non-root process then loses access to the whole prefix, and a
+    # reboot has no graphical session at all. Grant group/other read and
+    # directory traverse explicitly instead of only removing write.
+    find "$stage_dir$kwin_system_prefix" -type d -exec chmod 755 {} +
+    find "$stage_dir$kwin_system_prefix" -type f -exec chmod go-w,a+rX {} +
+    sudo cp -a --no-preserve=ownership "${selinux_context[@]}" \
+        "$stage_dir$kwin_system_prefix/." "$kwin_system_prefix/"
+    # Belt: the prefix itself is what a bad umask breaks first, and restoring
+    # its 0755 here is exactly the manual recovery -- cheap, and it makes the
+    # system-wide lockout impossible even if a future staging step slips.
+    sudo chmod 755 "$kwin_system_prefix"
+    # Directories the stale files lived in are pruned only when they end up
+    # empty, so a shared directory such as the plugin dir is never touched.
+    if (( ${#stale_entries[@]} > 0 )); then
+        # -p so an emptied leaf also takes its now-empty parents with it: the
+        # QML decoration package nested files two levels deep, and pruning only
+        # each file's own directory left the package root behind.
+        printf '%s\n' "${stale_entries[@]}" | xargs -r -n1 dirname \
+            | sort -ru | sudo xargs -r rmdir -p --ignore-fail-on-non-empty 2>/dev/null || true
+    fi
+    enable_kwin_effects
+    printf 'Installed and enabled KOS Bridge, Dock Animation, Context Menu Input, and Glass.\n'
+    printf 'KOS decoration is the first-install default; later choices are preserved.\n'
+    printf 'Manage window appearance and animations in kos-settings.\n'
+    warn_replaced_decoration_selected
+}
+
+# ---- optional: lock screen and standalone apps ---------------------------
+#
+# They are installed by naming them (`install lockscreen`, `install apps`)
+# rather than by flags: a bare `install` covers the core desktop only, and an
+# optional system surface should not appear as a side effect of the command
+# someone runs every day.
+#
+# The SDDM theme (apps/sddm) has no installer here for now. It is a greeter
+# theme, so it writes to /usr/share/sddm/themes and the system config; that
+# path is disabled until the greeter integration is sorted out. The QML stays
+# in the tree and can still be previewed with
+# `sddm-greeter --test-mode --theme apps/sddm`.
+
+# The package goes under BOTH roots on purpose. The greeter resolves it under
+# plasma/shells/ -- look-and-feel/ is not searched for the lock screen at all,
+# which is what apps/lockscreen/tests/theme-resolution proves -- while
+# plasma-apply-lookandfeel and the systemsettings page resolve under
+# look-and-feel/. Shipping only one of the two leaves half the integrations
+# pointing at a package that is not there. The core `install` ships only the
+# shells/ root (desktop takeover, below); the look-and-feel/ copy stays part
+# of `install lockscreen`.
+#
+# It is a copy, not a symlink, matching how deploy_artifacts ships the shell:
+# an installed layout must not depend on the checkout staying in place. QML
+# edits reach it through `install lockscreen`.
+kos_shell_id=org.kos.desktop
+shells_dir="$prefix/share/plasma/shells/$kos_shell_id"
+laf_dir="$prefix/share/plasma/look-and-feel/$kos_shell_id"
+# plasmashellrc [Shell] ShellPackage is one key with two consumers: plasmashell
+# (which shell draws the desktop) and the kscreenlocker greeter (which skin
+# unlocks the session). The pre-KOS value is saved here once, and `uninstall`
+# writes it back -- deleting the key when the user had none.
+plasma_shell_state="$prefix/share/kos/plasma-shell-state"
+
+install_theme_root() {  # $1: destination package root
+    # The checkout tree carries development content next to the runtime
+    # package; a theme root should hold only what the greeter resolves.
+    # tests/ alone is more than half of the tree (pkgprobe.cpp, stub QML).
+    mkdir -p "$(dirname "$1")"
+    rm -rf "$1"
+    cp -a "$project_dir/apps/lockscreen" "$1"
+    rm -rf "$1/tests"
+    rm -f "$1/README.md" "$1/README.zh-CN.md"
+}
+
+shell_package_installed() {
+    [[ -f "$shells_dir/contents/defaults" ]]
+}
+
+lockscreen_installed() {
+    [[ -f "$shells_dir/contents/lockscreen/LockScreen.qml" ]]
+}
+
+# The core install's unit layout is what `uninstall lockscreen` distinguishes
+# a full revert from a skin strip: with the units present, the shells/ root
+# belongs to the desktop takeover and must stay.
+core_install_present() {
+    [[ -e "$runtime_unit_dir/kos-shell.service" ]]
+}
+
+previous_plasma_shell() {
+    if command -v kreadconfig6 >/dev/null 2>&1; then
+        kreadconfig6 --file plasmashellrc --group Shell \
+            --key ShellPackage 2>/dev/null || true
+    else
+        # pipefail would make a missing plasmashellrc fail the whole
+        # pipeline, so swallow it: the answer is simply "no key".
+        { sed -n 's/^[[:space:]]*ShellPackage[[:space:]]*=//p' \
+            "${XDG_CONFIG_HOME:-$HOME/.config}/plasmashellrc" 2>/dev/null || true; } \
+            | head -n 1 || true
+    fi
+}
+
+# Write (or delete) plasmashellrc [Shell] ShellPackage. Without kwriteconfig6
+# the line is rewritten in place: an appended second key would leave which one
+# wins to the parser.
+write_shell_package_key() {  # $1: value, or --delete
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        if [[ "$1" == "--delete" ]]; then
+            kwriteconfig6 --file plasmashellrc --group Shell \
+                --key ShellPackage --delete || return 1
+        else
+            kwriteconfig6 --file plasmashellrc --group Shell \
+                --key ShellPackage "$1" || return 1
+        fi
+        return 0
+    fi
+    local rc="${XDG_CONFIG_HOME:-$HOME/.config}/plasmashellrc"
+    if grep -qsE '^[[:space:]]*ShellPackage[[:space:]]*=' "$rc"; then
+        if [[ "$1" == "--delete" ]]; then
+            sed -i -e '/^[[:space:]]*ShellPackage[[:space:]]*=/d' "$rc"
+        else
+            sed -i -e "s|^[[:space:]]*ShellPackage[[:space:]]*=.*|ShellPackage=$1|" "$rc"
+        fi
+    elif [[ "$1" != "--delete" ]]; then
+        { [[ -s "$rc" ]] && printf '\n'
+          printf '[Shell]\nShellPackage=%s\n' "$1"; } >> "$rc"
+    fi
+}
+
+# plasmashell names its appletsrc after the shell package, so switching shells
+# starts containment config from an empty file and the wallpaper resets to
+# the default. Seed the org.kos file from the previous shell's instead:
+# desktop containments are carried over, rewritten to the wallpaper-only
+# plugin so no folder view survives the switch; panels are left behind
+# because KOS ships its own bar and dock.
+migrate_plasma_appletsrc() {  # $1: previous shell id
+    local from="$config_dir/plasma-$1-appletsrc"
+    local to="$config_dir/plasma-$kos_shell_id-appletsrc"
+    [[ -s "$from" && ! -e "$to" ]] || return 0
+    awk '
+        function is_desktop_plugin(p) {
+            return p == "org.kde.plasma.folder" || p == "org.kde.desktopcontainment"
+        }
+        function remember() {
+            if (base && is_desktop_plugin(plugin))
+                keep[id] = 1
+        }
+        FNR == 1 && NR != FNR && !pass2 {   # pass 1 just ended
+            remember()
+            pass2 = 1
+        }
+        FNR == NR {                         # pass 1: learn desktop ids
+            if ($0 ~ /^\[Containments\]\[[0-9]+\]$/) {
+                remember()
+                tmp = $0
+                sub(/^\[Containments\]\[/, "", tmp)
+                sub(/\]$/, "", tmp)
+                id = tmp
+                base = 1
+                plugin = ""
+            } else if ($0 ~ /^\[/) {
+                remember()
+                base = 0
+            } else if (base && $0 ~ /^plugin=/) {
+                plugin = substr($0, 8)
+            }
+            next
+        }
+        # pass 2: copy the kept sections, rewriting only the base plugin
+        /^\[/ {
+            want = 0
+            isbase = 0
+            if ($0 ~ /^\[Containments\]\[[0-9]+\]/) {
+                tmp = $0
+                sub(/^\[Containments\]\[/, "", tmp)
+                sub(/\].*$/, "", tmp)
+                if (tmp in keep) {
+                    want = 1
+                    isbase = ($0 ~ /^\[Containments\]\[[0-9]+\]$/)
+                }
+            }
+            if (want)
+                print
+            next
+        }
+        {
+            if (!want)
+                next
+            if (isbase && $0 ~ /^plugin=/)
+                $0 = "plugin=org.kde.desktopcontainment"
+            print
+        }
+    ' "$from" "$from" > "$to" || { rm -f "$to"; return 0; }
+    printf 'Desktop containments migrated from plasma-%s-appletsrc to plasma-%s-appletsrc.\n' \
+        "$1" "$kos_shell_id"
+}
+
+# Point plasmashell (and the lock screen greeter) at the org.kos shell: back
+# up the previous choice once, migrate the wallpaper config, write the key.
+# A no-op when the shell is already selected.
+switch_plasma_shell() {
+    local previous
+    previous=$(previous_plasma_shell)
+    [[ "$previous" == "$kos_shell_id" ]] && return 0
+    if [[ -n "$previous" && ! -s "$plasma_shell_state" ]]; then
+        mkdir -p "$(dirname "$plasma_shell_state")"
+        printf '%s\n' "$previous" > "$plasma_shell_state"
+    fi
+    migrate_plasma_appletsrc "${previous:-org.kde.plasma.desktop}"
+    write_shell_package_key "$kos_shell_id"
+}
+
+# Undo switch_plasma_shell: put the saved choice back, or delete the key when
+# the user had none. A user who picked another shell after installing KOS
+# keeps their choice.
+restore_plasma_shell() {
+    if [[ "$(previous_plasma_shell)" != "$kos_shell_id" ]]; then
+        return 0
+    fi
+    # The saved value is kept when the write fails, so a failed revert stays
+    # retryable and the caller's "do not delete the package" guard sees the
+    # key still naming us.
+    if [[ -s "$plasma_shell_state" ]]; then
+        local previous
+        previous=$(head -n 1 "$plasma_shell_state")
+        write_shell_package_key "$previous" || return 1
+        printf 'plasmashellrc ShellPackage restored to %s.\n' "$previous"
+    else
+        write_shell_package_key --delete || return 1
+        printf 'plasmashellrc ShellPackage key removed.\n'
+    fi
+    local restored_shell
+    restored_shell=$(previous_plasma_shell)
+    [[ "$restored_shell" != "$kos_shell_id" ]] || return 1
+    if [[ -n "$qdbus_bin" ]]; then
+        "$qdbus_bin" org.kde.plasmashell /PlasmaShell \
+            org.kde.PlasmaShell.changeShell "${restored_shell:-org.kde.plasma.desktop}" \
+            >/dev/null 2>&1 || true
+    fi
+    rm -f "$plasma_shell_state"
+}
+
+# The core install takes over the desktop. plasmashell stays resident to draw
+# the wallpaper, but running the org.kos shell its desktop containment is the
+# plain org.kde.desktopcontainment pinned by apps/lockscreen/contents/defaults
+# -- wallpaper only, no folder view -- so it stops rendering ~/Desktop behind
+# DeskCenter: the duplicate, input-dead icon layer of issue #90 disappears,
+# and the stock shell's panel gives way to the KOS bar and dock. plasmashell
+# picks the switch up the next time it starts, which is the next login.
+take_over_plasma_desktop() {
+    # Record the lock screen's presence before the copy overwrites it, so a
+    # core `install` run after `install lockscreen` keeps the skin.
+    local keep_lockscreen
+    if lockscreen_installed; then keep_lockscreen=1; else keep_lockscreen=0; fi
+    install_theme_root "$shells_dir"
+    # The lock screen stays opt-in: a shells package without contents/lockscreen
+    # makes the greeter fall back to org.kde.plasma.desktop's skin (the
+    # fallback-package path pkgprobe.cpp documents), so the core install does
+    # not drag the lock screen in with the takeover.
+    [[ "$keep_lockscreen" == 1 ]] || rm -rf "$shells_dir/contents/lockscreen"
+    switch_plasma_shell
+    printf 'Plasma desktop taken over: plasmashell will run the %s shell (wallpaper only).\n' \
+        "$kos_shell_id"
+}
+
+install_lockscreen() {
+    install_theme_root "$shells_dir"
+    install_theme_root "$laf_dir"
+    switch_plasma_shell
+    printf 'Lock screen installed (plasma/shells + look-and-feel, ShellPackage=%s).\n' \
+        "$kos_shell_id"
+}
+
+# `uninstall lockscreen` while the core desktop takeover is installed cannot
+# drop the shells/ root: plasmashell runs it as its shell. Strip the skin
+# instead -- a shell package without contents/lockscreen falls back to
+# org.kde.plasma.desktop's lock screen (greeterapp.cpp verifyPackageApi does
+# exactly that, see apps/lockscreen/tests/theme-resolution/pkgprobe.cpp) --
+# and keep the takeover intact. Without the core install, revert fully.
+remove_lockscreen() {
+    if core_install_present; then
+        # Deleting a path inside the shells root would follow a developer's
+        # symlink at the checkout (apps/lockscreen/README) into the source
+        # tree, so a symlinked root is left alone.
+        rm -rf "$laf_dir"
+        [[ -L "$shells_dir" ]] || rm -rf "$shells_dir/contents/lockscreen"
+        printf 'Lock screen removed; kscreenlocker falls back to the default skin.\n'
+        printf 'The desktop takeover keeps the shells/ package (./tools/kosctl uninstall reverts it).\n'
+    else
+        # Same ordering as uninstall: the key has to stop naming a package
+        # before that package is deleted, or plasmashell will not start.
+        restore_plasma_shell || true
+        if [[ "$(previous_plasma_shell)" == "$kos_shell_id" ]]; then
+            printf 'plasmashellrc still names %s; keeping its shell package.\n' "$kos_shell_id"
+        else
+            rm -rf "$shells_dir" "$laf_dir"
+            printf 'Lock screen removed (ShellPackage key reverted).\n'
+        fi
+    fi
+}
+
+# The standalone apps are built and installed by their own script: they carry
+# their own CMake presets, tests and service registration, and several of them
+# pull heavy optional dependencies. Naming them keeps that cost out of the
+# default install.
+install_apps() {
+    "$project_dir/tools/install-apps.sh" "$@"
+}
+
+install_all() {
+    ensure_build_dependencies
+    build
+    deploy_artifacts "$build_dir"
+    install_kwin_plugins
+    take_over_plasma_desktop
+    warn_notification_claimers
+    python3 "$project_dir/tools/source-release.py" stamp "$prefix/share/kos/release.json" \
+        --from-file "$build_dir/release.json"
+    print_install_summary
+}
+
+run_shell() {
+    configure_render_backend
+    if [[ -z "$qs_bin" ]]; then
+        echo "Quickshell (qs) is not installed" >&2
+        return 1
+    fi
+    if [[ "${1:-}" == "installed" ]]; then
+        configure_shell_imports installed
+        exec "$qs_bin" -c kos
+    fi
+    configure_shell_imports source
+    exec "$qs_bin" -p "$project_dir/shell"
+}
+
+open_glass_settings() {
+    if command -v systemsettings >/dev/null 2>&1; then
+        exec systemsettings kcm_kwin_effects
+    fi
+    if command -v kcmshell6 >/dev/null 2>&1; then
+        exec kcmshell6 kcm_kwin_effects
+    fi
+    echo "KDE Desktop Effects settings are unavailable" >&2
+    return 1
+}
+
+restore_blur_state() {
+    local blur_enabled=true
+    if [[ -r "$kwin_effect_state" ]]; then
+        blur_enabled=$(sed -n 's/^blurEnabled=//p' "$kwin_effect_state" | head -n 1)
+    fi
+    if [[ "$blur_enabled" == "true" ]]; then
+        kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled \
+            true --type bool --notify true
+        if [[ -n "$qdbus_bin" ]]; then
+            "$qdbus_bin" org.kde.KWin /Effects \
+                org.kde.kwin.Effects.loadEffect blur >/dev/null 2>&1 || true
+        fi
+    else
+        kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled \
+            false --type bool --notify false
+    fi
+}
+
+uninstall_kwin_plugins() {
+    # A user-only installation (KOS_BUILD_KWIN_PLUGINS=OFF) must not change
+    # the user's existing KWin effect configuration during uninstall.
+    if [[ ! -s "$kwin_manifest" && ! -e "$kwin_effect_state" ]]; then
+        return 0
+    fi
+    if [[ -x "$prefix/bin/kos-settings" ]]; then
+        "$prefix/bin/kos-settings" --restore-window-defaults
+    fi
+
+    local effect
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        for effect in kos_bridge kos_dock_window_animation kos_context_menu_input glass; do
+            if [[ -n "$qdbus_bin" ]]; then
+                "$qdbus_bin" org.kde.KWin /Effects \
+                    org.kde.kwin.Effects.unloadEffect "$effect" >/dev/null 2>&1 || true
+            fi
+            kwriteconfig6 --file kwinrc --group Plugins \
+                --key "${effect}Enabled" false --type bool --notify || true
+        done
+        restore_blur_state
+    fi
+
+    if [[ -s "$kwin_manifest" ]]; then
+        local system_file
+        local -a system_files=()
+        while IFS= read -r system_file; do
+            [[ -z "$system_file" ]] && continue
+            case "$system_file" in
+                "$kwin_system_prefix"/*) system_files+=("$system_file") ;;
+                *)
+                    printf 'Refusing unsafe manifest entry: %s\n' "$system_file" >&2
+                    return 1
+                    ;;
+            esac
+        done < "$kwin_manifest"
+        if (( ${#system_files[@]} > 0 )); then
+            printf 'Removing KWin effects from %s requires administrator permission.\n' \
+                "$kwin_system_prefix"
+            sudo rm -f -- "${system_files[@]}"
+        fi
+    fi
+    # Clear disable overrides only after plugin files were actually removed.
+    # A rejected sudo leaves installed effects disabled for the next login.
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        for effect in kos_bridge kos_dock_window_animation kos_context_menu_input glass; do
+            kwriteconfig6 --file kwinrc --group Plugins \
+                --key "${effect}Enabled" --delete --notify || true
+        done
+    fi
+    rm -f "$kwin_manifest" "$kwin_effect_state"
+    # Last, and about the plugin file just removed rather than about anything
+    # this script wrote; the settings backend restores the saved decoration.
+    warn_kos_decoration_selected
+}
+
+uninstall() {
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user disable --now kos-shell.service \
+            kos-platform.service kos-data.service 2>/dev/null || true
+    fi
+    # Restore desktop input and panels before any sudo/plugin failure can stop
+    # uninstall halfway through. Also handles an already missing shell package.
+    restore_plasma_shell || return 1
+    # The optional surfaces are removed by what exists, not by what was asked
+    # for: an uninstall must clean up a component that was installed earlier
+    # even when no flag or argument names it now. The shells/ root exists
+    # after any core install (desktop takeover) and doubles as the lock
+    # screen package, so removing it and reverting the ShellPackage key
+    # covers both.
+    if shell_package_installed; then
+        # Revert the key BEFORE removing the package, and only remove it once
+        # the key is off it: plasmashell exits at startup with "starting
+        # invalid corona" when ShellPackage names a package it cannot load,
+        # which leaves a session with no wallpaper and no panel.
+        restore_plasma_shell || true
+        if [[ "$(previous_plasma_shell)" == "$kos_shell_id" ]]; then
+            printf 'plasmashellrc still names %s; keeping its shell package so plasmashell can start.\n' \
+                "$kos_shell_id"
+        else
+            rm -rf "$shells_dir" "$laf_dir"
+            printf 'Plasma shell reverted to its previous shell.\n'
+        fi
+    fi
+    uninstall_kwin_plugins
+    # An SDDM theme installed from this checkout by an earlier kosctl is left
+    # alone -- removing it needs root -- so report it instead of silently
+    # keeping it around.
+    if [[ -d /usr/share/sddm/themes/kos || -f /etc/sddm.conf.d/kos-theme.conf ]]; then
+        printf 'An SDDM theme from an earlier install is still present; remove it with:\n'
+        printf '  sudo rm -rf /usr/share/sddm/themes/kos /etc/sddm.conf.d/kos-theme.conf\n'
+    fi
+    rm -f "$runtime_unit_dir/kos-shell.service" \
+        "$runtime_unit_dir/kos-platform.service" \
+        "$runtime_unit_dir/kos-data.service"
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user daemon-reload || true
+    fi
+    rm -f "$prefix/share/kos/release.json"
+    rm -f "$prefix/libexec/kos-platform" "$prefix/libexec/kos-ai-worker" \
+        "$prefix/libexec/kos-data-service" "$prefix/bin/kos-settings"
+    rm -f "$prefix/lib/libonnxruntime.so" "$prefix/lib/libonnxruntime.so.1" \
+        "$prefix/lib/libonnxruntime.so.1.30.0" \
+        "$prefix/lib/libonnxruntime_providers_shared.so"
+    rm -f "$prefix/share/kos/platform/kwin/window-bridge.js" \
+        "$prefix/share/kos/settings/main.qml" \
+        "$prefix/share/applications/kos-settings.desktop" \
+        "$prefix/share/applications/org.kos.Platform.desktop" \
+        "$prefix/share/applications/kos-platform.desktop"
+    rm -rf "$prefix/share/kos/settings" "$prefix/share/shared/qml"
+    rm -rf "$prefix/share/kos/qml" "$prefix/share/kos/SberComponents"
+    rm -rf "$config_dir/quickshell/kos"
+    echo "Removed KOS binaries, units, and shell configuration; state data was preserved."
+
+}
+
+shortcuts() {
+    if [[ ! -x "$prefix/libexec/kos-platform" ]]; then
+        echo "kos-platform is not installed; run ./tools/kosctl install first" >&2
+        return 1
+    fi
+    KOS_SHORTCUTS_FILE="$project_dir/shared/contracts/shortcuts.v1.json" \
+        "$prefix/libexec/kos-platform" shortcuts "$1"
+}
+
+case "${1:-}" in
+    doctor) doctor ;;
+    build) build ;;
+    install)
+        case "${2:-}" in
+            "") install_all ;;
+            lockscreen) install_lockscreen ;;
+            apps) install_apps "${@:3}" ;;
+            *) usage >&2; exit 2 ;;
+        esac ;;
+    start) start_all ;;
+    dev)
+        case "${2:-shell}" in
+            shell) dev_all ;;
+            settings) dev_settings ;;
+            *) usage >&2; exit 2 ;;
+        esac ;;
+    run) run_shell "${2:-}" ;;
+    uninstall)
+        case "${2:-}" in
+            "") uninstall ;;
+            lockscreen) remove_lockscreen ;;
+            *) usage >&2; exit 2 ;;
+        esac ;;
+    glass-settings) open_glass_settings ;;
+    shortcuts)
+        [[ "${2:-}" == install || "${2:-}" == uninstall ]] || { usage >&2; exit 2; }
+        shortcuts "$2" ;;
+    *) usage >&2; exit 2 ;;
+esac

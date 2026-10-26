@@ -1,0 +1,117 @@
+pragma Singleton
+import QtQuick
+import qs.desktop.modules.common
+
+// ────────────────────────────────────────────────────────────────
+// DockAnimation — Central animation configuration.
+// Every timing constant, easing curve, and spring parameter lives
+// here. Components reference these values; nothing is hardcoded.
+//
+// Design philosophy: natural, physics-informed motion.
+// No gratuitous flourishes — every animation has a purpose.
+// ────────────────────────────────────────────────────────────────
+
+QtObject {
+    id: svc
+
+    // ═══════════════════════════════════════════════════════════
+    // Dock resize (triggered by window open/close, music appear)
+    // OutCubic: fast start, soft stop. InCubic's slow start was rejected by
+    // A/B test — it reads as "creeping" even at 100ms.
+    // ═══════════════════════════════════════════════════════════
+    readonly property int dockResizeDuration: AppearanceTokens.motion.fastDuration
+    readonly property var dockResizeEasing: AppearanceTokens.motion.standardEasing
+
+    // ═══════════════════════════════════════════════════════════
+    // Icon hover magnification
+    // ═══════════════════════════════════════════════════════════
+    // Hover is an explicit pointer affordance: the icon lifts and grows while
+    // its layout slot remains unchanged, so adaptive Dock geometry is stable.
+    // The peak scale is the user's dock setting when set, else the style token
+    // (DockIcon reads the same effective value for its per-frame curve).
+    readonly property int iconHoverDuration: 70
+    readonly property real iconHoverScale: ConfigService.effectiveHoverScale
+    readonly property var iconHoverEasing: AppearanceTokens.motion.standardEasing
+    // Paint feedback settles quickly; it must not trail direct pointer motion.
+    readonly property int iconHighlightDuration: 70
+    readonly property int iconPressHighlightDuration: 45
+
+    // Retain the legacy single-icon spring for hosts without a shared pointer.
+    // The distance-based fisheye below does not use this fixed-step integrator.
+    readonly property real iconSpring: 8.0
+    readonly property real iconDamping: 0.40
+    readonly property real iconMass: 0.60
+
+    // Time constant for the frame-synchronized entry/exit response: about 60 ms
+    // to reach 90%, independent of display refresh rate. Epsilon is in
+    // normalized influence units (well below a hundredth of a visual pixel).
+    readonly property real magnificationResponseSeconds: 0.026
+    readonly property real magnificationEpsilon: 0.0001
+    readonly property int magnificationExitGrace: 80
+    readonly property int appNameTooltipDelay: 250
+    readonly property int nameLabelMaximumWidth: 220
+    readonly property int nameLabelMaximumHeight: 28
+    readonly property int nameLabelGap: 6
+    readonly property real launchLandingSeconds: 0.13
+    readonly property real launchBounceSeconds: 0.48
+    readonly property real launchBounceHeightRatio: 0.65
+    readonly property int launchMinimumFeedbackMs: 500
+    readonly property int launchFeedbackTimeoutMs: 15000
+
+    // ═══════════════════════════════════════════════════════════
+    // Music player expand / collapse
+    // ═══════════════════════════════════════════════════════════
+    readonly property int musicExpandDuration: 320
+    readonly property var musicExpandEasing: Easing.InOutCubic
+
+    // ═══════════════════════════════════════════════════════════
+    // Dock appearance / disappearance
+    // ═══════════════════════════════════════════════════════════
+    readonly property int dockFadeDuration: AppearanceTokens.motion.normalDuration
+    readonly property var dockFadeEasing: AppearanceTokens.motion.standardEasing
+
+    // ═══════════════════════════════════════════════════════════
+    // Directional motion semantics (Material-inspired, same idea as
+    // end-4/dots-hyprland): entering elements decelerate into place
+    // (fast start, soft settle), exiting elements accelerate away
+    // (slow start, quick departure). Use these in explicit animations
+    // that have a direction — not on two-way Behaviors.
+    // ═══════════════════════════════════════════════════════════
+    readonly property var elementEnterEasing: AppearanceTokens.motion.standardEasing
+    readonly property var elementExitEasing: Easing.InCubic
+
+    // ═══════════════════════════════════════════════════════════
+    // Dock show-mode (smart auto-hide / persistent) timings.
+    // Times and curves are tuned constants consumed by the auto-hide
+    // controller; nothing is scattered into UI components. See
+    // docs/DockArchitecture.md, "Visibility modes and auto-hide".
+    // ═══════════════════════════════════════════════════════════
+    readonly property int smartHideConflictDelay: 200   // GNOME-like stable-overlap debounce
+    readonly property int smartHideModeSwitchGrace: 700   // persistent switch confirmation period
+    readonly property int smartHideLeaveDelay: 900   // pointer/inhibitor-all-cleared leave
+    readonly property int smartHideHoverShowDelay: 90   // handle hover reveal threshold
+    readonly property int smartHideHideDuration: 180
+    readonly property int smartHideRevealDuration: 180
+    readonly property var smartHideHideEasing: Easing.InCubic
+    readonly property var smartHideRevealEasing: Easing.OutCubic
+    readonly property int smartHideBootWaitLimit: 450   // max wait for config+KWin snapshot
+    readonly property int smartHideMinRemaining: 16   // tiny reversals need only one nominal frame
+    readonly property int smartHideUrgentRevealMs: 2200  // §5.8 temporary reveal for an urgent window
+    // Window previews should feel like a direct hover affordance, while still
+    // ignoring brief pointer passes across neighbouring Dock icons.
+    readonly property int windowPreviewDelay: 220
+    readonly property int windowPreviewSwitchDelay: 75
+    readonly property int windowPreviewEntranceDuration: 90
+    readonly property int infoPopupOpenDelay: 220
+    readonly property int infoPopupEntranceDuration: 100
+    // Leave enough hand-off time to move from the Dock icon into the separate
+    // preview surface, while keeping the preview responsive when abandoned.
+    readonly property int windowPreviewCloseDelay: 130
+    readonly property int windowPreviewHandoffDuration: 30
+    readonly property int windowPreviewExitDuration: 110
+    readonly property real windowPreviewExitScale: 0.94
+    // A transparent 1px layer-shell margins reparenting of the dock content to
+    // the true screen edge: the white reveal handle sits this far (dp) from the
+    // physical edge whereas the dock surface keeps edgeMargin-1 breathing room.
+    readonly property real smartHideHandleEdgeInset: 6
+}

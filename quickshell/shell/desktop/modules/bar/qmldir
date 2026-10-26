@@ -1,0 +1,52 @@
+module qs.desktop.modules.bar
+
+Bar 1.0 Bar.qml
+BarWindow 1.0 BarWindow.qml
+BarAutoHideController 1.0 BarAutoHideController.qml
+BarDateStatus 1.0 BarDateStatus.qml
+BarCalendarPopup 1.0 BarCalendarPopup.qml
+singleton AppMenuService 1.0 AppMenuService.qml
+GlobalMenu 1.0 GlobalMenu.qml
+SystemMenu 1.0 SystemMenu.qml
+BarStatusArea 1.0 BarStatusArea.qml
+Battery 1.0 Battery.qml
+CpuTemperature 1.0 CpuTemperature.qml
+TemperatureSensorPopups 1.0 TemperatureSensorPopups.qml
+NetworkStatus 1.0 NetworkStatus.qml
+WifiSignalIcon 1.0 WifiSignalIcon.qml
+NetworkTraffic 1.0 NetworkTraffic.qml
+NetworkPanel 1.0 NetworkPanel.qml
+BluetoothPanel 1.0 BluetoothPanel.qml
+ControlCenterToggle 1.0 ControlCenterToggle.qml
+ControlCenterPanel 1.0 ControlCenterPanel.qml
+SysTray 1.0 SysTray.qml
+UsageRing 1.0 UsageRing.qml
+UsageSparkline 1.0 UsageSparkline.qml
+SettingsButton 1.0 SettingsButton.qml
+TrayNotificationBridge 1.0 TrayNotificationBridge.qml
+
+singleton NetworkService 1.0 NetworkService.qml
+singleton ControlCenterService 1.0 ControlCenterService.qml
+singleton SysTrayOrderService 1.0 SysTrayOrderService.qml
+singleton SysTrayIdentityService 1.0 SysTrayIdentityService.qml
+ControlCenterCard 1.0 ControlCenterCard.qml
+ControlCenterSlider 1.0 ControlCenterSlider.qml
+StatusTooltip 1.0 StatusTooltip.qml
+ControlCenterSelection 1.0 ControlCenterSelection.qml
+NotificationHistoryPanel 1.0 NotificationHistoryPanel.qml
+NotificationHistoryToggle 1.0 NotificationHistoryToggle.qml
+NotificationHistoryGroup 1.0 NotificationHistoryGroup.qml
+NotificationHistoryEntry 1.0 NotificationHistoryEntry.qml
+NotificationSourceIcon 1.0 NotificationSourceIcon.qml
+
+NotificationHistoryPane 1.0 NotificationHistoryPane.qml
+
+NotificationHistoryCard 1.0 NotificationHistoryCard.qml
+
+StatusCollectionPopup 1.0 StatusCollectionPopup.qml
+StatusCollectionDropArea 1.0 StatusCollectionDropArea.qml
+
+BatteryPanel 1.0 BatteryPanel.qml
+NetworkTrafficPanel 1.0 NetworkTrafficPanel.qml
+singleton PowerProfileService 1.0 PowerProfileService.qml
+StatusPanelGlyph 1.0 StatusPanelGlyph.qml

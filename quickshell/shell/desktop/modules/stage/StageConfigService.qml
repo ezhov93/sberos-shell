@@ -1,0 +1,639 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import qs.desktop.modules.platform
+
+// StageConfigService — 台前调度（Stage 侧栏）全部可调参数的唯一事实来源。
+// 持久化 <stateDir>/stage/config.json（JsonConfigStore 原子写）；kwinrc
+// [Effect-stageanim] 的 AnimationDuration/EasingCurve 是它的副作用投影，
+// 改动经 reconfigureEffect 即时生效、启动时对齐一次。
+// 设置应用走 stage-config IPC 的 set/snapshot（返回整份快照 JSON）。
+// 本地 CLI（~/.local/bin/stage-anim）直接写 kwinrc 的值会在下次 shell
+// 启动对齐或设置页改动时被这里的持久值覆盖——CLI 是临时调参通道。
+QtObject {
+    id: svc
+
+    property int revision: 0
+
+    // ── schema：唯一事实来源（新增参数 = 加一行 schema + 一个属性）──
+    // 分组：布局 / 玻璃质感 / 动效节拍 / 实时预览 / 窗口动画特效投影
+    readonly property var _schema: ({
+            // 布局（scroll = 完整滚动：卡片完整显示不重叠，固定间距自然排列、
+            // 放不下滚轮滚动；adaptive = 等比缩小全显）
+            "layoutMode": {
+                type: "enum",
+                values: ["scroll", "adaptive"],
+                def: "scroll"
+            },
+            // 常驻侧：left = 屏幕左缘（默认）；right = 屏幕右缘（macOS
+            // Stage Manager 的位置设置同款）。切换会翻窗口锚点/卡片镜像/
+            // 特效回退矩形，三处联动见各自文件
+            "side": {
+                type: "enum",
+                values: ["left", "right"],
+                def: "left"
+            },
+            // 自由合并卡视觉：扇叠背板间距（px）/ 左下角图标排的图标大小 /
+            // 图标排并列上限（实际还按卡宽动态封顶，超出进 "+N"）
+            "fanSpacing": {
+                type: "int",
+                min: 2,
+                max: 24,
+                def: 8
+            },
+            // 扇叠悬停扩散系数（悬停/武装时间距 × 此值；1.0 = 不扩散）
+            "fanHoverSpread": {
+                type: "real",
+                min: 1.0,
+                max: 2.0,
+                def: 1.4
+            },
+            "stripIconSize": {
+                type: "int",
+                min: 16,
+                max: 80,
+                def: 46
+            },
+            "maxIconSlots": {
+                type: "int",
+                min: 1,
+                max: 8,
+                def: 4
+            },
+            // 合并手势驻留：被拖卡压在目标卡上停此时长才"武装"并组意图
+            //（用户实测调过 320→550→450，入 schema 供设置页可调）
+            "mergeDwellMs": {
+                type: "int",
+                min: 200,
+                max: 1200,
+                def: 450
+            },
+            // 卡片顶部名称：可关（沉浸缩略图——整卡就是窗口内容）
+            "showCardTitle": {
+                type: "bool",
+                def: false
+            },
+            // 卡宽是主尺寸；卡高按窗口宽高比逐卡算（StageSidebarWindow.
+            // _cardHeightFor，上限 4/3w＝基准卡形，竖窄窗不再拉成细长条）。
+            // cardHeight 只在宽高比未知（无记录空脸/旧数据）时作回落——
+            // 128×170 是人工定案的基准卡形。
+            "cardHeight": {
+                type: "int",
+                min: 80,
+                max: 220,
+                def: 170
+            },
+            // 卡宽（卡高之外的独立自由度；与 cardHeight 同按 0.75 宽高比）
+            "cardWidth": {
+                type: "int",
+                min: 60,
+                max: 320,
+                def: 128
+            },
+            // 侧栏距屏幕边缘（px）：卡片列左/右缘到屏缘的净距（默认 32 =
+            // 全屏浮层化前的定值 CARD_OVERFLOW_MARGIN 20 + CARD_X_INSET 12；
+            // 设置页「距离屏幕边缘」，位置在「侧栏位置」之下）
+            "stripMargin": {
+                type: "int",
+                min: 0,
+                max: 120,
+                def: 12
+            },
+            // 卡间距按**屏幕高度百分比**（用户定案：不写死像素）。面板窗恒
+            // 全屏，占比换算在 StageSidebarWindow.cardGap（4.5% × 1040 ≈ 47）
+            "cardGapPercent": {
+                type: "real",
+                min: 1,
+                max: 10,
+                def: 4.5
+            },
+            "centerCards": {
+                type: "bool",
+                def: true
+            },
+            "deckSidePeek": {
+                type: "int",
+                min: 4,
+                max: 60,
+                def: 20
+            },
+            "focusDim": {
+                type: "bool",
+                def: false
+            },
+            // ⚠️ 倾角上限 40 = 特效 stageanim 的 std::clamp 钳位（>40° 时
+            // depth>focal 顶点镜像炸裂）——schema 越过它就是"设置页可选但
+            // 静默被砍"，两处必须同步
+            // 倾角双旋钮（解耦，两模式统一）：deckRestTilt（牌堆遗名）=
+            // **静置倾斜角**——静止/交棒时的卡片倾角，adaptive 完整显示也有
+            // 静置姿态；tiltAngle = **悬停倾斜角**——鼠标悬停时的倾角
+            //（0 = 悬停放平阅读）
+            // TiltAngle kwinrc 投影取 deckRestTilt（与卡片交棒姿态同源，见
+            // _pushEffectConfig）。2026-10-18 按参考实测改判：参考列不是 2°
+            // 微倾，而是共享相机的广角偏航——屏幕上半卡右低、下半卡右高，
+            // 横边斜率随卡位线性变化（顶卡 ~10°、中卡 0°、底卡 ~9° 反向），
+            // 竖边严格垂直。反推静置偏航 ≈30°、焦距 ≈1100（TILT_FOCAL）。
+            // 旧的 2° 是"微倾"的误读：在 2200 焦距下视觉斜率 <0.2°，等于没歪
+            "deckRestTilt": {
+                type: "real",
+                min: 0,
+                max: 40,
+                def: 40
+            },
+            "tiltAngle": {
+                type: "real",
+                min: 0,
+                max: 40,
+                def: 0
+            },
+            // 玻璃质感（StageCard 卡面：背板/受光/描边/辉光/纵深）
+            "cardRadius": {
+                type: "int",
+                min: 0,
+                max: 24,
+                def: 6
+            },
+            "cardTint": {
+                type: "real",
+                min: 0.2,
+                max: 0.95,
+                def: 0.35
+            },
+            "cardOpacity": {
+                type: "real",
+                min: 0.2,
+                max: 1.0,
+                def: 1.0
+            },
+            "cardTopLight": {
+                type: "real",
+                min: 0,
+                max: 0.3,
+                def: 0.07
+            },
+            "cardBorder": {
+                type: "real",
+                min: 0,
+                max: 0.4,
+                def: 0.05
+            },
+            "cardGlow": {
+                type: "real",
+                min: 0,
+                max: 0.4,
+                def: 0.13
+            },
+            "thumbSize": {
+                type: "int",
+                min: 160,
+                max: 640,
+                def: 640
+            },
+            // 动效与节拍
+            "hoverScale": {
+                type: "real",
+                min: 1.0,
+                max: 1.20,
+                def: 1.05
+            },
+            "hoverDwellDelay": {
+                type: "int",
+                min: 0,
+                max: 800,
+                def: 200
+            },
+            "cardEnterDuration": {
+                type: "int",
+                min: 100,
+                max: 800,
+                def: 200
+            },
+            // 列位让位/回弹（一张卡离开或插入后，其余卡"往上挤"的位移）：
+            // 与卡片入场解耦——2026-10-18 用户实测让位比入场更需要跟手，
+            // 共用 200ms 时点开首卡后整列上移显得拖沓
+            "reflowDuration": {
+                type: "int",
+                min: 60,
+                max: 500,
+                def: 140
+            },
+            "tiltAnimDuration": {
+                type: "int",
+                min: 100,
+                max: 800,
+                def: 200
+            },
+            "engageDelay": {
+                type: "int",
+                min: 60,
+                max: 500,
+                def: 170
+            },
+            "autoMinimize": {
+                type: "bool",
+                def: true
+            },
+            // 保留整条侧栏条（exclusiveZone）：关=卡片纯悬浮，最大化/普通窗
+            // 可铺满全宽、滑到卡片下方（卡片浮在窗上、输入只挡卡面）
+            "reserveStrip": {
+                type: "bool",
+                def: true
+            },
+            "autoMinDelay": {
+                type: "int",
+                min: 200,
+                max: 3000,
+                def: 650
+            },
+            "demoteCaptureDelay": {
+                type: "int",
+                min: 100,
+                max: 1500,
+                def: 300
+            },
+            "demoteDispatchDelay": {
+                type: "int",
+                min: 10,
+                max: 200,
+                def: 30
+            },
+            "desktopFocusDebounce": {
+                type: "int",
+                min: 50,
+                max: 1000,
+                def: 150
+            },
+            // 活体流（zkde_screencast PipeWire 实时画面）：⚠️ 默认禁用——
+            // 本容器（安卓宿主）GPU 预算极紧。round36 起带占空比节流
+            //（连接抓帧→断开渲染，见 StageCard），实测可控后可开。
+            "thumbLiveStream": {
+                type: "bool",
+                def: false
+            },
+            "streamCycleOnMs": {
+                type: "int",
+                min: 80,
+                max: 1000,
+                def: 250
+            },
+            "streamCycleOffMs": {
+                type: "int",
+                min: 200,
+                max: 5000,
+                def: 750
+            },
+            // 合成器活体卡（stageanim 直绘）：隐藏窗经 refOffscreenRendering
+            // 继续出帧（成本=窗口可见在桌面），特效在条带绘制过程里把窗口
+            // 纹理按卡面透视画进卡里——无 screencast 管线，本机预算内。
+            "thumbLiveEffect": {
+                type: "bool",
+                def: false
+            },
+            // 窗口动画特效（stageanim）的 kwinrc 投影
+            "animDuration": {
+                type: "int",
+                min: 120,
+                max: 2000,
+                def: 320
+            },
+            "surfaceOpacity": {
+                type: "real",
+                min: 0.3,
+                max: 1.0,
+                def: 0.65
+            },
+            "animEasing": {
+                type: "enum",
+                values: ["OutCubic", "InOutCubic", "OutBack", "OutQuad", "InOutQuad", "Linear"],
+                def: "OutCubic"
+            },
+            // 诊断遥测开关（[DragTrace] 拖拽跟手日志）：默认关；排障时
+            // `stage-config set debugTrace true` 打开。设置页不暴露（非用户参数）
+            "debugTrace": {
+                type: "bool",
+                def: false
+            }
+        })
+
+    // 运行时属性（_load 用持久值覆盖默认；分组与 schema 一一对应）
+    // 卡片布局：scroll = 完整滚动（卡片完整显示永不重叠，固定间距自然
+    // 排列，超出滚轮滚动，底部位置点+窗数提示）；adaptive = 自适应缩小
+    //（全部完整显示，等比缩小到恰好放下）
+    property string layoutMode: "scroll"
+    property string side: "left"
+    property int fanSpacing: 8
+    property real fanHoverSpread: 1.4
+    // 2026-10-18 用户反馈"图标一样大了但太大"：60 → 46（≈36% 卡宽）
+    property int stripIconSize: 46
+    // 4 = 多应用合并卡并排显示各应用图标（参考 ref-orange）；1 会只剩首枚
+    property int maxIconSlots: 4
+    // ⚠️ 属性默认值 = 无 config.json 时的真实默认（_load 不回填 schema def，
+    // 两处默认必须同步改——2026-09-30 审计抓过 550/450 漂移）
+    property int mergeDwellMs: 450
+    property bool debugTrace: false   // 诊断遥测（[DragTrace]），见 schema 注释
+    // 2026-10-17 iPadOS 还原:参考缩略图无卡顶标题(app 名靠左下图标),
+    // 默认改 false。已有 config.json 里的旧值 true 会覆盖此默认 —— 用户
+    // 手动关一次或删键后生效
+    property bool showCardTitle: false
+    // 2026-10-18 结构轮：基准卡形 128×170（参考 0.753 竖版、放大一档）；
+    // 实际卡高逐卡按窗口宽高比算，本值只作未知宽高比的回落
+    property int cardHeight: 170
+    property int cardWidth: 128
+    // 侧栏距屏幕边缘：卡片列贴常驻侧屏缘的净距（列原点偏移 =
+    // stripMargin − CARD_X_INSET，见 StageSidebarWindow._stripInset）
+    // 2026-10-17 iPadOS 还原:参考卡距屏缘 ~11pt(原 32)
+    property int stripMargin: 12
+    // 卡间距占屏幕高度的百分比（用户定案：不写死像素）。4.5% 在 1040
+    // 高的屏上 ≈ 47px；屏越小间距等比收，不再出现"换分辨率就过密/过疏"
+    property real cardGapPercent: 4.5
+    // adaptive 模式：放得下时整列垂直居中；贴满时顶部锚定
+    property bool centerCards: true
+    // 聚焦退避距离：悬停聚焦时其余卡片从原位向两侧平移的像素
+    property int deckSidePeek: 20
+    // 聚焦时压暗退避卡片（用户觉得不必要，默认关）
+    property bool focusDim: false
+    // 倾角双旋钮（解耦，两模式统一）：deckRestTilt = 静置倾斜角（静止/
+    // 交棒姿态，adaptive 完整显示也有静置倾角）；tiltAngle = 悬停倾斜角
+    //（鼠标悬停时的倾角，0 = 悬停放平）。kwinrc TiltAngle 投影取
+    // deckRestTilt（与卡片交棒姿态同源，见 _pushEffectConfig）。
+    //（悬停放大只有一个旋钮 hoverScale——原 deckFocusScale 与其相乘控
+    // 同一效果，冲突已删）
+    // 2026-10-18 参考实测改判：静置偏航 30°（共享相机广角透视，竖边垂直、
+    // 横边随卡位倾斜），悬停放平。焦距同源改到 TILT_FOCAL=1100
+    // 2026-10-18 用户要求"倾斜角再大一点"：30 → 35 → 40（人工偏好覆盖参考值，
+    // 40 = 特效侧 std::clamp 上限，超过会让 depth>focal 顶点镜像炸裂）
+    property real deckRestTilt: 40
+    property real tiltAngle: 0
+    // 卡面玻璃质感：背板浓度（悬停自动 ×1.3 提亮）/ 顶部受光 / 静置描边
+    // 亮度 / 聚焦辉光强度
+    // 2026-10-18 结构轮：圆角按参考 7% 卡宽，128 宽取 9
+    // 2026-10-18 用户反馈"圆角小一点"：9 → 6（≈5% 卡宽）
+    property int cardRadius: 6
+    // 参考卡面是缩略图本体，背板只在无图/留边处露出；0.35 让留边接近
+    // 参考的浅色卡面，不再是一块深色玻璃
+    property real cardTint: 0.35
+    property real cardOpacity: 1.0
+    property real cardTopLight: 0.07
+    property real cardBorder: 0.05
+    property real cardGlow: 0.13
+    // 缩略图解码尺寸（宽，高等比 0.7）：裁切铺满卡面后按卡高放大显示，
+    // 需要比卡宽更大的纹理才不糊（128 卡 @2x 显示宽 ≈486 设备像素；
+    // 2026-10-18 实测 480 仍糊，640 才清晰——源图本身 720 级）
+    property int thumbSize: 640
+    property real hoverScale: 1.05
+    // 悬停驻留：指针停稳多久才应用聚焦排布（滑动途中只亮卡不重排 =
+    // 不跳卡）。0 = 立即聚焦（旧手感）
+    property int hoverDwellDelay: 200
+    property int cardEnterDuration: 200
+    property int reflowDuration: 140
+    property int tiltAnimDuration: 200
+    property int engageDelay: 170
+    property bool autoMinimize: true
+    property bool reserveStrip: true
+    property int autoMinDelay: 650
+    // 收编节拍：先拍快照（capture 等待多窗连拍完成）→ 矩形落盘 →
+    // dispatch 后派发最小化（特效起跑延迟，与展开动画对拍）
+    property int demoteCaptureDelay: 300
+    property int demoteDispatchDelay: 30
+    property int desktopFocusDebounce: 150
+    // 活体流门控（默认关：容器 GPU 预算红线，悬停建流即被宿主杀桌面）。
+    // 伪实时（thumbLive：keepBelow 后台重拍 + 静默最小化悬停预备）已整体
+    // 删除——只留静态快照与活体流两态（2026-09-28 用户定案）
+    property bool thumbLiveStream: false
+    // 占空比节流（round36）：on=连接消费抓帧时长，off=断开（KWin 停止
+    // 离屏渲染）时长；平均负载 ≈ on/(on+off) × 单流全速
+    property int streamCycleOnMs: 250
+    property int streamCycleOffMs: 750
+    // 合成器活体卡（stage-live.json → stageanim 直绘），见 schema 注释
+    property bool thumbLiveEffect: false
+    property int animDuration: 320
+    // 飞行玻璃透明度：窗口在卡片↔桌面途中半透明透见桌面，落地凝实；
+    // 1.0 = 关闭玻璃感（全程不透明，纯淡出）
+    property real surfaceOpacity: 0.65
+    property string animEasing: "OutCubic"
+
+    readonly property string configPath: Quickshell.stateDir + "/stage/config.json"
+
+    function snapshotJson(): string {
+        const out = {
+            revision: revision
+        };
+        for (const k in _schema)
+            out[k] = svc[k];
+        return JSON.stringify(out);
+    }
+
+    // schema 类型转换 + 钳位（set 与 _load 共用）；非法值返回 null
+    //（bool 也一样：只有真/假布尔字面量合法）
+    function _coerce(s, value) {
+        if (s.type === "int" || s.type === "real") {
+            // 前置拒收布尔/空串/空白串/数组/null：Number("")===0、
+            // Number(" ")===0、Number(true)===1、Number(null)===0、
+            // Number([5])===5 都会静默钳到 min 且 set 报 ok（IPC 手误
+            // 不报错——与 bool 路径的"非法报错"契约对称，2026-09-30 审计）
+            if (typeof value === "boolean" || value === null || value === undefined || Array.isArray(value) || String(value).trim() === "")
+                return null;
+            let v = Number(value);
+            if (isNaN(v))
+                return null;
+            v = Math.max(s.min, Math.min(s.max, v));
+            return s.type === "int" ? Math.round(v) : v;
+        }
+        if (s.type === "bool") {
+            // 收严到枚举式判定：true/"true"/1/"1" → true，false/"false"/
+            // 0/"0" → false，其余 null 走 error 路径——与 int/real/enum 的
+            // "非法返回 null"契约一致（原实现任意垃圾值静默转 false 且
+            // set 报 ok，IPC 手误不报错直接翻转开关）
+            if (value === true || value === "true" || value === 1 || value === "1")
+                return true;
+            if (value === false || value === "false" || value === 0 || value === "0")
+                return false;
+            return null;
+        }
+        if (s.type === "enum") {
+            const v = String(value);
+            return s.values.indexOf(v) >= 0 ? v : null;
+        }
+        return null;
+    }
+
+    // 唯一变更入口：强制转换 → 钳位 → 应用 → 副作用 → 持久化。
+    // 返回整份快照，设置应用的 IPC 应答直接可用。
+    function set(key, value): string {
+        const s = _schema[key];
+        if (!s)
+            return JSON.stringify({
+                ok: false,
+                error: "unknown key: " + key
+            });
+        const v = _coerce(s, value);
+        if (v === null)
+            return JSON.stringify({
+                ok: false,
+                error: "invalid value for " + key
+            });
+        svc[key] = v;
+        // 卡面画面模式互斥（静态快照 / 合成器实时 / PipeWire 流）：
+        // 两者同开＝QML 流画面与特效直绘叠绘冲突，set 层强制二选一
+        //（UI 怎么写都安全；全关＝静态快照）
+        const flipped = v === true ? (key === "thumbLiveEffect" && svc.thumbLiveStream ? "thumbLiveStream" : (key === "thumbLiveStream" && svc.thumbLiveEffect ? "thumbLiveEffect" : "")) : "";
+        if (flipped !== "")
+            svc[flipped] = false;
+        // _load 未完成期间的 set 记账：回调不得用旧持久值回滚这些键
+        // （set 已 _save 落盘，回滚＝内存/文件漂移直到下次 set）；
+        // 互斥翻转的键同样要记（它也是刚被 set 的）
+        if (_loadPending) {
+            _pendingSetKeys[key] = true;
+            if (flipped !== "")
+                _pendingSetKeys[flipped] = true;
+        }
+        revision++;
+        if (key === "animDuration" || key === "animEasing" || key === "tiltAngle" || key === "surfaceOpacity" || key === "deckRestTilt" || key === "layoutMode")
+            _pushEffectConfig();
+        _save();
+        return snapshotJson();
+    }
+
+    // kwinrc 投影 + 即时 reconfigure（不重启 KWin / shell）。
+    // 写手命令队列（round35 NEW-3）：滑杆连续 commit 时 Quickshell 的
+    // Process 在运行中重设 command 是彻底 no-op（命令静默丢弃、特效拿旧
+    // 值）——一律入队，exited 回调串行取下一条。勿改用 exec()（会 SIGTERM
+    // 杀在跑的链，留下部分写入）。
+    // ⚠️ 本队列是全 shell 唯一的 kwinrc 写通道（StageModeService 的
+    // 开关/对齐链也走 enqueueBashChain 入这里）：kwriteconfig6 是整文件
+    // 读改写、无跨进程写锁，两条队列并发时后完成者会抹掉先完成者刚写的
+    // 键（审计 P1：启动对齐窗口期 Target*/特效参数互相丢失即此）。
+    property var _writerQueue: []
+
+    property var _writerDone: null
+
+    function _enqueueWriter(argv, done) {
+        _writerQueue.push({
+            argv: argv,
+            done: done
+        });
+        if (_writer && !_writer.running)
+            _startNextWriter();
+    }
+
+    // 跨服务入口：StageModeService 的特效装卸/对齐链经此串行化
+    function enqueueBashChain(argv, done) {
+        _enqueueWriter(argv, done);
+    }
+
+    function _startNextWriter() {
+        if (!_writer || _writer.running || _writerQueue.length === 0)
+            return;
+        const job = _writerQueue.shift();
+        _writerDone = job.done;
+        _writer.command = job.argv;
+        _writer.running = true;
+    }
+
+    // 写完读回校验（历史事故：两个 --key 挤进一条 kwriteconfig6 把值写
+    // 串——GlassOpacity 被写成 25）。失配只告警不回滚：链本身成功说明
+    // 写入完成，失配意味着键被别的写手覆盖或拼错，打出来给人看。
+    function _verifyKeyCmd(key, expected): string {
+        // 失配信息走 stderr（stdout 无人看）；写手对任何 stderr 输出都会
+        // 告警，见 _procFactory 的 onExited
+        return " && v=$(kreadconfig6 --file kwinrc --group Effect-stageanim" + " --key " + key + "); if [ \"$v\" != \"" + expected + "\" ]; then echo '[StageConfig] kwinrc verify " + key + " expected " + expected + " got'\"$v\" >&2; fi";
+    }
+
+    function _pushEffectConfig() {
+        if (!_writer)
+            return;
+        // 窗口展开动画的装卡姿态 = 卡片交棒姿态：tiltCur 的 engaging 分支
+        // 两模式统一保持静置角（deckRestTilt），特效 TiltAngle 与之同源，
+        // 卡片淡出与窗口起摆零跳变
+        const tilt = deckRestTilt;
+        _enqueueWriter(["bash", "-c", "kwriteconfig6 --file kwinrc --group Effect-stageanim" + " --key AnimationDuration " + animDuration + " && kwriteconfig6 --file kwinrc --group Effect-stageanim" + " --key EasingCurve " + animEasing + " && kwriteconfig6 --file kwinrc --group Effect-stageanim" + " --key TiltAngle " + tilt + " && kwriteconfig6 --file kwinrc --group Effect-stageanim" + " --key GlassOpacity " + surfaceOpacity + " && qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects" + ".reconfigureEffect " + StageModeService.effectId + _verifyKeyCmd("TiltAngle", tilt) + _verifyKeyCmd("GlassOpacity", surfaceOpacity)]);
+    }
+
+    function _save() {
+        const out = {
+            version: 1
+        };
+        for (const k in _schema)
+            out[k] = svc[k];
+        JsonConfigStore.writePath(configPath, JSON.stringify(out));
+    }
+
+    property bool _loadPending: true   // Component.onCompleted 里 _load 后置 false
+    property var _pendingSetKeys: ({})
+    function _load() {
+        JsonConfigStore.readPath(configPath, function (data, exists) {
+            _loadPending = false;
+            if (!exists)
+                return;
+            try {
+                const obj = JSON.parse(data);
+                for (const k in _schema) {
+                    if (obj[k] === undefined || _pendingSetKeys[k])
+                        continue;
+                    const v = _coerce(_schema[k], obj[k]);
+                    if (v === null)
+                        continue;
+                    svc[k] = v;
+                }
+            } catch (e) {
+                console.warn("[StageConfig] bad config, keep defaults: " + e);
+                return;
+            }
+            // 互斥收敛（v82）：两模式同 true 的手工改档（运维实践）在
+            // _load 原样复活＝叠绘冲突；面板只暴露 effect 模式，stream 让路
+            if (svc.thumbLiveEffect && svc.thumbLiveStream) {
+                console.warn("[StageConfig] live mode mutex violated" + " (effect+stream both on) — stream off");
+                svc.thumbLiveStream = false;
+            }
+            // 治愈保存（v82）：_loadPending 窗口期内的 set 已把"未加载的
+            // 默认值"覆写进文件——加载完成后若仍有挂账键，按加载后的
+            // 内存真值补一次落盘（记账只防回滚，防不了文件先被污染）
+            if (Object.keys(_pendingSetKeys).length > 0) {
+                console.warn("[StageConfig] sets raced _load — healing" + " persisted file");
+                _save();
+            }
+            _pendingSetKeys = ({});
+            // 启动对齐：把持久值投影到 kwinrc（覆盖 CLI 的临时试验值）。
+            // revision 自增：onRevisionChanged 消费方（重排/重发布）在启动
+            // 加载时也要跑一遍——不 bump＝side=right 用户首帧按默认 left
+            // 渲染一闪再跳右
+            revision++;
+            _pushEffectConfig();
+            console.info("[StageConfig] loaded revision=" + revision);
+        });
+    }
+
+    // QtObject 没有默认属性，Process 经 Component 工厂实例化
+    //（同 WindowService / StageModeService 写法）。stderr 接出来 + 退出码
+    // 检查：bash 链任一步失败（qdbus 拒连/kwriteconfig 出错）原本无声
+    // 无息——半装卸态 + 零日志是排障黑洞（审计 P1）
+    property Component _procFactory: Component {
+        Process {
+            stdout: StdioCollector {}
+            stderr: StdioCollector {}
+            onExited: function (exitCode) {
+                // 退出码非零 = 链断裂；stderr 有内容 = 链走完但有告警
+                //（kwinrc 验值失配等）——两种都要落 journal
+                const err = stderr.text.trim();
+                if (exitCode !== 0)
+                    console.warn("[StageConfig] kwinrc writer chain failed" + " exit=" + exitCode + " stderr: " + err);
+                else if (err !== "")
+                    console.warn("[StageConfig] kwinrc writer warning: " + err);
+                const done = svc._writerDone;
+                svc._writerDone = null;
+                if (typeof done === "function")
+                    done(exitCode === 0);
+                svc._startNextWriter();
+            }
+        }
+    }
+
+    property var _writer: null
+
+    Component.onCompleted: {
+        _writer = _procFactory.createObject(svc);
+        _load();
+        _startNextWriter();
+    }
+}

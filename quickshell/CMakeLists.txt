@@ -1,0 +1,764 @@
+cmake_minimum_required(VERSION 3.21)
+
+# VERSION is the desktop distribution identity; protocol/app versions are separate.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" KOS_RELEASE_VERSION LIMIT_COUNT 1)
+if(NOT KOS_RELEASE_VERSION MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)(-[0-9A-Za-z.-]+)?$")
+    message(FATAL_ERROR "Invalid desktop VERSION")
+endif()
+set(KOS_RELEASE_NUMERIC_VERSION "${CMAKE_MATCH_1}")
+project(KOS VERSION ${KOS_RELEASE_NUMERIC_VERSION} LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+include(CTest)
+include(GNUInstallDirs)
+
+option(KOS_BUILD_PLATFORM "Build the KOS platform daemon and settings app" ON)
+option(KOS_BUILD_KWIN_PLUGINS "Build the KWin plugins and the window decoration" ON)
+option(KOS_BUILD_CALENDAR "Build the Calendar application" OFF)
+option(KOS_BUILD_TODO "Build the Todo application" OFF)
+option(KOS_BUILD_WEATHER "Build the Weather application" OFF)
+option(KOS_BUILD_MUSIC "Build the legacy Music application" OFF)
+option(KOS_BUILD_LISTENFREE "Build KOS ListenFree (requires its native SDK)" OFF)
+option(KOS_BUILD_CALCULATOR "Build the Calculator application" OFF)
+# The depth engine (kos-ai) needs OpenCV and the ONNX Runtime, and the 3D
+# wallpaper plugin needs Qt Quick 3D. KOS_BUILD_SPATIAL decides whether they are
+# built; the resolution below turns it into KOS_SPATIAL_ENABLED, which both this
+# file and platform/CMakeLists.txt read:
+#
+#   AUTO (default)  build them when the dependencies are already installed
+#   ON              require them; configure fails when they are missing
+#   OFF             never build them, never look for them
+if(NOT DEFINED KOS_BUILD_SPATIAL)
+    set(KOS_BUILD_SPATIAL "AUTO" CACHE STRING
+        "Build the ONNX/OpenCV depth engine and 3D wallpaper plugin: AUTO, ON or OFF")
+endif()
+set_property(CACHE KOS_BUILD_SPATIAL PROPERTY STRINGS AUTO ON OFF)
+
+set(KOS_SPATIAL_ENABLED FALSE)
+if(KOS_BUILD_SPATIAL STREQUAL "ON")
+    # The REQUIRED find_package calls in services/ai/CMakeLists.txt are the loud
+    # failure for this mode; nothing is probed here.
+    set(KOS_SPATIAL_ENABLED TRUE)
+elseif(KOS_BUILD_SPATIAL STREQUAL "AUTO" OR KOS_BUILD_SPATIAL STREQUAL "TRUE"
+        OR KOS_BUILD_SPATIAL STREQUAL "1")
+    find_package(OpenCV QUIET COMPONENTS core imgproc imgcodecs)
+    find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h
+        PATH_SUFFIXES onnxruntime onnxruntime/core/session)
+    find_library(ONNXRUNTIME_LIBRARY NAMES onnxruntime)
+    if(OpenCV_FOUND AND ONNXRUNTIME_INCLUDE_DIR AND ONNXRUNTIME_LIBRARY)
+        set(KOS_SPATIAL_ENABLED TRUE)
+    else()
+        message(STATUS
+            "Depth engine skipped: OpenCV or the ONNX Runtime is not installed. "
+            "Install both and configure with -DKOS_BUILD_SPATIAL=ON to build it.")
+    endif()
+elseif(NOT KOS_BUILD_SPATIAL STREQUAL "OFF")
+    message(FATAL_ERROR "KOS_BUILD_SPATIAL must be AUTO, ON or OFF")
+endif()
+
+# tools/kosctl reads this to decide whether to deploy (or clean up) the worker:
+# AUTO resolves here rather than in the script, and a build tree can still hold
+# a worker binary from an earlier configuration.
+if(KOS_SPATIAL_ENABLED)
+    file(WRITE "${CMAKE_BINARY_DIR}/kos-spatial-enabled" "ON\n")
+else()
+    file(WRITE "${CMAKE_BINARY_DIR}/kos-spatial-enabled" "OFF\n")
+endif()
+
+if(BUILD_TESTING)
+    find_program(KOS_NODE_EXECUTABLE NAMES node)
+    if(KOS_NODE_EXECUTABLE)
+        # Group Dock logic by module responsibility; node:test retains named
+        # scenarios inside each suite and continues after an individual failure.
+        foreach(suite model policy motion)
+            add_test(NAME kos-dock.${suite}
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/${suite}.test.mjs)
+            set_tests_properties(kos-dock.${suite} PROPERTIES LABELS logic TIMEOUT 30)
+        endforeach()
+        # Regression: material-style Dock showed two overlapping tooltips. The
+        # popup's active condition must stay decoupled from magnification.
+        add_test(NAME kos-dock.tooltip-mutex
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/tooltip-mutex.test.mjs)
+        set_tests_properties(kos-dock.tooltip-mutex PROPERTIES LABELS logic TIMEOUT 10)
+        # Regression: the DeskCenter weather card overlapped its hero/symbol/
+        # condition text on short cards; the size formulas must keep their
+        # availability terms above the weekly forecast.
+        add_test(NAME kos-deskcenter.weather-card
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/deskcenter/weather-card-205.test.mjs)
+        set_tests_properties(kos-deskcenter.weather-card PROPERTIES LABELS logic TIMEOUT 10)
+        # Regression: SurfaceShape ignored scale changes, so panels animating
+        # scale on entry (wallpaper preview) fringed at the corners.
+        add_test(NAME kos-surface-shape.scale-sync
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/surface-shape/scale-sync-214.test.mjs)
+        set_tests_properties(kos-surface-shape.scale-sync PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-applauncher.screen-routing
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/applauncher/screen-routing.test.mjs)
+        set_tests_properties(kos-applauncher.screen-routing PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-shell.traffic-history
+            COMMAND ${KOS_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/status-area/test_traffic_history.mjs)
+        set_tests_properties(kos-shell.traffic-history PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-shell.application-traffic
+            COMMAND ${KOS_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/status-area/test_application_traffic.mjs)
+        set_tests_properties(kos-shell.application-traffic PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-shell.language
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/localization/widget-language.mjs)
+        set_tests_properties(kos-shell.language PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-shell.clipboard-placement
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/clipboard-placement/test_geometry.mjs)
+        set_tests_properties(kos-shell.clipboard-placement PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-deskcenter.density-metrics
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/desktop-density/test_metrics.mjs)
+        set_tests_properties(kos-deskcenter.density-metrics PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-deskcenter.widget-layout
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/deskcenter/test_widget_layout.mjs
+        )
+        set_tests_properties(kos-deskcenter.widget-layout PROPERTIES TIMEOUT 10)
+        # The wheel-scroll curve itself (KosKineticScrollPhysics.mjs): distance
+        # per notch, time to settle, the coast after a spin, the bounds. A
+        # compositor can only show these as "it felt wrong".
+        add_test(NAME kos-ui.kinetic-scroll-physics
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shared/qml/foundation/test_kinetic_scroll.mjs
+        )
+        set_tests_properties(kos-ui.kinetic-scroll-physics PROPERTIES LABELS logic TIMEOUT 10)
+        add_test(NAME kos-shell.date-buckets
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_date_buckets.mjs
+        )
+        set_tests_properties(kos-shell.date-buckets PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.squircle
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_squircle.mjs
+        )
+        set_tests_properties(kos-shell.squircle PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.tray-attention-match
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_tray_attention_match.mjs
+        )
+        set_tests_properties(kos-shell.tray-attention-match PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.notification-count-match
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_notification_count_match.mjs
+        )
+        set_tests_properties(kos-shell.notification-count-match PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.control-center-submenu-state
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/bar/test_control_center_submenu_state.mjs
+        )
+        set_tests_properties(kos-shell.control-center-submenu-state PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.status-collection
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/bar/test_status_collection.mjs
+        )
+        set_tests_properties(kos-shell.status-collection PROPERTIES TIMEOUT 10 LABELS logic)
+        add_test(NAME kos-shell.network-traffic-width
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/bar/test_network_traffic_width.mjs
+        )
+        set_tests_properties(kos-shell.network-traffic-width PROPERTIES TIMEOUT 10 LABELS logic)
+        add_test(NAME kos-shell.visibility-policy
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_visibility_policy.mjs
+        )
+        set_tests_properties(kos-shell.visibility-policy PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.audio-output-names
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_audio_output_names.mjs
+        )
+        set_tests_properties(kos-shell.audio-output-names PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.weather-fields
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/weather/test_weather_service_fields.mjs
+        )
+        set_tests_properties(kos-shell.weather-fields PROPERTIES TIMEOUT 10 LABELS logic)
+        find_program(KOS_QMLTESTRUNNER_EXECUTABLE NAMES qmltestrunner
+            HINTS /usr/lib/qt6/bin /usr/lib64/qt6/bin)
+        if(KOS_QMLTESTRUNNER_EXECUTABLE)
+            add_test(NAME kos-shell.desktop-lyrics
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs lyrics
+                    ${KOS_QMLTESTRUNNER_EXECUTABLE})
+            set_tests_properties(kos-shell.desktop-lyrics PROPERTIES LABELS "ui;headless" TIMEOUT 15)
+            add_test(NAME kos-shell.date-projection
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/date-projection/run.mjs
+                    ${KOS_QMLTESTRUNNER_EXECUTABLE}
+            )
+            set_tests_properties(kos-shell.date-projection PROPERTIES TIMEOUT 15)
+        endif()
+        add_test(NAME kos-shell.wallpaper-slideshow
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/wallpaper/test_wallpaper_slideshow.mjs
+        )
+        set_tests_properties(kos-shell.wallpaper-slideshow PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.wallpaper-handoff
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/wallpaper/test_wallpaper_handoff.mjs)
+        set_tests_properties(kos-shell.wallpaper-handoff PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.wallpaper-transitions
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/wallpaper/test_wallpaper_transitions.mjs)
+        set_tests_properties(kos-shell.wallpaper-transitions PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.wallpaper-preview
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/wallpaper/test_wallpaper_preview.mjs
+        )
+        set_tests_properties(kos-shell.wallpaper-preview PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.theme-wallpaper-policy
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/wallpaper/test_theme_wallpaper_policy.mjs)
+        set_tests_properties(kos-shell.theme-wallpaper-policy PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.theme-wallpaper-state
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/wallpaper/test_theme_wallpaper_state.mjs)
+        set_tests_properties(kos-shell.theme-wallpaper-state PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.stage-geometry
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/stage/test_stage_geometry.mjs
+        )
+        set_tests_properties(kos-shell.stage-geometry PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.stage-groups
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/stage/test_stage_groups.mjs
+        )
+        set_tests_properties(kos-shell.stage-groups PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.stage-effects
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/stage/test_stage_effects.mjs)
+        set_tests_properties(kos-shell.stage-effects PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.stage-protocol
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/stage/test_stage_protocol.mjs)
+        set_tests_properties(kos-shell.stage-protocol PROPERTIES TIMEOUT 10)
+        find_program(KOS_QUICKSHELL_EXECUTABLE NAMES quickshell)
+        if(KOS_QUICKSHELL_EXECUTABLE)
+            add_test(NAME kos-shell.dock-surface
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs surface
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.dock-surface PROPERTIES LABELS ui TIMEOUT 10)
+            add_test(NAME kos-shell.dock-reveal-runtime
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs reveal
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.dock-reveal-runtime PROPERTIES LABELS ui TIMEOUT 25
+                ENVIRONMENT "QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml")
+            add_test(NAME kos-deskcenter.density-runtime
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/desktop-density/run.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-deskcenter.density-runtime PROPERTIES LABELS ui TIMEOUT 15)
+            add_test(NAME kos-shell.dock-builtins
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs builtins
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.dock-builtins PROPERTIES
+                LABELS ui TIMEOUT 25
+                ENVIRONMENT "QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml")
+            # A live DesktopEntry stored in a descriptor or an identity result
+            # crashed the shell on every catalogue rescan. Nothing may carry one
+            # now, and every launch resolves the entry from its desktop id.
+            add_test(NAME kos-shell.app-launch-resolution
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/app-launch-resolution/run.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.app-launch-resolution PROPERTIES
+                LABELS ui TIMEOUT 45
+                ENVIRONMENT "QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml")
+            add_test(NAME kos-shell.dock-startup
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs startup
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.dock-startup PROPERTIES LABELS ui TIMEOUT 60)
+            add_test(NAME kos-shell.dock-reveal-indicator
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs reveal-indicator
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.dock-reveal-indicator PROPERTIES
+                LABELS ui TIMEOUT 25
+                ENVIRONMENT "QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml")
+            add_test(NAME kos-shell.notification-history
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/notification-history/run.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.notification-history PROPERTIES LABELS ui TIMEOUT 15)
+            add_test(NAME kos-shell.notification-history-visual
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/notification-history/run-visual.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.notification-history-visual PROPERTIES LABELS ui TIMEOUT 15)
+            add_test(NAME kos-shell.notification-pane
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/notification-history/run-pane.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.notification-pane PROPERTIES
+                LABELS ui TIMEOUT 15
+                ENVIRONMENT "QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml;QML_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml")
+            add_test(NAME kos-shell.notification-source-icons
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/notification-history/run-icons.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE})
+            set_tests_properties(kos-shell.notification-source-icons PROPERTIES LABELS ui TIMEOUT 15)
+            find_program(KOS_DBUS_RUN_SESSION_EXECUTABLE NAMES dbus-run-session)
+            find_program(KOS_GDBUS_EXECUTABLE NAMES gdbus)
+            if(KOS_DBUS_RUN_SESSION_EXECUTABLE AND KOS_GDBUS_EXECUTABLE)
+                add_test(NAME kos-shell.notification-history-dbus
+                    COMMAND ${KOS_NODE_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/notification-history/run-dbus.mjs
+                        ${KOS_QUICKSHELL_EXECUTABLE})
+                set_tests_properties(kos-shell.notification-history-dbus PROPERTIES LABELS ui TIMEOUT 25)
+                add_test(NAME kos-shell.notification-policy-production
+                    COMMAND ${KOS_NODE_EXECUTABLE}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/tests/notification-history/run-production.mjs
+                        ${KOS_QUICKSHELL_EXECUTABLE})
+                set_tests_properties(kos-shell.notification-policy-production PROPERTIES LABELS ui TIMEOUT 35)
+            endif()
+            add_test(NAME kos-shell.static-work-runtime
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/static-work/run.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE}
+            )
+            set_tests_properties(kos-shell.static-work-runtime PROPERTIES TIMEOUT 15)
+            add_test(NAME kos-shell.squircle-mask
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/squircle-mask/run.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE}
+            )
+            set_tests_properties(kos-shell.squircle-mask PROPERTIES TIMEOUT 15)
+            # Reads the resolved glass ink in the states 液态玻璃跟随外观模式 can
+            # put the glass in. The binding chain it walks (config -> appearance
+            # token -> surface/text) renders a plausible colour even when it is
+            # broken, so only the resolved values catch it.
+            # Reads the resolved plate and ink of the Bar's mac style in the
+            # states its slider can put it in. The ink follows the wallpaper
+            # blended with the plate at the chosen tint, and an ink that read
+            # the plate alone still renders plausibly -- it only fails on a
+            # bright wallpaper at a low tint, which is what this walks.
+            # Drives the shipping DockIcon's magnificationPointer by hand to
+            # check where the Dock decides an icon is hovered. The hover test
+            # must not read geometry that the hover lift itself moves, which is
+            # what makes the cursor jitter at the slot edge.
+            add_test(NAME kos-shell.dock-hover-hit
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs hover-hit
+                    ${KOS_QUICKSHELL_EXECUTABLE}
+            )
+            set_tests_properties(kos-shell.dock-hover-hit PROPERTIES TIMEOUT 20)
+            add_test(NAME kos-shell.dock-magnification-runtime
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/dock/runtime.mjs magnification
+                    ${KOS_QUICKSHELL_EXECUTABLE}
+            )
+            set_tests_properties(kos-shell.dock-magnification-runtime PROPERTIES TIMEOUT 20)
+            set_tests_properties(kos-shell.static-work-runtime
+                kos-shell.squircle-mask
+                kos-shell.dock-hover-hit kos-shell.dock-magnification-runtime
+                PROPERTIES ENVIRONMENT "QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml")
+        endif()
+        find_program(KOS_WESTON_EXECUTABLE NAMES weston)
+        if(KOS_QUICKSHELL_EXECUTABLE AND KOS_WESTON_EXECUTABLE)
+            # The whole shell on a real compositor: tests/shell-startup drives
+            # headless weston and waits for quickshell to report
+            # "Configuration Loaded". It needs both binaries, so it only ever
+            # registers on a machine that can actually run it.
+            add_test(NAME kos-shell.startup
+                COMMAND ${KOS_NODE_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell-startup/run.mjs
+                    ${KOS_QUICKSHELL_EXECUTABLE} ${KOS_WESTON_EXECUTABLE}
+            )
+            set_tests_properties(kos-shell.startup PROPERTIES
+                LABELS ui
+                TIMEOUT 180
+            )
+        endif()
+        add_test(NAME kos-ui.page-cache-policy
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shared/qml/test_page_cache_policy.mjs
+        )
+        set_tests_properties(kos-ui.page-cache-policy PROPERTIES TIMEOUT 10)
+        # Material, glass, and appearance migration contracts were removed with
+        # their unsupported settings and configuration formats.
+        add_test(NAME kos-deskcenter.desktop-outputs
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/deskcenter/test_desktop_outputs.mjs
+        )
+        set_tests_properties(kos-deskcenter.desktop-outputs PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-shell.screen-selection
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/shell/desktop/modules/common/test_screen_selection.mjs
+        )
+        set_tests_properties(kos-shell.screen-selection PROPERTIES TIMEOUT 10)
+        add_test(NAME kos-platform.window-placement
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/platform/tests/test_window_placement.mjs
+        )
+        set_tests_properties(kos-platform.window-placement PROPERTIES TIMEOUT 10)
+        # The JSONL transport core shared by PlatformClient and DataClient:
+        # reconnect queueing, dedup, expiry and the fail-all path run under a
+        # stubbed socket, no daemon or display needed.
+        add_test(NAME kos-platform.jsonl-client
+            COMMAND ${KOS_NODE_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/platform/tests/test_jsonl_client.mjs
+        )
+        set_tests_properties(kos-platform.jsonl-client PROPERTIES TIMEOUT 10)
+    endif()
+    # The platform contract test is dependency-free Python with its own
+    # __main__ entry point, so a plain interpreter is all it needs. It is the
+    # only check that keeps shared/contracts/platform.v1.md, ShortcutsService's
+    # default table and the daemon's generated handler in agreement.
+    find_program(KOS_PYTHON_EXECUTABLE NAMES python3 python)
+    if(KOS_PYTHON_EXECUTABLE)
+        add_test(NAME kos-app.default-registration
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/app-registration/test_registration.py)
+        set_tests_properties(kos-app.default-registration PROPERTIES LABELS data TIMEOUT 10)
+        add_test(NAME kos-app.install-dependencies
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/app-install/test_dependencies.py)
+        set_tests_properties(kos-app.install-dependencies PROPERTIES LABELS data TIMEOUT 10)
+        add_test(NAME kos-shell.translation-catalogs
+            COMMAND ${KOS_PYTHON_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/localization/check_catalogs.py)
+        set_tests_properties(kos-shell.translation-catalogs PROPERTIES LABELS logic TIMEOUT 60)
+        add_test(NAME kos-ci.inventory-contract
+            COMMAND ${KOS_PYTHON_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/ci/test_inventory.py)
+        set_tests_properties(kos-ci.inventory-contract PROPERTIES LABELS logic TIMEOUT 10)
+    endif()
+    find_program(KOS_INTERACTION_QMLTEST NAMES qmltestrunner qmltestrunner6
+        HINTS /usr/lib/qt6/bin)
+    find_program(KOS_INTERACTION_QUICKSHELL NAMES quickshell)
+    find_program(KOS_TEST_KWIN NAMES kwin_wayland)
+    find_program(KOS_TEST_DBUS_RUN NAMES dbus-run-session)
+    if(KOS_PYTHON_EXECUTABLE AND KOS_INTERACTION_QUICKSHELL AND KOS_TEST_KWIN AND KOS_TEST_DBUS_RUN)
+        add_test(NAME kos-ui.status-panels
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/status-area/run-panels.py)
+        add_test(NAME kos-ui.status-panels-opengl
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/status-area/run-panels.py --opengl)
+        set_tests_properties(kos-ui.status-panels kos-ui.status-panels-opengl PROPERTIES
+            ENVIRONMENT "QML_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+            LABELS "ui;compositor" TIMEOUT 45 RUN_SERIAL TRUE)
+        add_test(NAME kos-ui.control-center-modules
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/control-center/run.py)
+        set_tests_properties(kos-ui.control-center-modules PROPERTIES
+            ENVIRONMENT "QML_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+            LABELS "ui;headless" TIMEOUT 40 RUN_SERIAL TRUE)
+        add_test(NAME kos-ui.clipboard-placement
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/clipboard-placement/run.py)
+        set_tests_properties(kos-ui.clipboard-placement PROPERTIES LABELS ui TIMEOUT 40)
+    endif()
+    if(KOS_INTERACTION_QMLTEST)
+        add_test(NAME kos-calculator.engine
+            COMMAND ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/calculator/tst_engine.qml)
+        set_tests_properties(kos-calculator.engine PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+            LABELS "ui;headless" TIMEOUT 20)
+        add_test(NAME kos-ui.interaction-controls
+            COMMAND ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/interaction-controls/tst_controls.qml)
+        set_tests_properties(kos-ui.interaction-controls PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+            LABELS "ui;headless" TIMEOUT 20)
+        add_test(NAME kos-ui.shared-motion
+            COMMAND ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/interaction-controls/tst_motion.qml)
+        set_tests_properties(kos-ui.shared-motion PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+            LABELS "ui;headless" TIMEOUT 20)
+        add_test(NAME kos-ui.kinetic-scroll
+            COMMAND ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/interaction-controls/tst_kinetic_scroll.qml)
+        set_tests_properties(kos-ui.kinetic-scroll PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+            LABELS "ui;headless" TIMEOUT 30)
+        add_test(NAME kos-ui.kinetic-input
+            COMMAND ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/tests/interaction-controls/tst_kinetic_input.qml)
+        set_tests_properties(kos-ui.kinetic-input PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+            LABELS "ui;headless" TIMEOUT 20)
+    endif()
+    if(KOS_PYTHON_EXECUTABLE AND KOS_INTERACTION_QUICKSHELL)
+        add_test(NAME kos-ui.interaction-runtime
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/interaction-runtime/run.py)
+        add_test(NAME kos-ui.popup-motion
+            COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/popup-motion/run.py)
+        if(KOS_BUILD_KWIN_PLUGINS)
+            add_test(NAME kos-ui.surface-shape-sync
+                COMMAND ${KOS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/popup-motion/run.py --verify-wayland)
+            set_tests_properties(kos-ui.surface-shape-sync PROPERTIES
+                ENVIRONMENT "QML_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml"
+                LABELS "ui;kwin" TIMEOUT 60 RUN_SERIAL TRUE)
+        endif()
+        set_tests_properties(kos-ui.interaction-runtime kos-ui.popup-motion PROPERTIES
+            LABELS ui TIMEOUT 60 RUN_SERIAL TRUE)
+    endif()
+    if(KOS_PYTHON_EXECUTABLE)
+        add_test(NAME kos-platform.contracts
+            COMMAND ${KOS_PYTHON_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/platform/tests/test_contract.py
+        )
+        set_tests_properties(kos-platform.contracts PROPERTIES TIMEOUT 10)
+    endif()
+    # Labels group the suite so a caller can run one layer without the others.
+    # `tools/run-tests.sh` and CI both drive `ctest -L`, so a test only has to
+    # be listed once, here, to join a layer:
+    #
+    #   logic    pure computation, node or python, no display and no service
+    #   platform the daemon's contract test
+    #   ui       needs a QML engine (and, for the panel tests, a compositor)
+    #
+    # The data/service layer is labelled where those tests are registered, in
+    # apps/common, apps/weather, apps/music, services/pim-service and
+    # services/data-service, because those directories only exist when their
+    # parent feature is configured.
+    # Every label has to be applied under the same condition that registered
+    # the test: set_tests_properties aborts the configure when a named test
+    # does not exist, and each source below is optional -- the node tests need
+    # node, date-projection additionally needs qmltestrunner, the three runtime
+    # tests need an installed quickshell (absent in a CI container), and the
+    # contract test needs python.
+    if(KOS_NODE_EXECUTABLE)
+        set_tests_properties(kos-deskcenter.widget-layout kos-shell.date-buckets
+            kos-shell.squircle kos-shell.tray-attention-match
+            kos-shell.notification-count-match kos-shell.control-center-submenu-state
+            kos-shell.visibility-policy
+            kos-shell.wallpaper-slideshow kos-shell.wallpaper-handoff
+            kos-shell.wallpaper-transitions kos-shell.wallpaper-preview
+            kos-shell.theme-wallpaper-policy
+            kos-shell.theme-wallpaper-state
+            kos-shell.stage-geometry kos-shell.stage-groups kos-shell.stage-effects kos-shell.stage-protocol
+            kos-deskcenter.desktop-outputs
+            kos-shell.screen-selection
+            kos-ui.page-cache-policy
+            PROPERTIES LABELS logic)
+        set_tests_properties(kos-platform.window-placement
+            kos-platform.jsonl-client PROPERTIES LABELS platform)
+    endif()
+    if(KOS_QMLTESTRUNNER_EXECUTABLE)
+        set_tests_properties(kos-shell.date-projection PROPERTIES LABELS logic)
+    endif()
+    if(KOS_QUICKSHELL_EXECUTABLE)
+        set_tests_properties(kos-shell.static-work-runtime kos-shell.squircle-mask
+            kos-shell.dock-hover-hit kos-shell.dock-magnification-runtime
+            PROPERTIES LABELS ui)
+    endif()
+    if(KOS_PYTHON_EXECUTABLE)
+        set_tests_properties(kos-platform.contracts PROPERTIES LABELS platform)
+    endif()
+endif()
+
+find_package(Qt6 6.5 REQUIRED COMPONENTS
+    Core
+    DBus
+    Gui
+    Network
+    Qml
+    Quick
+    QuickControls2
+)
+find_package(KF6WindowSystem 6.0 QUIET)
+if(BUILD_TESTING)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Test)
+    qt_add_executable(kos-legacy-glass-blur-test
+        kwin/glass-effect/tests/test_legacy_blur_region.cpp)
+    target_link_libraries(kos-legacy-glass-blur-test PRIVATE Qt6::Core Qt6::Gui)
+    add_test(NAME kos-glass.legacy-blur-region COMMAND kos-legacy-glass-blur-test)
+    set_tests_properties(kos-glass.legacy-blur-region PROPERTIES LABELS platform TIMEOUT 10)
+endif()
+if(KOS_BUILD_CALENDAR OR KOS_BUILD_TODO)
+    find_package(KF6CalendarCore 6.0 REQUIRED)
+endif()
+
+qt_standard_project_setup(REQUIRES 6.5)
+qt_policy(SET QTP0001 NEW)
+if(Qt6_VERSION VERSION_GREATER_EQUAL 6.8)
+    qt_policy(SET QTP0004 NEW)
+endif()
+
+# Keep every generated QML module below one canonical import root. This lets
+# qmllint and qmlimportscanner resolve Kos.Ui from each standalone app.
+set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+if(KOS_BUILD_PLATFORM)
+    add_subdirectory(platform)
+    add_subdirectory(apps/settings)
+endif()
+
+if(KOS_BUILD_CALENDAR OR KOS_BUILD_TODO OR KOS_BUILD_WEATHER OR KOS_BUILD_MUSIC
+        OR KOS_BUILD_CALCULATOR)
+    add_subdirectory(shared/qml)
+    add_subdirectory(apps/common)
+endif()
+
+if(KOS_BUILD_CALENDAR OR KOS_BUILD_TODO)
+    add_subdirectory(shared/pim)
+    add_subdirectory(services/pim-service)
+endif()
+
+if(KOS_BUILD_WEATHER)
+    add_subdirectory(services/data-service)
+endif()
+
+include(KosApplication)
+
+# Every application ships behind an opt-in flag, but its tests must not: the
+# C++ suites that cover app-owned code are the only thing that exercises
+# ApplicationPreferences, WeatherClient, the music database and the PIM store,
+# and gating them behind their own app turned the whole layer into tests that
+# nothing ever ran. Each directory below configures and builds its test targets
+# without turning its application on -- the flags above still decide whether the
+# app itself is built.
+#
+#  - apps/common:      kos_app_core is a plain STATIC library holding no app
+#                      code, so the preference store test only needs this
+#                      directory.
+#  - apps/weather:     the client test compiles src/WeatherClient.cpp directly
+#                      rather than linking the app, so no data-service is
+#                      involved.
+#  - apps/music:       needs PkgConfig plus gstreamer/taglib; skipped when they
+#                      are missing so such a machine still configures the rest.
+#  - services/pim-service: the store/DBus tests link kos_pim_service_core, and
+#                      the two DBus tests also run the service binary, which
+#                      this directory builds unconditionally.
+#  - services/data-service: a bare `go test ./...`, independent of any C++.
+#
+# This block sits after include(KosApplication) because apps/music and
+# services/pim-service call kos_add_application, which that include defines.
+if(BUILD_TESTING)
+    if(NOT (KOS_BUILD_CALENDAR OR KOS_BUILD_TODO OR KOS_BUILD_WEATHER
+            OR KOS_BUILD_MUSIC OR KOS_BUILD_CALCULATOR))
+        add_subdirectory(apps/common)
+    endif()
+
+    if(NOT (KOS_BUILD_CALENDAR OR KOS_BUILD_TODO))
+        find_package(KF6CalendarCore 6.0 QUIET)
+        if(TARGET KF6::CalendarCore)
+            add_subdirectory(shared/pim)
+            add_subdirectory(services/pim-service)
+        endif()
+    endif()
+
+    if(NOT KOS_BUILD_WEATHER)
+        add_subdirectory(services/data-service)
+        # Tests only: KOS_WEATHER_TESTS_ONLY makes apps/weather skip
+        # kos_add_application, so the client test runs without Kos::Ui or the
+        # data-service build target the application would drag in.
+        set(KOS_WEATHER_TESTS_ONLY ON)
+        add_subdirectory(apps/weather)
+        unset(KOS_WEATHER_TESTS_ONLY)
+    endif()
+
+    if(NOT KOS_BUILD_MUSIC)
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(KOS_MUSIC_GSTREAMER QUIET IMPORTED_TARGET
+                gstreamer-1.0 gstreamer-audio-1.0 gstreamer-pbutils-1.0)
+            pkg_check_modules(KOS_MUSIC_TAGLIB QUIET IMPORTED_TARGET
+                taglib>=1.12)
+            if(TARGET PkgConfig::KOS_MUSIC_GSTREAMER
+                    AND TARGET PkgConfig::KOS_MUSIC_TAGLIB)
+                # Tests only: KOS_MUSIC_TESTS_ONLY makes this directory skip
+                # kos_add_application, so no app (and no Kos::Ui dependency)
+                # is pulled in.
+                set(KOS_MUSIC_TESTS_ONLY ON)
+                add_subdirectory(apps/music)
+                unset(KOS_MUSIC_TESTS_ONLY)
+            endif()
+        endif()
+    endif()
+
+    # apps/lockscreen is a data-only Plasma Look-and-Feel package: there is no
+    # target to build, so the check is a script. It compiles a throwaway probe
+    # against KF6::Package that reproduces the greeter's own skin selection --
+    # the trap it guards is invisible otherwise, because a metadata.json whose
+    # "X-Plasma-APIVersion" is nested inside "KPlugin" makes the greeter fall
+    # back to a KDE default skin without logging anything a locked session can
+    # show. Missing development headers fail the check rather than skip it.
+    add_test(NAME kos-lockscreen.theme-resolution
+        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/apps/lockscreen/tests/theme-resolution/run.sh")
+    # Labelled here rather than in the block above: `if(TARGET ...)` cannot see
+    # tests (they are not build targets), and this test is registered only now,
+    # so an earlier set_tests_properties would name a test that does not exist
+    # yet. Without this line the test carries no label and no layer runs it.
+    set_tests_properties(kos-lockscreen.theme-resolution PROPERTIES LABELS "ui;headless" TIMEOUT 30)
+    if(KOS_INTERACTION_QMLTEST)
+        add_test(NAME kos-lockscreen.media-selection
+            COMMAND dbus-run-session -- ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/apps/lockscreen/tests/media)
+        set_tests_properties(kos-lockscreen.media-selection PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QML_DISABLE_DISK_CACHE=1"
+            LABELS "ui;headless" TIMEOUT 15)
+        add_test(NAME kos-lockscreen.wake-authentication
+            COMMAND dbus-run-session -- ${KOS_INTERACTION_QMLTEST}
+                -input ${CMAKE_CURRENT_SOURCE_DIR}/apps/lockscreen/tests/headless/tst_wake.qml)
+        set_tests_properties(kos-lockscreen.wake-authentication PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QML_DISABLE_DISK_CACHE=1"
+            LABELS "ui;headless" TIMEOUT 30)
+    endif()
+endif()
+
+if(KOS_BUILD_CALENDAR)
+    add_subdirectory(apps/calendar)
+endif()
+if(KOS_BUILD_TODO)
+    add_subdirectory(apps/todo)
+endif()
+if(KOS_BUILD_WEATHER)
+    add_subdirectory(apps/weather)
+endif()
+if(KOS_BUILD_MUSIC)
+    add_subdirectory(apps/music)
+endif()
+if(KOS_BUILD_LISTENFREE)
+    add_subdirectory(apps/listenfree)
+endif()
+if(KOS_BUILD_CALCULATOR)
+    add_subdirectory(apps/calculator)
+endif()
+
+# The shell imports this QML module even without compositor effects.
+if(KOS_BUILD_PLATFORM OR KOS_BUILD_KWIN_PLUGINS)
+    add_subdirectory(shell/native/surface-shape)
+endif()
+
+if(KOS_BUILD_KWIN_PLUGINS)
+    add_subdirectory(kwin/dock-window-animation)
+    add_subdirectory(kwin/context-menu-input)
+    add_subdirectory(kwin/kos-bridge)
+    add_subdirectory(kwin/kos-decoration)
+    add_subdirectory(kwin/kwin-effects-stageanim)
+endif()
+
+# The spatial wallpaper mesh is an optional QML extension, built only when the
+# depth engine is. Keep Qt Quick 3D and OpenCV outside the shell's mandatory
+# dependencies so systems without them retain the existing shader renderer.
+if(KOS_BUILD_PLATFORM AND KOS_SPATIAL_ENABLED)
+    find_package(Qt6 QUIET COMPONENTS Quick3D)
+    if(TARGET Qt6::Quick3D AND Qt6_VERSION VERSION_GREATER_EQUAL 6.5)
+        add_subdirectory(shell/native/spatial3d)
+    else()
+        message(STATUS "Qt Quick 3D not found; spatial mesh renderer disabled")
+    endif()
+endif()
+
+# No install() rules for the shell and shared QML trees, on purpose: user-side
+# deployment is owned by tools/kosctl (deploy_artifacts), which copies from
+# the source tree. Rules here would be a
+# second, drifting copy of the same file list -- and nothing in this repo ever
+# ran `cmake --install` for them anyway.

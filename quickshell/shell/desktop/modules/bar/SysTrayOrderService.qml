@@ -1,0 +1,202 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import qs.desktop.modules.platform
+import "StatusCollection.mjs" as StatusCollection
+
+// Persists the user's Alt+drag reordering of the tray row — native
+// StatusNotifierItem icons and the shell's own network/battery/settings/
+// control-center cells share one continuous, freely reorderable sequence,
+// keyed by a stable id (see SysTray.qml for the key scheme).
+QtObject {
+    id: svc
+
+    // Kept beside dock/config.json rather than inside the shell directory so
+    // Quickshell's source-file watcher never reloads the shell mid-write.
+    readonly property string configDir: Quickshell.stateDir + "/bar"
+    readonly property string configPath: configDir + "/tray-order.json"
+
+    property var order: []
+    property var collectedKeys: []
+    property bool ready: false
+
+    // A native StatusNotifierItem slot, as opposed to one of the shell's own
+    // trailing cells (see the key scheme in SysTray.qml).
+    function isTrayKey(key) {
+        return key.indexOf("tray:") === 0;
+    }
+    // An item whose StatusNotifierItem id has not resolved yet is keyed by
+    // its Repeater index, which changes as soon as the real id arrives; such
+    // a key must never be written to the persisted order.
+    function isPlaceholderKey(key) {
+        return key.indexOf("tray:#") === 0;
+    }
+
+    // Returns `keys` arranged by the saved preference. Keys the preference
+    // has never seen are new arrivals: a native tray icon takes the leading
+    // slots, so an app launched now shows up at the left edge of the row
+    // rather than behind the shell's own cells, while an unrecognised shell
+    // cell stays at the tail where it is declared.
+    //
+    // Partitioning guarantees third-party tray icons stay strictly to the
+    // left of the shell's own system control cells, with controlcenter as
+    // the fixed trailing anchor at the rightmost edge.
+    function arrange(keys) {
+        const liveTrayKeys = (keys || []).filter(k => svc.isTrayKey(k));
+        const liveCellKeys = (keys || []).filter(k => !svc.isTrayKey(k));
+
+        // 1. Arrange native tray keys according to saved preference
+        const knownTray = [];
+        const seenTray = ({});
+        for (let i = 0; i < svc.order.length; i++) {
+            const key = svc.order[i];
+            if (svc.isTrayKey(key) && liveTrayKeys.indexOf(key) >= 0 && !seenTray[key]) {
+                knownTray.push(key);
+                seenTray[key] = true;
+            }
+        }
+        const unseenTray = liveTrayKeys.filter(k => !seenTray[k]);
+        const arrangedTray = unseenTray.concat(knownTray);
+
+        // 2. Arrange shell control cells according to saved preference
+        const knownCell = [];
+        const seenCell = ({});
+        for (let i = 0; i < svc.order.length; i++) {
+            const key = svc.order[i];
+            if (!svc.isTrayKey(key) && liveCellKeys.indexOf(key) >= 0 && !seenCell[key]) {
+                knownCell.push(key);
+                seenCell[key] = true;
+            }
+        }
+        const unseenCell = liveCellKeys.filter(k => !seenCell[k]);
+        const arrangedCell = knownCell.concat(unseenCell);
+
+        // Pin cell:controlcenter as the permanent rightmost trailing anchor
+        const ccIndex = arrangedCell.indexOf("cell:controlcenter");
+        if (ccIndex >= 0 && ccIndex !== arrangedCell.length - 1) {
+            arrangedCell.splice(ccIndex, 1);
+            arrangedCell.push("cell:controlcenter");
+        }
+
+        return arrangedTray.concat(arrangedCell);
+    }
+
+    // Folds keys the saved order has never seen into it — tray icons at the
+    // head of the tray section, shell cells at the tail of the cell section.
+    function register(keys) {
+        if (!svc.ready)
+            return;
+        const existing = ({});
+        for (let i = 0; i < svc.order.length; i++)
+            existing[svc.order[i]] = true;
+        const head = [];
+        const tail = [];
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            if (existing[key] || svc.isPlaceholderKey(key))
+                continue;
+            existing[key] = true;
+            if (svc.isTrayKey(key))
+                head.push(key);
+            else
+                tail.push(key);
+        }
+        if (head.length === 0 && tail.length === 0)
+            return;
+        const currentTray = svc.order.filter(k => svc.isTrayKey(k));
+        const currentCell = svc.order.filter(k => !svc.isTrayKey(k));
+        svc.order = head.concat(currentTray, currentCell, tail);
+        scheduleSave();
+    }
+
+    // `currentKeys` is the live key set (arrange() needs it to place unknown
+    // keys correctly); the caller passes the same set it used to compute the
+    // dragged item's current position.
+    function moveKey(key, targetIndex, currentKeys) {
+        const arranged = arrange(currentKeys);
+        const sourceIndex = arranged.indexOf(key);
+        if (sourceIndex < 0)
+            return;
+
+        // Control Center is pinned to the far right trailing edge
+        if (key === "cell:controlcenter")
+            return;
+        const trayCount = arranged.filter(k => svc.isTrayKey(k)).length;
+        let minDest = 0;
+        let maxDest = arranged.length - 1;
+
+        if (svc.isTrayKey(key)) {
+            // Tray items can only be reordered within the tray section
+            minDest = 0;
+            maxDest = Math.max(0, trayCount - 1);
+        } else {
+            // Shell cells can only be reordered within the cells section
+            minDest = trayCount;
+            maxDest = Math.max(minDest, arranged.length - (arranged.indexOf("cell:controlcenter") >= 0 ? 2 : 1));
+        }
+
+        const destination = Math.max(minDest, Math.min(maxDest, Math.round(targetIndex)));
+        if (sourceIndex === destination)
+            return;
+        const moved = arranged.splice(sourceIndex, 1)[0];
+        arranged.splice(destination, 0, moved);
+        // Retain preferences for absent apps and the other side of the collection.
+        svc.order = StatusCollection.mergeOrder(svc.order, arranged);
+        scheduleSave();
+    }
+
+    function isCollected(key) {
+        return key !== "cell:controlcenter" && svc.collectedKeys.indexOf(key) >= 0;
+    }
+
+    function setCollected(key, collected) {
+        if (!key || key === "cell:controlcenter" || svc.isPlaceholderKey(key))
+            return;
+        if (svc.isCollected(key) === collected)
+            return;
+        svc.collectedKeys = collected ? svc.collectedKeys.concat([key]) : svc.collectedKeys.filter(k => k !== key);
+        scheduleSave();
+    }
+
+    property Timer _saveTimer: Timer {
+        interval: 500
+        repeat: false
+        onTriggered: svc._doSave()
+    }
+    function scheduleSave() {
+        _saveTimer.restart();
+    }
+
+    function _doSave() {
+        const json = JSON.stringify({
+            version: 2,
+            order: svc.order,
+            collectedKeys: svc.collectedKeys
+        }, null, 2);
+        JsonConfigStore.writePath(svc.configPath, json);
+    }
+
+    function loadConfig() {
+        JsonConfigStore.readPath(svc.configPath, function (data, exists) {
+            if (exists && data) {
+                try {
+                    const obj = JSON.parse(data);
+                    if (Array.isArray(obj.collectedKeys))
+                        svc.collectedKeys = [...new Set(obj.collectedKeys.filter(key => typeof key === "string" && !svc.isPlaceholderKey(key) && key !== "cell:controlcenter"))];
+                    if (Array.isArray(obj.order)) {
+                        const raw = obj.order.filter(key => typeof key === "string");
+                        const trayPart = raw.filter(k => svc.isTrayKey(k));
+                        const cellPart = raw.filter(k => !svc.isTrayKey(k));
+                        svc.order = trayPart.concat(cellPart);
+                    }
+                } catch (e) {
+                    console.warn("[SysTrayOrder] parse error: " + e);
+                }
+            }
+            svc.ready = true;
+        });
+    }
+
+    Component.onCompleted: loadConfig()
+}

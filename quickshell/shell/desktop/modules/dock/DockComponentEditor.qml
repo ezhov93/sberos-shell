@@ -1,0 +1,280 @@
+import QtQuick
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.common
+import "../../../Kos/Ui"
+import "../../../shared/qml/controls" as Controls
+
+// Contextual editor for the information area. It edits the cards themselves:
+// active cards are ordered at the front, unused cards remain available in the
+// same visual tray, and dragging an active card changes the live Dock order.
+AnimatedPopupWindow {
+    id: editor
+
+    property Item anchorItem: null
+    property bool pointerInside: false
+    readonly property var labels: ({
+            music: I18n.tr("Music"),
+            weather: I18n.tr("Weather"),
+            clock: I18n.tr("Clock"),
+            metrics: I18n.tr("System")
+        })
+    readonly property var symbols: ({
+            music: "♫",
+            weather: "☀",
+            clock: "◷",
+            metrics: "⌁"
+        })
+    readonly property var displayIds: {
+        const active = ConfigService.infoCardOrder.slice();
+        for (const id of ConfigService.knownInfoCardIds) {
+            if (active.indexOf(id) < 0)
+                active.push(id);
+        }
+        return active;
+    }
+
+    motionOrigin: Item.Bottom
+    implicitWidth: 456
+    implicitHeight: 204
+    color: "transparent"
+    grabFocus: interactive
+
+    PopupAnchorBinding {
+        popupAnchor: editor.anchor
+        sourceItem: editor.anchorItem
+    }
+
+    anchor {
+        edges: Edges.Top
+        gravity: Edges.Top
+        margins.top: -12
+    }
+
+    function openFor(item) {
+        anchorItem = item;
+        DockModelService.openDockPopup(editor);
+    }
+
+    onVisibleChanged: if (!visible)
+        DockModelService.releaseDockPopup(editor)
+
+    Item {
+        anchors.fill: parent
+
+        OpaqueSurface {
+            id: editorSurface
+            anchors.fill: parent
+            radius: 20
+        }
+
+        ColumnLayout {
+            anchors {
+                fill: parent
+                margins: 14
+            }
+            spacing: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: I18n.tr("Dock Widgets")
+                    color: ThemeService.foregroundColor
+                    font {
+                        pixelSize: 14
+                        weight: Font.DemiBold
+                    }
+                }
+                Text {
+                    text: I18n.tr("Drag to reorder, tap to add or remove")
+                    color: ThemeService.foregroundColor
+                    opacity: 0.58
+                    font.pixelSize: 11
+                }
+                Item {
+                    Layout.fillWidth: true
+                    height: 1
+                }
+                Rectangle {
+                    width: 48
+                    height: 26
+                    radius: 9
+                    color: AppearanceTokens.colors.primaryContainer
+                    Text {
+                        anchors.centerIn: parent
+                        text: I18n.tr("Done")
+                        color: AppearanceTokens.colors.primaryContainerForeground
+                        font {
+                            pixelSize: 11
+                            weight: Font.DemiBold
+                        }
+                    }
+                    TapHandler {
+                        onTapped: editor.hide()
+                    }
+                }
+            }
+
+            Row {
+                id: cardRow
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 8
+
+                Repeater {
+                    model: editor.displayIds
+
+                    delegate: Rectangle {
+                        id: card
+                        required property string modelData
+                        required property int index
+                        readonly property bool active: ConfigService.infoCardOrder.indexOf(modelData) >= 0
+                        readonly property int activeIndex: ConfigService.infoCardOrder.indexOf(modelData)
+                        property real dragOffset: 0
+
+                        width: 96
+                        height: 72
+                        radius: 14
+                        color: active ? AppearanceTokens.colors.secondaryContainer : AppearanceTokens.colors.surfaceContainerLow
+                        border.width: active ? 2 : 1
+                        border.color: active ? AppearanceTokens.colors.primary : AppearanceTokens.colors.outlineVariant
+                        opacity: active ? 1 : 0.62
+                        z: reorderDrag.active ? 10 : 0
+                        transform: Translate {
+                            x: card.dragOffset
+                        }
+                        scale: reorderDrag.active ? 1.06 : 1
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 120
+                            }
+                        }
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 120
+                            }
+                        }
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 4
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: editor.symbols[card.modelData]
+                                color: ThemeService.foregroundColor
+                                font.pixelSize: 22
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: editor.labels[card.modelData]
+                                color: ThemeService.foregroundColor
+                                font {
+                                    pixelSize: 11
+                                    weight: Font.DemiBold
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            anchors {
+                                top: parent.top
+                                right: parent.right
+                                margins: 5
+                            }
+                            width: 20
+                            height: 20
+                            radius: 10
+                            color: active ? "#ff453a" : ThemeService.accentColor
+                            Text {
+                                anchors.centerIn: parent
+                                text: card.active ? "−" : "+"
+                                color: "white"
+                                font {
+                                    pixelSize: 15
+                                    weight: Font.Bold
+                                }
+                            }
+                        }
+
+                        TapHandler {
+                            enabled: !reorderDrag.active
+                            onTapped: {
+                                if (card.active)
+                                    ConfigService.removeInfoCard(card.modelData);
+                                else
+                                    ConfigService.addInfoCard(card.modelData, ConfigService.infoCardOrder.length);
+                            }
+                        }
+
+                        DragHandler {
+                            id: reorderDrag
+                            target: null
+                            enabled: card.active
+                            xAxis.enabled: true
+                            yAxis.enabled: false
+                            onTranslationChanged: if (active)
+                                card.dragOffset = translation.x
+                            onActiveChanged: {
+                                if (active)
+                                    return;
+                                if (Math.abs(card.dragOffset) < 8) {
+                                    card.dragOffset = 0;
+                                    return;
+                                }
+                                const step = card.width + cardRow.spacing;
+                                const delta = Math.round(card.dragOffset / step);
+                                ConfigService.moveInfoCard(card.modelData, Math.max(0, Math.min(ConfigService.infoCardOrder.length - 1, card.activeIndex + delta)));
+                                card.dragOffset = 0;
+                            }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 4
+                Layout.rightMargin: 4
+
+                ColumnLayout {
+                    spacing: 1
+                    Text {
+                        text: I18n.tr("Auto rotate")
+                        color: ThemeService.foregroundColor
+                        font {
+                            pixelSize: 13
+                            weight: Font.DemiBold
+                        }
+                    }
+                    Text {
+                        text: I18n.tr("When off, hover and scroll wheel still switch pages")
+                        color: ThemeService.foregroundColor
+                        opacity: 0.58
+                        font.pixelSize: 10
+                    }
+                }
+                Item {
+                    Layout.fillWidth: true
+                    height: 1
+                }
+                Controls.ThemeSwitch {
+                    id: autoRotateSwitch
+                    implicitWidth: 58
+                    implicitHeight: 28
+                    checked: ConfigService.infoCardAutoRotate
+                    accentColor: ThemeService.accentColor
+                    trackColor: Qt.rgba(ThemeService.foregroundColor.r, ThemeService.foregroundColor.g, ThemeService.foregroundColor.b, 0.18)
+                    onToggled: function (enabled) {
+                        ConfigService.updateInfoCardAutoRotate(enabled);
+                    }
+                }
+            }
+        }
+    }
+
+    HoverHandler {
+        onHoveredChanged: editor.pointerInside = hovered
+    }
+}

@@ -1,0 +1,61 @@
+# Local editor/assistant settings
+# (AI 工具的规则/skill 目录：从提交移出，但留在本机供 agent 读取)
+.claude/
+.agents/
+CLAUDE.md
+.zcode/
+.loop/
+.idea/
+
+# Quickshell runtime logs and generated crash data
+*.log
+*.qslog
+*.qslog.gz
+
+# Local build outputs
+.build/
+
+# Python bytecode from test helpers such as tests/popup-motion/run.py
+__pycache__/
+
+# Local workbench: session reports and open-issue notes that must not be
+# committed, but should stay readable and traceable on this machine.
+# See tmp/README.md for what belongs here.
+/tmp/
+
+# Anchored on purpose: running kos-bridge's documented preview command from the
+# repo root (cmake -S kwin/kos-bridge -B build) lands its tree here
+# instead of the ignored per-project path. Nothing else uses a root build/.
+/build/
+apps/settings/build/
+kwin/kos-bridge/build/
+kwin/kos-decoration/build/
+/.workbuddy/memory
+
+# Sandboxed tooling rewrites `rm` into a trash move, so anything deleted from
+# inside the checkout lands in a .Trash-0/ directory at its root. Throwaway.
+.Trash-0/
+
+# LockScreenFeedService writes the generated feed into the *installed* lock
+# screen package -- $HOME/.local/share/plasma/shells/org.kos.desktop for a
+# default kosctl install, which is GenericDataLocation, not this checkout. So
+# LockFeed.qml ships here as the default feed the lock screen shows before the
+# shell has written real data, and is tracked. Only the generator's temp file is
+# ignored, for the case where the checkout itself is the install prefix.
+apps/lockscreen/contents/lockscreen/LockFeed.qml.tmp
+
+# Rendered by apps/lockscreen/tests/headless/run.sh on every run.
+apps/lockscreen/tests/headless/lock.png
+
+# Reasonix agent runtime state: captured attachments and the local permission
+# config it writes into the checkout.
+.reasonix/
+reasonix.toml
+
+# Session-local assistant metadata + local effect build dir
+.mimosa/
+kwin/kwin-effects-stageanim/build/
+
+# UI iteration captures and automation ledgers stay local, not in product docs.
+/docs/ui-calendar/
+/docs/ui-weather/

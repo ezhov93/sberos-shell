@@ -1,0 +1,41 @@
+module qs.desktop.modules.common
+AnimatedPopupWindow 1.0 AnimatedPopupWindow.qml
+PageMotion 1.0 PageMotion.qml
+SceneBounds 1.0 SceneBounds.qml
+DateProjection 1.0 DateProjection.qml
+ThemeText 1.0 ThemeText.qml
+MaterialFlower 1.0 MaterialFlower.qml
+WavyProgress 1.0 WavyProgress.qml
+WidgetSurface 1.0 WidgetSurface.qml
+RoundedInputRegion 1.0 RoundedInputRegion.qml
+SquircleMask 1.0 SquircleMask.qml
+KosCardShadow 1.0 KosCardShadow.qml
+OpaqueSurface 1.0 OpaqueSurface.qml
+FrostedSurface 1.0 FrostedSurface.qml
+PopupMotion 1.0 PopupMotion.qml
+AppIcon 1.0 AppIcon.qml
+ContextMenu 1.0 ContextMenu.qml
+MenuItemRow 1.0 MenuItemRow.qml
+KosFloatPanel 1.0 KosFloatPanel.qml
+BundledIcon 1.0 BundledIcon.qml
+singleton ContextMenuCoordinator 1.0 ContextMenuCoordinator.qml
+singleton AppPresentationService 1.0 AppPresentationService.qml
+singleton AppActionService 1.0 AppActionService.qml
+singleton MetricsService 1.0 MetricsService.qml
+singleton IconThemeReloadService 1.0 IconThemeReloadService.qml
+singleton BundledIcons 1.0 BundledIcons.qml
+singleton SystemIconResolver 1.0 SystemIconResolver.qml
+singleton TrayAttentionService 1.0 TrayAttentionService.qml
+singleton AppNotificationService 1.0 AppNotificationService.qml
+singleton AppearanceConfigService 1.0 AppearanceConfigService.qml
+singleton IconAppearanceService 1.0 IconAppearanceService.qml
+singleton AppearanceTokens 1.0 AppearanceTokens.qml
+singleton ScreenLifecycle 1.0 ScreenLifecycle.qml
+
+MediaControlButton 1.0 MediaControlButton.qml
+
+ActionFeedbackToast 1.0 ActionFeedbackToast.qml
+
+DesktopConfirmDialog 1.0 DesktopConfirmDialog.qml
+
+PopupAnchorBinding 1.0 PopupAnchorBinding.qml

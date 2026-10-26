@@ -1,0 +1,228 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.platform
+
+// KOS global shortcuts — one owner for defaults, user rebindings, and the
+// kglobalaccel handoff. The service publishes the effective set to
+// kos-platform (`shortcuts.apply`); the daemon registers each entry as a
+// QAction under the single KGlobalAccel component and runs the Exec line on
+// activation. No desktop files are involved.
+//
+// The Shell composes each Exec line so activation always addresses the live
+// instance: installed shells run as `qs -c kos` while development shells run
+// as `qs -p <repo>/shell`, and `ipc call` only reaches the matching one.
+QtObject {
+    id: service
+
+    readonly property string configDir: Quickshell.stateDir + "/shortcuts"
+    readonly property string configPath: configDir + "/config.json"
+
+    // id → combo overrides written by the Settings app. Anything absent
+    // keeps its default binding.
+    property var overrides: ({})
+    property bool ready: false
+
+    readonly property var defaults: [
+        {
+            id: "net.local.kos-launcher",
+            description: I18n.tr("App Launcher"),
+            target: "applauncher",
+            action: "toggle",
+            combo: "Meta+Space"
+        },
+        {
+            id: "net.local.kos-window-switcher",
+            description: I18n.tr("Quick Search"),
+            target: "quicksearch",
+            action: "toggle window",
+            combo: "Meta+Shift+Space"
+        },
+        {
+            id: "net.local.kos-control-center",
+            description: I18n.tr("Control Center"),
+            target: "control-center",
+            action: "toggle",
+            combo: "Meta+B"
+        },
+        {
+            id: "net.local.kos-overview",
+            description: I18n.tr("Workspace Overview"),
+            target: "overview",
+            action: "toggle",
+            combo: "Meta+Tab"
+        },
+        {
+            id: "net.local.kos-stage",
+            description: I18n.tr("Stage Sidebar"),
+            target: "stage-sidebar",
+            action: "toggle",
+            combo: "Meta+Y"
+        },
+        {
+            id: "net.local.kos-clipboard",
+            description: I18n.tr("Clipboard History"),
+            target: "quicksearch",
+            action: "toggle clipboard",
+            combo: "Meta+V"
+        },
+        {
+            id: "net.local.kos-show-desktop",
+            description: I18n.tr("Show / Return to Desktop"),
+            target: "desktop",
+            action: "toggle",
+            combo: "Meta+D"
+        },
+    ]
+
+    function isValidCombo(combo) {
+        const value = String(combo || "").trim();
+        if (!value)
+            return false;
+        // kglobalaccel PortableText: modifiers and the key joined by "+".
+        return value.split("+").every(part => part.length > 0);
+    }
+
+    // Defaults merged with user overrides; the effective binding set.
+    function effectiveShortcuts() {
+        return defaults.map(item => ({
+                    id: item.id,
+                    description: item.description,
+                    target: item.target,
+                    action: item.action,
+                    defaultCombo: item.combo,
+                    combo: overrides[item.id] || item.combo,
+                    custom: overrides[item.id] !== undefined
+                }));
+    }
+
+    function _snapshotObject(error) {
+        return {
+            version: 1,
+            shortcuts: effectiveShortcuts(),
+            error: error || ""
+        };
+    }
+
+    function snapshot() {
+        return _snapshotObject();
+    }
+
+    function updateShortcut(id, rawCombo) {
+        const combo = String(rawCombo || "").trim();
+        const known = defaults.find(item => item.id === id);
+        if (!known)
+            return _snapshotObject(I18n.tr("Unknown shortcut: %1").arg(id));
+        if (!isValidCombo(combo))
+            return _snapshotObject(I18n.tr("Invalid shortcut combination: %1").arg(combo));
+        const duplicate = effectiveShortcuts().find(item => item.id !== id && item.combo === combo);
+        if (duplicate)
+            return _snapshotObject(I18n.tr("Shortcut %1 is already used by \"%2\"").arg(combo).arg(duplicate.description));
+        if (combo === known.combo)
+            delete overrides[id];
+        else
+            overrides[id] = combo;
+        overridesChanged();
+        saveTimer.restart();
+        applyToPlatform();
+        return _snapshotObject();
+    }
+
+    function resetShortcut(id) {
+        if (!defaults.find(item => item.id === id))
+            return _snapshotObject(I18n.tr("Unknown shortcut: %1").arg(id));
+        delete overrides[id];
+        overridesChanged();
+        saveTimer.restart();
+        applyToPlatform();
+        return _snapshotObject();
+    }
+
+    function _execFor(item) {
+        const args = "ipc call " + item.target + " " + item.action;
+        const configRoot = (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/quickshell/kos";
+        // The installed layout is launched as `-c kos`; anything else is a
+        // development tree and must be addressed by its explicit path.
+        if (Quickshell.shellDir === configRoot)
+            return "qs -c kos " + args;
+        // The daemon parses this with KShell::splitArgs. Preserve spaces and
+        // quotes in the selector as one argument; it never invokes a shell.
+        const path = "'" + String(Quickshell.shellDir).replace(/'/g, "'\\''") + "'";
+        return "qs --path " + path + " " + args;
+    }
+
+    // Publish the effective set to kos-platform. Applies at startup and after
+    // every change — the request fails fast while the daemon is down and the
+    // transportChanged handler re-sends on reconnect — so a missing or stale
+    // kglobalaccel entry self-heals on every Shell start.
+    function applyToPlatform() {
+        const shortcuts = effectiveShortcuts().map(item => ({
+                    id: item.id,
+                    description: item.description,
+                    combo: item.combo,
+                    exec: _execFor(item)
+                }));
+        PlatformClient.request("shortcuts.apply", {
+            shortcuts: shortcuts
+        }, function (response) {
+            if (!response?.ok)
+                console.warn("[Shortcuts] apply failed: " + (response?.error?.message || "platform unavailable"));
+            else
+                console.log("[Shortcuts] applied " + shortcuts.length + " shortcuts");
+        });
+    }
+
+    property Timer saveTimer: Timer {
+        interval: 250
+        repeat: false
+        onTriggered: service._save()
+    }
+
+    function _save() {
+        const payload = JSON.stringify({
+            version: 1,
+            overrides: service.overrides
+        }, null, 2);
+        JsonConfigStore.writePath(service.configPath, payload);
+    }
+
+    function _load() {
+        JsonConfigStore.readPath(service.configPath, function (data, exists) {
+            if (exists && data) {
+                try {
+                    const object = JSON.parse(data);
+                    const stored = object.overrides;
+                    if (stored && typeof stored === "object") {
+                        // Only accept overrides that name a known shortcut.
+                        const known = new Set(defaults.map(item => item.id));
+                        const clean = {};
+                        for (const key in stored) {
+                            if (known.has(key) && isValidCombo(stored[key]))
+                                clean[key] = String(stored[key]);
+                        }
+                        service.overrides = clean;
+                    }
+                } catch (error) {
+                    console.warn("[Shortcuts] parse error: " + error);
+                }
+            }
+            service.ready = true;
+            service.applyToPlatform();
+        });
+    }
+
+    // QtObject has no children: non-visual objects must be declared as
+    // properties or they fail to instantiate with "non-existent default
+    // property".
+    property Connections platformConnections: Connections {
+        target: PlatformClient
+        function onTransportChanged(connected) {
+            if (connected && service.ready)
+                service.applyToPlatform();
+        }
+    }
+
+    Component.onCompleted: _load()
+}

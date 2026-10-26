@@ -1,0 +1,239 @@
+import QtQuick
+import QtTest
+
+Item {
+    property var settingsBridge: bridge
+    QtObject {
+        id: bridge
+        property bool sourceTreeEntry: false
+        property string sessionShellDir: ""
+        property bool developmentBannerDismissed: false
+        property string lastError: ""
+        property var snapshot: ({
+                baseHeight: 60,
+                position: "bottom",
+                contentStyle: "compact",
+                dockStyle: "floating",
+                visibilityMode: "smart",
+                windowGrouping: "grouped",
+                showLauncher: true,
+                showTrash: true
+            })
+        property var calls: []
+        property var groupingCalls: []
+        property var badgeCalls: []
+        property var indicatorCalls: []
+        property bool deferSnapshot: false
+        signal dockSnapshotChanged(var state)
+        signal dockBuiltinVisibilityChanged(var state)
+        signal notificationSnapshotChanged(var state)
+        signal dockRevealIndicatorVisibilityChanged(var state)
+        function dockSnapshot() {
+            if (!deferSnapshot)
+                dockSnapshotChanged(snapshot);
+        }
+        function updateDockBuiltinVisibility(id, visible) {
+            calls = calls.concat([
+                {
+                    id,
+                    visible
+                }
+            ]);
+        }
+        function notificationSnapshot() {
+            notificationSnapshotChanged(Object.assign({}, snapshot, {
+                ready: true,
+                sources: [],
+                blockedKeys: [],
+                showNotificationBadges: snapshot.showNotificationBadges !== false
+            }));
+        }
+        function setNotificationPreference(key, value) {
+            if (key === "showNotificationBadges")
+                badgeCalls = badgeCalls.concat([value]);
+        }
+        function setNotificationBlocked(key, value) {
+        }
+        function updateDockRevealIndicatorVisibility(visible) {
+            indicatorCalls = indicatorCalls.concat([visible]);
+        }
+        function updateDockWindowGrouping(mode) {
+            groupingCalls = groupingCalls.concat([mode]);
+        }
+    }
+    TestCase {
+        name: "SettingsBuiltins"
+        when: windowShown
+        function init() {
+            bridge.snapshot = {
+                baseHeight: 60,
+                position: "bottom",
+                contentStyle: "compact",
+                dockStyle: "floating",
+                visibilityMode: "smart",
+                windowGrouping: "grouped",
+                showLauncher: true,
+                showTrash: true
+            };
+            bridge.calls = [];
+            bridge.badgeCalls = [];
+            bridge.groupingCalls = [];
+            bridge.deferSnapshot = false;
+            bridge.lastError = "";
+        }
+
+        function test_grouping_binding() {
+            const component = Qt.createComponent("../../main.qml");
+            compare(component.status, Component.Ready, component.errorString());
+            const app = component.createObject(null, {
+                currentPage: 3
+            });
+            verify(app !== null);
+            const control = findChild(app.contentItem, "window-grouping-switch");
+            verify(control !== null);
+            const scroll = findChild(app.contentItem, "settings-page-scroll");
+            scroll.contentY = control.mapToItem(scroll.contentItem, 0, 0).y - 100;
+            verify(waitForRendering(control));
+            mouseClick(control);
+            compare(bridge.groupingCalls.length, 1);
+            compare(bridge.groupingCalls[0], "separate");
+            verify(control.checked, "only the snapshot confirms the switch");
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                windowGrouping: "separate"
+            });
+            bridge.dockSnapshot();
+            verify(!control.checked, "asynchronous acknowledgement updates the switch");
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                windowGrouping: "grouped"
+            });
+            bridge.dockSnapshot();
+            verify(control.checked, "external changes keep the binding");
+            app.destroy();
+        }
+        function test_notification_badge_binding() {
+            const component = Qt.createComponent("../../main.qml");
+            compare(component.status, Component.Ready, component.errorString());
+            const app = component.createObject(null, {
+                currentPage: 11
+            });
+            verify(app !== null);
+            const control = findChild(app.contentItem, "notification-showNotificationBadges-switch");
+            verify(control !== null);
+            verify(control.checked, "older snapshots keep notification badges enabled");
+            const scroll = findChild(app.contentItem, "settings-page-scroll");
+            verify(waitForRendering(app.contentItem));
+            scroll.contentY = Math.max(0, Math.min(scroll.contentHeight - scroll.height, control.mapToItem(scroll.contentItem, 0, 0).y - 100));
+            verify(waitForRendering(control));
+            mouseClick(control);
+            compare(bridge.badgeCalls.length, 1);
+            compare(bridge.badgeCalls[0], false);
+            verify(control.checked && !control.enabled, "wait for the confirmed snapshot");
+            bridge.dockSnapshot();
+            verify(!control.enabled, "an unrelated snapshot cannot acknowledge the request");
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                showNotificationBadges: false
+            });
+            bridge.notificationSnapshot();
+            verify(!control.checked && control.enabled);
+            mouseClick(control);
+            compare(bridge.badgeCalls.length, 2);
+            compare(bridge.badgeCalls[1], true);
+            bridge.lastError = "save failed";
+            bridge.notificationSnapshotChanged({});
+            verify(!control.checked && control.enabled, "a failed update keeps the confirmed value");
+            bridge.lastError = "";
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                showNotificationBadges: true
+            });
+            bridge.notificationSnapshot();
+            verify(control.checked, "external snapshots keep the switch binding");
+            compare(bridge.badgeCalls.length, 2, "snapshot updates must not write back");
+            app.destroy();
+        }
+        function test_reveal_indicator_binding() {
+            const component = Qt.createComponent("../../main.qml");
+            compare(component.status, Component.Ready, component.errorString());
+            const app = component.createObject(null, {
+                currentPage: 3
+            });
+            verify(app !== null);
+            const control = findChild(app.contentItem, "dock-reveal-indicator-switch");
+            verify(control !== null);
+            verify(control.checked, "older snapshots keep the indicator enabled");
+            const scroll = findChild(app.contentItem, "settings-page-scroll");
+            verify(waitForRendering(app.contentItem));
+            scroll.contentY = Math.max(0, Math.min(scroll.contentHeight - scroll.height, control.mapToItem(scroll.contentItem, 0, 0).y - 100));
+            verify(waitForRendering(control));
+            mouseClick(control);
+            compare(bridge.indicatorCalls.length, 1);
+            compare(bridge.indicatorCalls[0], false);
+            verify(control.checked && !control.enabled, "wait for the confirmed snapshot");
+            bridge.dockSnapshot();
+            verify(!control.enabled, "an unrelated snapshot cannot acknowledge the request");
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                showRevealIndicator: false
+            });
+            bridge.dockRevealIndicatorVisibilityChanged(bridge.snapshot);
+            verify(!control.checked && control.enabled);
+            mouseClick(control);
+            compare(bridge.indicatorCalls.length, 2);
+            compare(bridge.indicatorCalls[1], true);
+            bridge.lastError = "save failed";
+            bridge.dockRevealIndicatorVisibilityChanged({});
+            verify(!control.checked && control.enabled, "a failed update keeps the confirmed value");
+            bridge.lastError = "";
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                showRevealIndicator: true
+            });
+            bridge.dockSnapshot();
+            verify(control.checked, "external snapshots keep the switch binding");
+            compare(bridge.indicatorCalls.length, 2, "snapshot updates must not write back");
+            app.destroy();
+        }
+        function test_selection() {
+            const component = Qt.createComponent("../../main.qml");
+            compare(component.status, Component.Ready, component.errorString());
+            const app = component.createObject(null, {
+                currentPage: 3
+            });
+            verify(app !== null);
+            tryVerify(() => findChild(app.contentItem, "dock-launcher-checkbox") !== null);
+            const launcher = findChild(app.contentItem, "dock-launcher-checkbox");
+            const trash = findChild(app.contentItem, "dock-trash-checkbox");
+            verify(launcher !== null);
+            verify(trash !== null);
+            verify(launcher.checked && trash.checked);
+            verify(waitForRendering(launcher));
+            mouseClick(launcher);
+            compare(bridge.calls.length, 1);
+            compare(bridge.calls[0].id, "launcher");
+            compare(bridge.calls[0].visible, false);
+            verify(!launcher.enabled && !trash.enabled);
+            bridge.dockSnapshotChanged(bridge.snapshot);
+            verify(!launcher.enabled && !trash.enabled, "an unrelated Dock snapshot must not finish the visibility update");
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                showLauncher: false
+            });
+            bridge.dockBuiltinVisibilityChanged(bridge.snapshot);
+            verify(!launcher.checked && trash.checked);
+            verify(launcher.enabled && trash.enabled);
+            mouseClick(trash);
+            compare(bridge.calls.length, 2);
+            compare(bridge.calls[1].id, "trash");
+            bridge.lastError = "save failed";
+            bridge.dockBuiltinVisibilityChanged({});
+            verify(trash.checked, "failed update returns to confirmed state");
+            verify(trash.enabled);
+            // Other clients may change the same setting after an error.
+            bridge.lastError = "";
+            bridge.snapshot = Object.assign({}, bridge.snapshot, {
+                showLauncher: true,
+                showTrash: false
+            });
+            bridge.dockSnapshot();
+            verify(launcher.checked && !trash.checked);
+            compare(bridge.calls.length, 2, "snapshot changes must not send extra writes");
+            app.destroy();
+        }
+    }
+}

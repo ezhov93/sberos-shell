@@ -1,0 +1,646 @@
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Widgets
+import Quickshell.Services.Notifications
+import QtQuick
+import Qt5Compat.GraphicalEffects
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.common
+import qs.desktop.modules.dock
+import qs.desktop.modules.notifications
+import "../../../Kos/Ui"
+
+// Top-right notification popup. One card per app group (newest on top).
+//
+// The window anchors top+right+bottom with a fixed bottom margin, so its
+// surface size is constant -- it never resizes when cards enter/leave. That
+// matters because a Wayland surface resize during the entrance x-slide showed
+// up as a visible mid-animation hitch (the compositor's synchronous resize
+// landed inside the 200ms slide). A constant surface eliminates it.
+//
+// The ListModel carries only primitive roles; live Notification objects are
+// fetched from groupService by groupKey (see NotificationGroupService --
+// ListModel cannot store object arrays).
+PanelWindow {
+    id: root
+
+    // The transparent notification surface is not an application window.
+    WlrLayershell.namespace: "notification"
+
+    required property var groupService
+    property int exitDuration: 200
+
+    // Global ceiling on popup auto-expire, in ms. Apps may request longer
+    // (Fcitx requests 60000 for its "Wayland 诊断" notice), but no popup is
+    // allowed to linger past this. Change this single number to retune.
+    readonly property int maxAutoExpireMs: 6000
+
+    color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+
+    // Fixed surface: top-anchored, enough vertical room for a stack of cards
+    // growing downward. The mask keeps empty space click-through.
+    anchors {
+        top: true
+        right: true
+        bottom: true
+    }
+    margins {
+        top: 48
+        right: 18
+        bottom: 48
+    }
+
+    implicitWidth: 350
+
+    readonly property var visibleCards: notificationList.contentItem.children.filter(child => child.notificationInputRegion !== undefined && child.visible)
+
+    // Input geometry is declared independently from visual surface geometry.
+    Region {
+        id: notificationInput
+        regions: root.visibleCards.filter(card => !card.removing).map(card => card.notificationInputRegion)
+    }
+
+    mask: notificationInput
+
+    ListView {
+        id: notificationList
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        model: root.groupService.groupsModel
+        spacing: 10
+        interactive: false
+        clip: true
+
+        // Entrance: opacity + x-slide. Surface size is constant, so no resize
+        // lands mid-slide -- the slide stays smooth.
+        add: Transition {
+            ParallelAnimation {
+                NumberAnimation {
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 200
+                    easing.type: Easing.InCubic
+                }
+                NumberAnimation {
+                    property: "x"
+                    from: 120
+                    to: 0
+                    duration: 200
+                    easing.type: Easing.InCubic
+                }
+            }
+        }
+        displaced: Transition {
+            NumberAnimation {
+                property: "y"
+                duration: 200
+                easing.type: Easing.InOutCubic
+            }
+        }
+        removeDisplaced: Transition {
+            NumberAnimation {
+                property: "y"
+                duration: 200
+                easing.type: Easing.InOutCubic
+            }
+        }
+
+        delegate: Rectangle {
+            id: card
+            required property var modelData
+            required property int index
+            // Clickable outline for pointer input.
+            readonly property var notificationInputRegion: cardInput
+            property bool removing: false
+            enabled: !removing
+            ListView.onRemove: {
+                removing = true;
+                ListView.delayRemove = true;
+                exitAnimation.start();
+            }
+
+            Timer {
+                id: removingSafetyTimer
+                interval: root.exitDuration + 300
+                running: card.removing && !exitAnimation.running
+                onTriggered: exitAnimation.start()
+            }
+
+            NumberAnimation {
+                id: exitAnimation
+                target: card
+                property: "x"
+                to: notificationList.width + 44
+                duration: root.exitDuration
+                easing.type: Easing.InCubic
+                onFinished: card.ListView.delayRemove = false
+            }
+
+            readonly property string groupKey: modelData.groupKey
+            readonly property int groupCount: modelData.count
+            readonly property bool groupCollapsed: modelData.collapsed
+            // Live newest Notification for this group. Depends on
+            // sidecarRevision so it re-evaluates when the service rebuilds.
+            readonly property var notification: {
+                void root.groupService.sidecarRevision;
+                return root.groupService.latestForKey(card.groupKey);
+            }
+            // Snapshot of the last visible notification's display fields.
+            // When the group is dying (count hits 0 during a dismiss), the
+            // live notification is null but the card is still mid-exit-slide.
+            // Without this snapshot the card's text collapses to empty and
+            // you see a blank shell sliding away. We keep the last good
+            // summary/body/appName/icon so the exiting card looks intact.
+            property string _lastSummary: ""
+            property string _lastBody: ""
+            property string _lastAppName: ""
+            property string _lastIconSource: ""
+            property int _lastUrgency: 1
+            onModelDataChanged: card.removing = false
+            onNotificationChanged: {
+                if (card.notification) {
+                    card._lastSummary = card.notification.summary || "";
+                    card._lastBody = card.notification.body || "";
+                    card._lastAppName = card.notification.appName || "";
+                    card._lastUrgency = card.notification.urgency;
+                    card._lastIconSource = AppIdentityService._iconPath(card.notification.image || card.notification.appIcon);
+                    card.removing = false;
+                }
+                // The delegate is reused when a group's newest notification is
+                // replaced by a newer one. Without this reset the fresh notice
+                // would inherit the previous one's already-elapsed time and
+                // vanish almost immediately.
+                card._elapsedMs = 0;
+                card._lastTickAt = 0;
+            }
+            // Display fields: use live notification, fall back to snapshot
+            // when the group is dying (notification null but card visible).
+            readonly property string displaySummary: !NotificationPolicyService.showPreview ? I18n.tr("Notification received") : card.notification ? (card.notification.summary.length > 0 ? card.notification.summary : card.notification.appName) : card._lastSummary
+            readonly property string displayBody: !NotificationPolicyService.showPreview ? "" : card.notification ? card.notification.body : card._lastBody
+            readonly property string displayAppName: card.notification ? card.notification.appName : card._lastAppName
+            readonly property string displayIconSource: card.notification ? AppIdentityService._iconPath(card.notification.image || card.notification.appIcon) : card._lastIconSource
+            readonly property bool isCritical: (card.notification ? card.notification.urgency : card._lastUrgency) === NotificationUrgency.Critical
+            readonly property bool isLow: (card.notification ? card.notification.urgency : card._lastUrgency) === NotificationUrgency.Low
+            readonly property bool expanded: !card.groupCollapsed && card.groupCount > 1
+            readonly property color foregroundColor: AppearanceTokens.content.shellInk()
+            readonly property string iconSource: card.displayIconSource
+
+            // Hover state for pause-on-hover. A HoverHandler (not a MouseArea)
+            // so it never steals clicks from the buttons inside the card.
+            property bool hovered: false
+            HoverHandler {
+                onHoveredChanged: card.hovered = hovered
+            }
+
+            // Auto-expire duration for this card, in ms. Critical notifications
+            // stay until dismissed (matches Plasma: urgency=critical never
+            // auto-expires); everything else is capped by root.maxAutoExpireMs.
+            readonly property int expireMs: {
+                if (card.isCritical)
+                    return 0;
+                const n = card.notification;
+                const requested = (n && n.expireTimeout > 0) ? n.expireTimeout : 7000;
+                return Math.min(root.maxAutoExpireMs, Math.max(1000, requested));
+            }
+
+            width: notificationList.width
+            height: Math.floor(content.implicitHeight + 28)
+            Behavior on height {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.InOutCubic
+                }
+            }
+            radius: 28
+            color: "transparent"
+
+            // Rounded input geometry stays independent from painted content.
+            RoundedInputRegion {
+                id: cardInput
+                item: card
+                radius: card.radius
+            }
+
+            // ---- backgrounds ----
+            // The urgency tints and edge accents sit inside the opaque surface.
+            OpaqueSurface {
+                id: panel
+                anchors.fill: parent
+                radius: card.radius
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: panel.contentRadius
+                    visible: card.isCritical
+                    color: Qt.rgba(0.55, 0.10, 0.08, 0.22)
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: panel.contentRadius
+                    visible: card.isLow
+                    color: ThemeService.isDark ? Qt.rgba(0.04, 0.05, 0.08, 0.12) : Qt.rgba(0, 0, 0, 0.04)
+                }
+                Rectangle {
+                    visible: card.isCritical
+                    x: 4
+                    y: panel.contentRadius * 0.5
+                    width: 3
+                    height: panel.height - panel.contentRadius
+                    radius: 1.5
+                    color: Qt.rgba(1.0, 0.27, 0.23, 0.95)
+                }
+                Rectangle {
+                    x: Math.min(panel.width / 2, panel.contentRadius + 2)
+                    y: 0.6
+                    width: Math.max(0, panel.width - x * 2)
+                    height: 1
+                    color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)
+                }
+            }
+
+            // ---- close + auto-expire ----
+
+            // Close the whole group at once (× button or auto-expire), not
+            // just the latest notification -- otherwise a stacked group of N
+            // needs N clicks. Single notifications are a group of 1, so this
+            // covers both cases. Uses groupKey (stable across rebuilds) rather
+            // than card.index (which can drift during a rebuild).
+            function close(expired) {
+                if (removing)
+                    return;
+                removing = true;
+                if (expired)
+                    root.groupService.expireGroupByKey(card.groupKey);
+                else
+                    root.groupService.dismissGroupByKey(card.groupKey);
+            }
+
+            // ---- countdown bar ----
+            // Drawn as the bottom sliver of the card, above the glass panel so
+            // it stays visible. Hidden for critical/persistent notifications
+            // (no countdown to show) and once the group is dying.
+            Rectangle {
+                id: countdownTrack
+                visible: card.expireMs > 0 && !card.isCritical
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                    leftMargin: card.radius * 0.5
+                    rightMargin: card.radius * 0.5
+                    bottomMargin: 6
+                }
+                height: 2
+                radius: 1
+                color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+
+                Rectangle {
+                    radius: parent.radius
+                    height: parent.height
+                    // Drains left-to-right: the remaining sliver shrinks toward
+                    // the left edge as time runs out. Updated every 50ms by the
+                    // ticker, so no Behavior is needed -- adding one would lag
+                    // the bar behind the real remaining time.
+                    width: Math.round(parent.width * card._remainingFraction)
+                    anchors.left: parent.left
+                    color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.55) : Qt.rgba(0, 0, 0, 0.35)
+                }
+            }
+
+            // ---- auto-expire ----
+
+            // QML's Timer has no `paused` property, and changing any of its
+            // properties while running RESETS the elapsed time (documented).
+            // So a Timer cannot be paused on hover -- `running: !hovered` would
+            // restart the countdown every time the pointer crossed the card.
+            //
+            // Instead we run a fixed-step ticker and accumulate elapsed time
+            // ourselves, using Date.now() so the accumulated value does not
+            // drift with frame jitter. Hover simply stops accumulating.
+            property real _elapsedMs: 0
+            property real _lastTickAt: 0
+
+            readonly property real _remainingMs: Math.max(0, card.expireMs - card._elapsedMs)
+            // 1 -> 0, for the bar.
+            readonly property real _remainingFraction: card.expireMs > 0 ? Math.max(0, Math.min(1, card._remainingMs / card.expireMs)) : 0
+
+            // Ticker only runs while the card is alive AND not hovered. It is
+            // deliberately NOT restarted on hover-out with a fresh baseline:
+            // _lastTickAt is re-seeded at the top of each onTriggered, so the
+            // gap spent hovered is never counted.
+            Timer {
+                id: expireTicker
+                interval: 50
+                repeat: true
+                running: card.notification !== null && card.expireMs > 0 && !card.hovered
+                onTriggered: {
+                    const now = Date.now();
+                    if (card._lastTickAt > 0)
+                        card._elapsedMs += now - card._lastTickAt;
+                    card._lastTickAt = now;
+                    if (card._remainingMs <= 0)
+                        card.close(true);
+                }
+            }
+
+            // Re-seed the baseline whenever the ticker (re)starts, so the time
+            // spent hovered or paused is excluded from the countdown.
+            onHoveredChanged: {
+                if (!card.hovered)
+                    card._lastTickAt = 0;
+            }
+
+            // ---- header ----
+
+            Item {
+                id: appMark
+                width: 34
+                height: width
+                anchors {
+                    left: parent.left
+                    leftMargin: 14
+                    top: parent.top
+                    topMargin: 14
+                }
+
+                ThemeText {
+                    anchors.centerIn: parent
+                    visible: !iconMask.visible
+                    text: card.displayAppName.length > 0 ? card.displayAppName.slice(0, 1).toUpperCase() : "•"
+                    color: card.foregroundColor
+                    font {
+                        pixelSize: 16
+                        bold: true
+                    }
+                }
+                Rectangle {
+                    id: iconMask
+                    anchors.centerIn: parent
+                    width: 30
+                    height: width
+                    radius: width * 0.30
+                    visible: card.iconSource.length > 0
+                    color: "transparent"
+                    // Rectangle.clip doesn't round-corner child Images reliably.
+                    // Use layer + OpacityMask to actually crop the icon to the
+                    // rounded rectangle (same pattern as DockWindowPreview).
+                    layer.enabled: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: iconMask.width
+                            height: iconMask.height
+                            radius: iconMask.radius
+                            color: "black"
+                            visible: false
+                        }
+                    }
+                    IconImage {
+                        anchors.fill: parent
+                        source: card.iconSource
+                        // Theme icon: synchronous, see AppIcon.qml.
+                        asynchronous: false
+                        smooth: true
+                    }
+                }
+            }
+
+            Rectangle {
+                id: countBadge
+                visible: card.groupCount > 1
+                width: badgeText.implicitWidth + 12
+                height: 18
+                radius: 9
+                anchors {
+                    right: closeButton.left
+                    rightMargin: 8
+                    top: parent.top
+                    topMargin: 15
+                }
+                color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08)
+                ThemeText {
+                    id: badgeText
+                    anchors.centerIn: parent
+                    text: card.groupCount
+                    color: card.foregroundColor
+                    font {
+                        pixelSize: 11
+                        bold: true
+                    }
+                }
+            }
+
+            MouseArea {
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    right: countBadge.visible ? countBadge.left : closeButton.left
+                    bottom: appMark.bottom
+                }
+                visible: card.groupCount > 1
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.groupService.toggleCollapsed(card.index)
+            }
+
+            // ---- content ----
+
+            Column {
+                id: content
+                anchors {
+                    left: appMark.right
+                    leftMargin: 10
+                    right: closeButton.left
+                    rightMargin: 8
+                    top: parent.top
+                    topMargin: 14
+                    bottom: parent.bottom
+                    bottomMargin: 14
+                }
+                spacing: 4
+
+                ThemeText {
+                    width: parent.width
+                    text: card.expanded ? (modelData.appName.length > 0 ? modelData.appName : "Notifications") : card.displaySummary
+                    color: card.foregroundColor
+                    font {
+                        pixelSize: 14
+                        bold: true
+                    }
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+
+                ThemeText {
+                    width: parent.width
+                    visible: !card.expanded && text.length > 0
+                    text: card.displayBody
+                    color: card.foregroundColor
+                    opacity: 1
+                    font.pixelSize: 13
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 4
+                    elide: Text.ElideRight
+                    textFormat: Text.PlainText
+                }
+
+                // Expanded: one row per notification, newest first.
+                Repeater {
+                    model: {
+                        void root.groupService.sidecarRevision;
+                        return card.expanded ? root.groupService.notificationsForKey(card.groupKey).slice().reverse() : [];
+                    }
+                    Item {
+                        width: content.width
+                        height: Math.max(notifRowText.implicitHeight, 20)
+                        visible: card.expanded
+                        ThemeText {
+                            id: notifRowText
+                            anchors {
+                                left: parent.left
+                                right: notifRowClose.left
+                                rightMargin: 6
+                                verticalCenter: parent.verticalCenter
+                            }
+                            text: !NotificationPolicyService.showPreview ? I18n.tr("Notification received") : modelData.summary.length > 0 ? modelData.summary : (modelData.appName || "")
+                            color: card.foregroundColor
+                            font {
+                                pixelSize: 13
+                                bold: true
+                            }
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                        ThemeText {
+                            id: notifRowClose
+                            text: "×"
+                            color: card.foregroundColor
+                            opacity: notifRowCloseArea.containsMouse ? 0.9 : 0.45
+                            font.pixelSize: 16
+                            anchors {
+                                right: parent.right
+                                verticalCenter: parent.verticalCenter
+                            }
+                            MouseArea {
+                                id: notifRowCloseArea
+                                anchors.fill: parent
+                                anchors.margins: -6
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.groupService.dismissNotification(modelData)
+                            }
+                        }
+                    }
+                }
+
+                // Action buttons (collapsed: latest notification).
+                Row {
+                    width: parent.width
+                    spacing: 8
+                    visible: !card.expanded && card.notification && card.notification.actions && card.notification.actions.length > 0
+                    Repeater {
+                        model: (card.notification && card.notification.actions) ? card.notification.actions : []
+                        Rectangle {
+                            id: actionBtn
+                            height: 28
+                            width: actionLabel.implicitWidth + 24
+                            radius: 14
+                            color: actionMouse.pressed ? AppearanceTokens.state.pressed : actionMouse.containsMouse ? AppearanceTokens.state.hover : AppearanceTokens.state.selected
+                            ThemeText {
+                                id: actionLabel
+                                anchors.centerIn: parent
+                                text: {
+                                    const raw = modelData.text || modelData.identifier || "";
+                                    // Some apps send lowercase or alternate-case
+                                    // action labels; tr() maps the common ones and
+                                    // falls back to the raw label otherwise.
+                                    return I18n.tr(raw) || raw;
+                                }
+                                color: card.foregroundColor
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                            }
+                            MouseArea {
+                                id: actionMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    const resident = card.notification?.resident ?? false;
+                                    modelData.invoke();
+                                    if (!resident)
+                                        card.close(false);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Inline reply (collapsed: latest notification).
+                Rectangle {
+                    width: parent.width
+                    height: 34
+                    radius: 8
+                    visible: !card.expanded && card.notification && card.notification.hasInlineReply
+                    color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                    TextInput {
+                        id: replyInput
+                        anchors {
+                            fill: parent
+                            margins: 6
+                        }
+                        verticalAlignment: Text.AlignVCenter
+                        color: card.foregroundColor
+                        font.pixelSize: 13
+                        text: ""
+                        ThemeText {
+                            visible: !replyInput.text && !replyInput.activeFocus
+                            text: card.notification ? (card.notification.inlineReplyPlaceholder || "Reply…") : "Reply…"
+                            color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.40) : Qt.rgba(0, 0, 0, 0.40)
+                            font.pixelSize: 13
+                            anchors.fill: parent
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onAccepted: {
+                            if (text.length > 0 && card.notification) {
+                                const resident = card.notification.resident;
+                                card.notification.sendInlineReply(text);
+                                text = "";
+                                if (!resident)
+                                    card.close(false);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---- close button ----
+
+            ThemeText {
+                id: closeButton
+                text: "×"
+                color: card.foregroundColor
+                opacity: 0.55
+                font.pixelSize: 22
+                anchors {
+                    right: parent.right
+                    rightMargin: 12
+                    top: parent.top
+                    topMargin: 9
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: card.close(false)
+                }
+            }
+        }
+    }
+}

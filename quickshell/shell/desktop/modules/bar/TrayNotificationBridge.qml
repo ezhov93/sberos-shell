@@ -1,0 +1,131 @@
+import QtQuick
+import QtQml.Models
+import Quickshell
+import Quickshell.Services.SystemTray
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.platform
+
+// Bridges system tray item attention signals into desktop notifications.
+// When a tray icon starts flashing (status becomes NeedsAttention) or its
+// tooltip/icon changes, we emit a freedesktop notification so the user sees
+// it in the Quickshell notification center.
+QtObject {
+    id: root
+
+    // How long to suppress repeated notifications with identical content
+    // from the same tray item.
+    property int dedupeIntervalMs: 5000
+
+    // last notification key -> timestamp
+    property var _lastSent: ({})
+
+    // Entries only matter while they are younger than the dedupe window, so
+    // sweeping expired keys keeps the map bounded on long sessions where tray
+    // items churn through many distinct summaries.
+    property Timer _dedupeSweep: Timer {
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: {
+            const cutoff = root._now() - root.dedupeIntervalMs;
+            for (const key in root._lastSent) {
+                if (root._lastSent[key] < cutoff)
+                    delete root._lastSent[key];
+            }
+        }
+    }
+
+    function _now() {
+        return Date.now();
+    }
+
+    function _canNotify(item, summary, body) {
+        const key = item.id + "|" + summary + "|" + body;
+        const last = root._lastSent[key];
+        if (last && (_now() - last) < dedupeIntervalMs)
+            return false;
+        root._lastSent[key] = _now();
+        return true;
+    }
+
+    function _notify(item) {
+        const appName = SysTrayIdentityService.friendlyName(item) || item.title || I18n.tr("System notification");
+        const summary = item.tooltipTitle || appName;
+        const body = item.tooltipDescription || (item.status === SystemTrayItem.NeedsAttention ? I18n.tr("New message") : I18n.tr("Status update"));
+        const icon = item.icon || "";
+
+        if (!_canNotify(item, summary, body))
+            return;
+
+        // The daemon's notify op reaches the session D-Bus notification
+        // interface. Quickshell's NotificationServer owns
+        // org.freedesktop.Notifications when Plasma's daemon is not present,
+        // so this lands in our own UI. The previous single shared Process
+        // rewrote `command` while a send was still running, which dropped or
+        // misattributed notifications; the op carries validated data instead.
+        PlatformClient.request("notify", {
+            summary: summary,
+            body: body,
+            icon: icon,
+            appName: appName,
+            urgency: "normal"
+        }, function (response) {
+            if (!response?.ok)
+                console.warn("[TrayNotify] notify failed: " + (response?.error?.message || "platform unavailable"));
+        });
+    }
+
+    // This bridge only needs one listener object per tray entry. A visual
+    // Repeater tries to stack its Item delegates beside itself; because this
+    // service is a QtObject, both the Repeater and delegates have no visual
+    // parent and Qt emits stackBefore/stackAfter warnings. Instantiator owns
+    // the same delegate lifecycle without attempting visual stacking.
+    property Instantiator _trayRepeater: Instantiator {
+        model: SystemTray.items
+        delegate: Item {
+            id: trayItemDelegate
+            required property var modelData
+
+            property int _lastStatus: modelData.status
+            property string _lastIcon: modelData.icon
+            property string _lastTooltipTitle: modelData.tooltipTitle
+            property string _lastTooltipDescription: modelData.tooltipDescription
+
+            Connections {
+                target: modelData
+
+                function onStatusChanged() {
+                    if (modelData.status === SystemTrayItem.NeedsAttention && trayItemDelegate._lastStatus !== SystemTrayItem.NeedsAttention) {
+                        trayItemDelegate._lastStatus = modelData.status;
+                        root._notify(modelData);
+                    } else {
+                        trayItemDelegate._lastStatus = modelData.status;
+                    }
+                }
+
+                function onIconChanged() {
+                    if (modelData.icon !== trayItemDelegate._lastIcon) {
+                        trayItemDelegate._lastIcon = modelData.icon;
+                        // Some apps flash by toggling the icon without changing status.
+                        if (modelData.status !== SystemTrayItem.NeedsAttention)
+                            root._notify(modelData);
+                    }
+                }
+
+                function onTooltipTitleChanged() {
+                    if (modelData.tooltipTitle !== trayItemDelegate._lastTooltipTitle) {
+                        trayItemDelegate._lastTooltipTitle = modelData.tooltipTitle;
+                        root._notify(modelData);
+                    }
+                }
+
+                function onTooltipDescriptionChanged() {
+                    if (modelData.tooltipDescription !== trayItemDelegate._lastTooltipDescription) {
+                        trayItemDelegate._lastTooltipDescription = modelData.tooltipDescription;
+                        root._notify(modelData);
+                    }
+                }
+            }
+        }
+    }
+}

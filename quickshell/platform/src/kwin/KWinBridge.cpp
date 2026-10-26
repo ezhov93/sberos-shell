@@ -1,0 +1,913 @@
+#include "KWinBridge.h"
+
+#include <QDBusConnection>
+#include <QDBusError>
+#include <QDBusInterface>
+#include <QDBusMessage>
+#include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+#include <QDBusReply>
+#include <QDBusServiceWatcher>
+#include <QDBusUnixFileDescriptor>
+#include <QDateTime>
+#include <QDirIterator>
+#include <QFile>
+#include <QFileInfo>
+#include <QHash>
+#include <QImage>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+#include <QPointer>
+#include <QQueue>
+#include <QRegularExpression>
+#include <QScopeGuard>
+#include <QSet>
+#include <QSocketNotifier>
+#include <QStandardPaths>
+#include <QSettings>
+#include <QSize>
+#include <QThreadPool>
+#include <QTimer>
+#include <QGuiApplication>
+#include <QCoreApplication>
+#include <QTextStream>
+
+#include <QtConcurrent>
+
+#include <KIconLoader>
+
+#include <algorithm>
+#include <atomic>
+#include <array>
+#include <cerrno>
+#include <memory>
+#if defined(__GLIBC__)
+#include <malloc.h>
+#endif
+#include <poll.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+namespace KosPlatform {
+namespace {
+
+KWinEventHandler g_eventHandler;
+class Bridge;
+Bridge *g_bridge = nullptr;
+
+// KWin screenshot captures stream up to tens of MB of RGBA through a pipe.
+// Running many at once multiplies that bandwidth and decode cost; keep a
+// small concurrency window and park the rest on a bounded queue.
+constexpr int kMaxThumbnailConcurrency = 2;
+constexpr qsizetype kMaxThumbnailQueue = 32;
+constexpr qint64 kThumbnailFreshMs = 5000;
+constexpr int kThumbnailWorkerThreads = 4;
+constexpr qint64 kMaxThumbnailFrameBytes = 256 * 1024 * 1024;
+
+// A raw screenshot frame is tens of MB of RGBA. After the first large block is
+// freed glibc raises its dynamic mmap threshold, so later captures of the same
+// size are served from the heap arenas and their pages are not returned to the
+// OS on free -- the daemon's RSS ratchets up in ~25 MB steps while Dock/Stage
+// previews are live and does not come back down. Hand the freed arenas back
+// after each capture batch. Throttled: a trim walks every arena, and captures
+// complete at a few hertz while previews are open.
+void trimCaptureMemory()
+{
+#if defined(__GLIBC__)
+    static std::atomic<qint64> lastTrimMs{0};
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    qint64 last = lastTrimMs.load(std::memory_order_relaxed);
+    if (now - last < 5000)
+        return;
+    if (!lastTrimMs.compare_exchange_strong(last, now, std::memory_order_relaxed))
+        return;
+    malloc_trim(0);
+#endif
+}
+
+class Bridge final : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.kos.Platform")
+
+public slots:
+    // KWin effects expose animationStarted as a D-Bus signal. Keep the
+    // subscription inside the resident platform process so Shell does not
+    // need to spawn a gdbus monitor of its own.
+    void AnimationStarted(const QString &appId, const QString &windowId,
+                          const QString &transition, int durationMs)
+    {
+        publishEvent(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("animation.started")},
+            {QStringLiteral("appId"), appId},
+            {QStringLiteral("windowId"), windowId},
+            {QStringLiteral("transition"), transition},
+            {QStringLiteral("durationMs"), durationMs},
+        });
+    }
+
+    // D-Bus 面只暴露 KWin 侧（脚本/特效）真正调用的两个槽（v87 审查：
+    // ExportAllSlots 会让同会话任意进程可调 Enqueue 注入 close/minimize、
+    // TakeCommand 抽干命令队列、Publish 伪造窗口模型——正常客户端走
+    // unix socket，D-Bus 面只服务 KWin）
+    Q_SCRIPTABLE void Publish(const QString &payload)
+    {
+        QJsonParseError error;
+        const QJsonDocument document = QJsonDocument::fromJson(payload.toUtf8(), &error);
+        if (error.error != QJsonParseError::NoError || !document.isObject()) {
+            QTextStream(stderr) << "Invalid KWin event: " << error.errorString() << Qt::endl;
+            return;
+        }
+
+        QJsonObject event = document.object();
+        if (event.value(QStringLiteral("type")) == QStringLiteral("snapshot")) {
+            // Resolving each window's fallback icon can scan hundreds of
+            // desktop files and the whole icon tree. Do it off the D-Bus
+            // thread so geometry snapshots never stall the bridge.
+            decorateSnapshotIcons(event);
+            return;
+        }
+        publishEvent(event);
+    }
+
+    Q_SCRIPTABLE QString TakeCommand()
+    {
+        return m_commands.isEmpty() ? QString{} : m_commands.dequeue();
+    }
+
+    void Enqueue(const QString &payload)
+    {
+        QJsonParseError error;
+        const QJsonDocument document = QJsonDocument::fromJson(payload.toUtf8(), &error);
+        if (error.error != QJsonParseError::NoError || !document.isObject())
+            return;
+
+        const QString command = QString::fromUtf8(document.toJson(QJsonDocument::Compact));
+        const QString action = document.object().value(QStringLiteral("action")).toString();
+
+        // Direct overview trigger delegates to Plasma's native Overview effect via
+        // KWin's registered global shortcut.
+        if (action == QStringLiteral("toggle-overview")
+            || action == QStringLiteral("show-overview")
+            || action == QStringLiteral("hide-overview")) {
+            QDBusInterface effects(QStringLiteral("org.kde.KWin"),
+                                  QStringLiteral("/Effects"),
+                                  QStringLiteral("org.kde.kwin.Effects"),
+                                  QDBusConnection::sessionBus());
+            if (!effects.isValid())
+                return;
+            // Explicit show/hide calls must preserve their original semantics.
+            // Use native state because Overview can also be opened from Plasma.
+            if (action != QStringLiteral("toggle-overview")) {
+                const QVariant active = effects.property("activeEffects");
+                if (!active.isValid())
+                    return;
+                const bool overviewActive = active.toStringList().contains(QStringLiteral("overview"));
+                const bool wanted = action == QStringLiteral("show-overview");
+                if (overviewActive == wanted)
+                    return;
+            }
+            if (effects.isValid()) {
+                const QDBusReply<bool> loaded = effects.call(QStringLiteral("isEffectLoaded"), QStringLiteral("overview"));
+                if (loaded.isValid() && !loaded.value()) {
+                    effects.call(QStringLiteral("loadEffect"), QStringLiteral("overview"));
+                }
+            }
+            QDBusMessage msg = QDBusMessage::createMethodCall(
+                QStringLiteral("org.kde.kglobalaccel"),
+                QStringLiteral("/component/kwin"),
+                QStringLiteral("org.kde.kglobalaccel.Component"),
+                QStringLiteral("invokeShortcut"));
+            msg << QStringLiteral("Overview");
+            QDBusConnection::sessionBus().send(msg);
+            return;
+        }
+
+        // Thumbnail capture uses KWin's restricted ScreenShot2 API directly.
+        // The KWin Script has no pixel access, but it already gives us the
+        // authoritative UUID that ScreenShot2 accepts on Wayland.
+        if (action == QStringLiteral("thumbnail")) {
+            const QString id = document.object().value(QStringLiteral("id")).toString();
+            if (!id.isEmpty())
+                QTimer::singleShot(0, this, [this, id] { captureThumbnail(id); });
+            return;
+        }
+
+        // A Dock click expresses the latest focus intent. Keeping older
+        // activate requests makes rapid clicks feel delayed and can focus a
+        // window the user has already moved away from. Preserve close and
+        // minimize requests, but replace queued activations with the latest.
+        if (action == QStringLiteral("activate")) {
+            QQueue<QString> retained;
+            while (!m_commands.isEmpty()) {
+                const QString queued = m_commands.dequeue();
+                QJsonParseError queuedError;
+                const QJsonDocument queuedDocument = QJsonDocument::fromJson(
+                    queued.toUtf8(), &queuedError);
+                const bool isActivation = queuedError.error == QJsonParseError::NoError
+                    && queuedDocument.isObject()
+                    && queuedDocument.object().value(QStringLiteral("action")).toString()
+                        == QStringLiteral("activate");
+                if (!isActivation)
+                    retained.enqueue(queued);
+            }
+            m_commands = retained;
+        }
+
+        m_commands.enqueue(command);
+        // The KWin Script drains this queue through TakeCommand; when it is
+        // absent (script unloaded or KWin restarting) the queue would grow
+        // without bound. Drop the oldest intents so the newest still apply.
+        while (m_commands.size() > 256)
+            m_commands.dequeue();
+    }
+
+    QString Ping() const
+    {
+        return QStringLiteral("ready");
+    }
+
+public:
+    explicit Bridge(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+        // All icon work — the desktop-file index, KIconLoader lookups and the
+        // full directory fallback scan — lives on this single worker thread.
+        // One thread means the caches below need no locking and KIconLoader
+        // is only ever touched from a thread it was constructed on.
+        m_iconPool.setMaxThreadCount(1);
+        // Raw screenshot frames are tens of MiB. Keeping them off Qt's global
+        // pool prevents captures from leaving one large malloc arena behind
+        // on every CPU worker the global pool happens to choose. Two captures
+        // need at most one pipe reader and one encoder each.
+        m_thumbnailPool.setMaxThreadCount(kThumbnailWorkerThreads);
+        m_thumbnailPool.setExpiryTimeout(-1);
+        // Prewarm the desktop index so the first window snapshot does not
+        // wait for several hundred .desktop files to be parsed.
+        const QPointer<Bridge> self(this);
+        // Fire-and-forget: the ticket on m_iconPool supersedes stale work,
+        // so the QFuture is intentionally discarded.
+        m_iconPool.start([self] {
+            if (self)
+                self->ensureDesktopIndex();
+        });
+    }
+
+private:
+    void publishEvent(const QJsonObject &event)
+    {
+        if (g_eventHandler)
+            g_eventHandler(event);
+        // Socket subscribers receive the event above. Full JSON on stdout is
+        // diagnostic only; avoid serializing and flushing every geometry tick.
+        static const bool traceEvents = qEnvironmentVariableIntValue("KOS_PLATFORM_TRACE_EVENTS") == 1;
+        if (traceEvents) {
+            QTextStream(stdout) << "EVENT "
+                                << QJsonDocument(event).toJson(QJsonDocument::Compact)
+                                << Qt::endl;
+        }
+    }
+
+    void publishThumbnailError(const QString &id, const QString &message)
+    {
+        QJsonObject event;
+        event.insert(QStringLiteral("type"), QStringLiteral("thumbnail"));
+        event.insert(QStringLiteral("id"), id);
+        event.insert(QStringLiteral("error"), message);
+        publishEvent(event);
+    }
+
+    void publishThumbnailDebug(const QString &id, const QString &stage)
+    {
+        QJsonObject event;
+        event.insert(QStringLiteral("type"), QStringLiteral("thumbnail-debug"));
+        event.insert(QStringLiteral("id"), id);
+        event.insert(QStringLiteral("stage"), stage);
+        publishEvent(event);
+    }
+
+    // Runs on the D-Bus thread: hand the snapshot to the icon worker. During
+    // a drag the script can publish several snapshots per second; each new
+    // ticket supersedes the previous one, so stale snapshots are dropped
+    // instead of queueing obsolete work ahead of the latest state.
+    void decorateSnapshotIcons(const QJsonObject &event)
+    {
+        const quint64 ticket = ++m_iconTicket;
+        const QPointer<Bridge> self(this);
+        // Fire-and-forget: m_iconTicket supersedes stale snapshots, so the
+        // QFuture is intentionally discarded.
+        m_iconPool.start([self, ticket, event]() mutable {
+            if (!self || ticket != self->m_iconTicket)
+                return;
+            QJsonObject decorated = event;
+            QJsonArray windows = decorated.value(QStringLiteral("windows")).toArray();
+            for (int i = 0; i < windows.size(); ++i) {
+                QJsonObject window = windows.at(i).toObject();
+                const QString icon = self->findFallbackIcon(
+                    window.value(QStringLiteral("appId")).toString());
+                if (!icon.isEmpty())
+                    window.insert(QStringLiteral("iconPath"), icon);
+                windows[i] = window;
+            }
+            decorated.insert(QStringLiteral("windows"), windows);
+            QMetaObject::invokeMethod(self, [self, ticket, decorated] {
+                if (self && ticket == self->m_iconTicket)
+                    self->publishSnapshot(decorated);
+            }, Qt::QueuedConnection);
+        });
+    }
+
+    // Runs on the D-Bus thread after the icon worker stamps the ticket.
+    void publishSnapshot(const QJsonObject &event)
+    {
+        // Thumbnails are keyed by KWin's window id, which dies with the
+        // window. Diff against the snapshot so closed windows release their
+        // PNG file and any queued capture request instead of leaking.
+        QSet<QString> ids;
+        const QJsonArray windows = event.value(QStringLiteral("windows")).toArray();
+        for (const auto &value : windows)
+            ids.insert(value.toObject().value(QStringLiteral("id")).toString());
+        for (auto it = m_thumbnailPaths.begin(); it != m_thumbnailPaths.end();) {
+            if (!ids.contains(it.key())) {
+                QFile::remove(it.value());
+                m_thumbnailCapturedAtMs.remove(it.key());
+                m_thumbnailSizes.remove(it.key());
+                it = m_thumbnailPaths.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        if (!m_thumbnailQueue.isEmpty()) {
+            QQueue<QString> retained;
+            for (const QString &queuedId : std::as_const(m_thumbnailQueue)) {
+                if (ids.contains(queuedId))
+                    retained.enqueue(queuedId);
+            }
+            m_thumbnailQueue = retained;
+        }
+        m_lastWindowIds = ids;
+        m_haveWindowSnapshot = true;
+        publishEvent(event);
+    }
+
+    void captureThumbnail(const QString &id)
+    {
+        const QString cachedPath = m_thumbnailPaths.value(id);
+        const qint64 capturedAt = m_thumbnailCapturedAtMs.value(id, 0);
+        const QSize cachedSize = m_thumbnailSizes.value(id);
+        if (!cachedPath.isEmpty() && cachedSize.isValid()
+                && QFileInfo::exists(cachedPath)
+                && QDateTime::currentMSecsSinceEpoch() - capturedAt < kThumbnailFreshMs) {
+            publishThumbnailDebug(id, QStringLiteral("cache-hit"));
+            publishThumbnail(id, cachedPath, cachedSize.width(), cachedSize.height());
+            return;
+        }
+        if (m_thumbnailInFlight.contains(id) || m_thumbnailQueue.contains(id))
+            return;
+        if (int(m_thumbnailInFlight.size()) >= kMaxThumbnailConcurrency) {
+            if (m_thumbnailQueue.size() < kMaxThumbnailQueue) {
+                m_thumbnailQueue.enqueue(id);
+            } else {
+                // Reject explicitly so the shell's pending mark clears
+                // instead of waiting on an event that never arrives.
+                publishThumbnailError(id,
+                    QStringLiteral("Thumbnail capture queue is full"));
+            }
+            return;
+        }
+        m_thumbnailInFlight.insert(id);
+        beginThumbnailCapture(id);
+    }
+
+    void beginThumbnailCapture(const QString &id)
+    {
+        publishThumbnailDebug(id, QStringLiteral("begin"));
+
+        int pipeFds[2];
+        if (::pipe(pipeFds) != 0) {
+            publishThumbnailError(id, QStringLiteral("Cannot create screenshot pipe"));
+            endThumbnailCapture(id);
+            return;
+        }
+        // Keep one local write descriptor so we can close it deterministically
+        // after the D-Bus call. QDBusUnixFileDescriptor duplicates whatever it
+        // is handed (Qt 6 setFileDescriptor() -> qt_safe_dup()), so this local
+        // descriptor is ours to close: it used to be leaked on every capture.
+        const int dbusWriteFd = ::dup(pipeFds[1]);
+        if (dbusWriteFd == -1) {
+            ::close(pipeFds[0]);
+            ::close(pipeFds[1]);
+            publishThumbnailError(id, QStringLiteral("Cannot duplicate screenshot pipe"));
+            endThumbnailCapture(id);
+            return;
+        }
+
+        // KWin may start writing the raw RGBA frame before it delivers the
+        // delayed D-Bus reply. A 4K window readily exceeds a pipe buffer; if
+        // we wait for that reply before reading, KWin and this process can
+        // deadlock. Start draining immediately in a worker thread.
+        const auto expectedBytes = std::make_shared<std::atomic<qint64>>(-1);
+        // This deadline also applies before metadata arrives, including during
+        // shutdown when the event loop can no longer deliver the D-Bus reply.
+        const auto deadlineMs = std::make_shared<std::atomic<qint64>>(
+            QDateTime::currentMSecsSinceEpoch() + 10000);
+        auto pixelsFuture = QtConcurrent::run(&m_thumbnailPool,
+                [readFd = pipeFds[0], expectedBytes, deadlineMs] {
+            // The drain loop leaves through four different branches. Hand-closing
+            // the read end on only two of them leaked one descriptor per capture,
+            // and a long session eventually reached EMFILE: glib then aborts the
+            // whole daemon when a new thread cannot create its wakeup pipe. The
+            // guard below owns the descriptor, so every exit gives it back.
+            const auto closeReadFd = qScopeGuard([readFd] { ::close(readFd); });
+            const int flags = ::fcntl(readFd, F_GETFL);
+            if (flags == -1 || ::fcntl(readFd, F_SETFL, flags | O_NONBLOCK) == -1)
+                return QByteArray{};
+            QByteArray bytes;
+            std::array<char, 64 * 1024> buffer;
+            for (;;) {
+                const qint64 expected = expectedBytes->load();
+                if (expected >= 0 && bytes.size() >= expected) {
+                    return bytes.left(expected);
+                }
+                const qint64 deadline = deadlineMs->load();
+                if (QDateTime::currentMSecsSinceEpoch() >= deadline) {
+                    return bytes;
+                }
+
+                pollfd pollFd = { readFd, POLLIN | POLLHUP, 0 };
+                if (::poll(&pollFd, 1, 50) <= 0)
+                    continue;
+                const ssize_t bytesRead = ::read(readFd, buffer.data(), buffer.size());
+                if (bytesRead > 0) {
+                    if (bytes.size() > kMaxThumbnailFrameBytes - bytesRead)
+                        return QByteArray{};
+                    bytes.append(buffer.data(), bytesRead);
+                    continue;
+                }
+                if (bytesRead == -1 && (errno == EAGAIN || errno == EINTR))
+                    continue;
+                if (bytesRead <= 0)
+                    return bytes;
+            }
+        });
+
+        QVariantMap options;
+        // 不含窗口装饰：缩略图要纯内容——带装饰时每张缩略图顶部都有一截
+        // 标题栏+应用图标（台前卡片"最上面覆盖着图标"的根源），实时模式
+        // 下内容持续刷新、那条静止的图标条格外显眼
+        options.insert(QStringLiteral("include-decoration"), false);
+        // 不含窗口投影：CaptureWindow 默认把窗口的合成器投影一起拍进
+        // alpha 通道（实测 614×440 的暗窗，左右各有 ~12px 的 alpha 渐变
+        // 带，内容只从 x=12 开始）。缩略图是"窗口内容"，带投影会同时造成
+        // 三个可见缺陷：①内容被投影边距缩进、实际比卡面小一圈；②透明
+        // 边距让卡背板的白描边透出来，暗窗上读作"一圈莫名其妙的亮边"；
+        // ③卡面内部自带一层投影，与卡外的 KosCardShadow 叠成双影。
+        options.insert(QStringLiteral("include-shadow"), false);
+        // ScreenShot2 writes raw pixels to this descriptor after its D-Bus
+        // reply describes the image dimensions and QImage format.
+        QDBusUnixFileDescriptor writePipe(dbusWriteFd);
+        QDBusInterface screenshot(QStringLiteral("org.kde.KWin"),
+                                  QStringLiteral("/org/kde/KWin/ScreenShot2"),
+                                  QStringLiteral("org.kde.KWin.ScreenShot2"));
+        screenshot.setTimeout(8000);
+        // Async so a slow or stuck KWin reply never blocks every other bridge
+        // request; the pipe reader drains independently of the reply anyway.
+        const QDBusPendingCall pending = screenshot.asyncCall(
+            QStringLiteral("CaptureWindow"), id, options,
+            QVariant::fromValue(writePipe));
+        // Our own write end is a descriptor distinct from the one the message
+        // owns; without this close the reader never sees EOF after KWin has
+        // finished writing the frame.
+        ::close(pipeFds[1]);
+        // QDBusUnixFileDescriptor duplicated dbusWriteFd when the message was
+        // built, and asyncCall marshalled and sent that message before returning
+        // (NoBlock defers the reply, not the send), so our own descriptor is free
+        // here. Omitting this close leaked one descriptor per capture, on top of
+        // the drain leak the guard above repairs.
+        ::close(dbusWriteFd);
+
+        auto *watcher = new QDBusPendingCallWatcher(pending, this);
+        connect(watcher, &QDBusPendingCallWatcher::finished, this,
+                [this, id, expectedBytes, deadlineMs, pixelsFuture](QDBusPendingCallWatcher *self) {
+            self->deleteLater();
+            const QDBusPendingReply<QVariantMap> reply = *self;
+            publishThumbnailDebug(id, reply.isError()
+                ? QStringLiteral("dbus-error")
+                : QStringLiteral("dbus-reply"));
+            if (reply.isError()) {
+                expectedBytes->store(0);
+                // The reader exits on the expected-size check within one poll
+                // cycle; reap it off-thread so this callback never blocks.
+                // Reap off-thread and consume any partial pixels before trimming.
+                m_thumbnailPool.start(
+                    [pixelsFuture]() mutable {
+                        const auto trimAfterCapture = qScopeGuard([] { trimCaptureMemory(); });
+                        const QByteArray discardedPixels = pixelsFuture.takeResult();
+                    });
+                publishThumbnailError(id, reply.error().message());
+                endThumbnailCapture(id);
+                return;
+            }
+
+            const QVariantMap result = reply.value();
+            const int width = result.value(QStringLiteral("width")).toInt();
+            const int height = result.value(QStringLiteral("height")).toInt();
+            const int stride = result.value(QStringLiteral("stride")).toInt();
+            const auto format = static_cast<QImage::Format>(
+                result.value(QStringLiteral("format")).toInt());
+            const qint64 expectedSize = qint64(stride) * height;
+            publishThumbnailDebug(id, QStringLiteral("meta=%1x%2 stride=%3 format=%4 type=%5")
+                .arg(width).arg(height).arg(stride).arg(int(format))
+                .arg(result.value(QStringLiteral("type")).toString()));
+            // Reject oversized metadata before constructing an image. The
+            // pipe reader independently enforces the same allocation bound.
+            expectedBytes->store(expectedSize > kMaxThumbnailFrameBytes
+                ? 0 : std::max<qint64>(0, expectedSize));
+            deadlineMs->store(QDateTime::currentMSecsSinceEpoch() + 4000);
+
+            // A 4K frame is tens of MB of pixels plus a PNG encode; decode,
+            // scale and save off the D-Bus thread.
+            // Fire-and-forget: QPointer<guard> + m_thumbnailSerial supersedes
+            // stale captures, so the QFuture is intentionally discarded.
+            const quint64 serial = ++m_thumbnailSerial;
+            const QPointer<Bridge> guard(this);
+            m_thumbnailPool.start([guard, id, pixelsFuture, width, height, stride,
+                               format, expectedSize, serial]() mutable {
+                // Release the capture's heap pages on every exit path, the
+                // failure branches below included.
+                const auto trimAfterCapture = qScopeGuard([] { trimCaptureMemory(); });
+                // Consume the future's stored result; result() leaves another
+                // reference alive in the task/watcher after this scope's trim.
+                const QByteArray bytes = pixelsFuture.takeResult();
+                if (!guard)
+                    return;
+                QMetaObject::invokeMethod(guard, [guard, id] {
+                    if (guard)
+                        guard->publishThumbnailDebug(
+                            id, QStringLiteral("pixels-drained"));
+                }, Qt::QueuedConnection);
+
+                auto fail = [guard, id](const QString &message) {
+                    QMetaObject::invokeMethod(guard, [guard, id, message] {
+                        if (!guard)
+                            return;
+                        guard->publishThumbnailError(id, message);
+                        guard->endThumbnailCapture(id);
+                    }, Qt::QueuedConnection);
+                };
+                if (width <= 0 || height <= 0 || stride <= 0
+                        || format == QImage::Format_Invalid
+                        || expectedSize > kMaxThumbnailFrameBytes
+                        || bytes.size() < expectedSize) {
+                    fail(QStringLiteral("KWin returned an invalid screenshot"));
+                    return;
+                }
+
+                const QImage source(reinterpret_cast<const uchar *>(bytes.constData()),
+                                    width, height, stride, format);
+                // The preview is rendered at roughly 316x184 logical pixels.
+                // Keep a 2x source so it remains crisp on high-DPI outputs
+                // rather than being upscaled by Qt Quick from a 360px
+                // thumbnail.
+                QImage image = source.scaled(QSize(720, 440), Qt::KeepAspectRatio,
+                                             Qt::SmoothTransformation);
+                if (image.isNull()) {
+                    fail(QStringLiteral("Cannot decode KWin screenshot"));
+                    return;
+                }
+
+                // KWin's frame carries a fully transparent rim along the window
+                // shape's outer edge (2px on every side even with decorations
+                // and shadows excluded). Scaled onto the card face that rim is
+                // a translucent hairline around the thumbnail: the card's
+                // rounded clip trims the *rim* instead of the window content,
+                // which reads as "rounded frame around a square screenshot".
+                // Trim the frame to the rows/columns that actually carry
+                // pixels so the card edge meets the content edge.
+                if (image.hasAlphaChannel()) {
+                    constexpr int kAlphaFloor = 8;
+                    int left = image.width();
+                    int top = image.height();
+                    int right = -1;
+                    int bottom = -1;
+                    for (int y = 0; y < image.height(); ++y) {
+                        const auto *line = reinterpret_cast<const QRgb *>(
+                            image.constScanLine(y));
+                        for (int x = 0; x < image.width(); ++x) {
+                            if (qAlpha(line[x]) < kAlphaFloor)
+                                continue;
+                            left = std::min(left, x);
+                            top = std::min(top, y);
+                            right = std::max(right, x);
+                            bottom = std::max(bottom, y);
+                        }
+                    }
+                    if (right >= left && bottom >= top
+                            && (left > 0 || top > 0
+                                || right < image.width() - 1
+                                || bottom < image.height() - 1)) {
+                        image = image.copy(left, top, right - left + 1,
+                                           bottom - top + 1);
+                    }
+                }
+
+                const QString runtimeDir = QStandardPaths::writableLocation(
+                        QStandardPaths::RuntimeLocation)
+                    + QStringLiteral("/quickshell/window-thumbnails");
+                QDir().mkpath(runtimeDir);
+                QString safeId = id;
+                safeId.remove(QRegularExpression(QStringLiteral("[^A-Za-z0-9_-]")));
+                const QString path = runtimeDir + QLatin1Char('/') + safeId
+                    + QLatin1Char('-') + QString::number(serial)
+                    + QStringLiteral(".png");
+                if (!image.save(path, "PNG")) {
+                    fail(QStringLiteral("Cannot save thumbnail PNG"));
+                    return;
+                }
+                const int imageWidth = image.width();
+                const int imageHeight = image.height();
+                QMetaObject::invokeMethod(guard, [guard, id, path,
+                                                  imageWidth, imageHeight] {
+                    if (guard)
+                        guard->finishThumbnail(id, path, imageWidth, imageHeight);
+                }, Qt::QueuedConnection);
+            });
+        });
+    }
+
+    // Runs on the D-Bus thread once the worker saved the PNG.
+    void finishThumbnail(const QString &id, const QString &path,
+                         int width, int height)
+    {
+        // The window can close while a capture drains; drop the PNG instead of
+        // handing the shell a file it would immediately discard.
+        if (m_haveWindowSnapshot && !m_lastWindowIds.contains(id)) {
+            QFile::remove(path);
+            endThumbnailCapture(id);
+            return;
+        }
+        const QString previousPath = m_thumbnailPaths.value(id);
+        if (!previousPath.isEmpty() && previousPath != path)
+            QFile::remove(previousPath);
+        m_thumbnailPaths.insert(id, path);
+        m_thumbnailCapturedAtMs.insert(id, QDateTime::currentMSecsSinceEpoch());
+        m_thumbnailSizes.insert(id, QSize(width, height));
+        endThumbnailCapture(id);
+
+        publishThumbnail(id, path, width, height);
+    }
+
+    void publishThumbnail(const QString &id, const QString &path,
+                          int width, int height)
+    {
+        QJsonObject event;
+        event.insert(QStringLiteral("type"), QStringLiteral("thumbnail"));
+        event.insert(QStringLiteral("id"), id);
+        event.insert(QStringLiteral("path"), path);
+        event.insert(QStringLiteral("width"), width);
+        event.insert(QStringLiteral("height"), height);
+        publishEvent(event);
+    }
+
+    void endThumbnailCapture(const QString &id)
+    {
+        m_thumbnailInFlight.remove(id);
+        while (int(m_thumbnailInFlight.size()) < kMaxThumbnailConcurrency
+                && !m_thumbnailQueue.isEmpty()) {
+            const QString next = m_thumbnailQueue.dequeue();
+            if (m_thumbnailInFlight.contains(next))
+                continue;
+            m_thumbnailInFlight.insert(next);
+            beginThumbnailCapture(next);
+        }
+    }
+
+    // Everything below runs exclusively on m_iconPool's single worker thread.
+
+    static QString normalizeName(QString value) {
+        value = value.toLower(); value.remove(QStringLiteral(".desktop"));
+        QString result;
+        for (const QChar c : value) if (c.isLetterOrNumber()) result.append(c);
+        return result;
+    }
+
+    void ensureDesktopIndex() {
+        if (m_desktopIndexReady) return;
+        m_desktopIndexReady = true;
+        for (const QString &directory : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
+            QDirIterator it(directory, {QStringLiteral("*.desktop")}, QDir::Files);
+            while (it.hasNext()) {
+                const QString path = it.next(); QSettings desktop(path, QSettings::IniFormat);
+                desktop.beginGroup(QStringLiteral("Desktop Entry"));
+                const QString icon = desktop.value(QStringLiteral("Icon")).toString().trimmed();
+                const QString startup = desktop.value(QStringLiteral("StartupWMClass")).toString().trimmed();
+                desktop.endGroup(); if (icon.isEmpty()) continue;
+                const QString id = normalizeName(QFileInfo(path).completeBaseName());
+                const QString startupId = normalizeName(startup);
+                if (!id.isEmpty() && !m_desktopIcons.contains(id)) m_desktopIcons.insert(id, icon);
+                if (!startupId.isEmpty() && !m_desktopIcons.contains(startupId)) m_desktopIcons.insert(startupId, icon);
+            }
+        }
+    }
+
+    QString findFallbackIcon(const QString &appId) {
+        ensureDesktopIndex();
+        // appId -> desktop icon name. Both hits and misses are cached: without
+        // the negative entry every snapshot re-ran the O(N) substring scan for
+        // appIds that match no desktop file.
+        const QString appKey = normalizeName(appId);
+        QString iconName;
+        if (m_appIconName.contains(appKey)) {
+            iconName = m_appIconName.value(appKey);
+        } else {
+            iconName = m_desktopIcons.value(appKey);
+            if (iconName.isEmpty()) {
+                for (auto it = m_desktopIcons.cbegin(); it != m_desktopIcons.cend(); ++it) {
+                    if (it.key().contains(appKey) || appKey.contains(it.key())) { iconName = it.value(); break; }
+                }
+            }
+            m_appIconName.insert(appKey, iconName);
+        }
+        const QString requestedIcon = iconName.isEmpty() ? appId : iconName;
+        if (requestedIcon.startsWith(QLatin1Char('/')) && QFileInfo::exists(requestedIcon))
+            return requestedIcon;
+
+        const QString key = normalizeName(requestedIcon);
+        if (key.isEmpty()) return {};
+        // iconName -> resolved path. Inserted even when empty below, so misses
+        // (including the directory scan coming back empty) are also cached.
+        if (m_iconCache.contains(key)) return m_iconCache.value(key);
+
+        // This is the same lookup used by KDE's kiconfinder6: KIconLoader is
+        // aware of kdeglobals, the selected icon theme and its inheritance.
+        // In particular, a desktop entry such as spotify-launcher resolves to
+        // the themed Spotify artwork instead of its hicolor fallback.
+        const QString themedIcon = KIconLoader::global()->iconPath(
+            requestedIcon, KIconLoader::Desktop, true);
+        if (!themedIcon.isEmpty()) {
+            m_iconCache.insert(key, themedIcon);
+            return themedIcon;
+        }
+
+        QString bestPath; int bestScore = -1;
+        const QRegularExpression sizeExpression(QStringLiteral("/(\\d+)x\\d+/"));
+        for (const QString &root : QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+            QDirIterator it(root + QStringLiteral("/icons"), {QStringLiteral("*.png"), QStringLiteral("*.svg"), QStringLiteral("*.xpm")}, QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                const QString path = it.next(); const QString name = normalizeName(QFileInfo(path).baseName());
+                if (name.isEmpty() || (name != key && !name.contains(key))) continue;
+                int score = name == key ? 10000 : 5000 - (name.size() - key.size());
+                if (path.contains(QStringLiteral("/apps/"))) score += 1000;
+                if (path.contains(QStringLiteral("scalable"))) score += 500;
+                const auto match = sizeExpression.match(path); if (match.hasMatch()) score += match.captured(1).toInt();
+                if (score > bestScore) { bestScore = score; bestPath = path; }
+            }
+        }
+        m_iconCache.insert(key, bestPath); return bestPath;
+    }
+
+    QQueue<QString> m_commands;
+    QHash<QString, QString> m_desktopIcons;
+    QHash<QString, QString> m_appIconName;
+    QHash<QString, QString> m_iconCache;
+    QSet<QString> m_lastWindowIds;
+    QHash<QString, QString> m_thumbnailPaths;
+    QHash<QString, qint64> m_thumbnailCapturedAtMs;
+    QHash<QString, QSize> m_thumbnailSizes;
+    QSet<QString> m_thumbnailInFlight;
+    QQueue<QString> m_thumbnailQueue;
+    quint64 m_thumbnailSerial = 0;
+    bool m_desktopIndexReady = false;
+    bool m_haveWindowSnapshot = false;
+    std::atomic<quint64> m_iconTicket{0};
+    // Both pools are declared last so their destructors wait for workers while
+    // every cache they access above is still alive.
+    QThreadPool m_iconPool;
+    QThreadPool m_thumbnailPool;
+};
+
+} // namespace
+
+bool startKWinBridge(const KWinEventHandler &handler)
+{
+    g_eventHandler = handler;
+    QDBusConnection bus = QDBusConnection::sessionBus();
+
+    if (!bus.registerService(QStringLiteral("org.kos.Platform"))) {
+        QTextStream(stderr) << "Could not register D-Bus service: "
+                            << bus.lastError().message() << Qt::endl;
+        return false;
+    }
+
+    g_bridge = new Bridge(qApp);
+    if (!bus.registerObject(QStringLiteral("/Platform"), g_bridge,
+                            QDBusConnection::ExportScriptableSlots)) {
+        QTextStream(stderr) << "Could not register D-Bus object: "
+                            << bus.lastError().message() << Qt::endl;
+        delete g_bridge;
+        g_bridge = nullptr;
+        return false;
+    }
+
+    // Forward the private effect signal into the platform JSONL event stream.
+    // The connection is harmless while the optional effect is not installed;
+    // KWin simply has no signal source yet and the daemon remains available.
+    if (!bus.connect(QStringLiteral("org.kde.KWin"),
+                    QStringLiteral("/KOSDockWindowAnimation"),
+                    QStringLiteral("org.kos.KWin.DockWindowAnimation"),
+                    QStringLiteral("animationStarted"),
+                    g_bridge,
+                    SLOT(AnimationStarted(QString,QString,QString,int)))) {
+        QTextStream(stderr) << "Could not subscribe to Dock animation signal: "
+                            << bus.lastError().message() << Qt::endl;
+    }
+
+    // KWin may register after the platform daemon, or acquire a new bus owner
+    // after a compositor restart. A one-shot load leaves Dock permanently
+    // without windows in either case. Retry startup briefly, and reload when
+    // a new KWin owner appears. This only loads our JS script, not effect .so's.
+    auto *scriptLoader = new QTimer(g_bridge);
+    scriptLoader->setInterval(2000);
+    auto attempts = std::make_shared<int>(0);
+    auto *kwinWatcher = new QDBusServiceWatcher(
+        QStringLiteral("org.kde.KWin"), bus,
+        QDBusServiceWatcher::WatchForOwnerChange, g_bridge);
+    QObject::connect(kwinWatcher, &QDBusServiceWatcher::serviceOwnerChanged,
+                     scriptLoader, [scriptLoader, attempts](const QString &,
+                                     const QString &, const QString &newOwner) {
+        scriptLoader->stop();
+        if (!newOwner.isEmpty()) {
+            *attempts = 0;
+            scriptLoader->start(0);
+        }
+    });
+    QObject::connect(scriptLoader, &QTimer::timeout, g_bridge, [scriptLoader, attempts] {
+        scriptLoader->setInterval(2000);
+        if (++*attempts >= 5)
+            scriptLoader->stop();
+        const auto reportFailure = [](const QString &reason) {
+            QTextStream(stderr) << "KWin window bridge not started: " << reason
+                                << Qt::endl;
+        };
+        QDBusInterface effects(QStringLiteral("org.kde.KWin"),
+                              QStringLiteral("/Effects"),
+                              QStringLiteral("org.kde.kwin.Effects"),
+                              QDBusConnection::sessionBus());
+        if (effects.isValid()) {
+            const QDBusReply<bool> loaded = effects.call(QStringLiteral("isEffectLoaded"), QStringLiteral("overview"));
+            if (loaded.isValid() && !loaded.value()) {
+                effects.call(QStringLiteral("loadEffect"), QStringLiteral("overview"));
+            }
+        }
+
+        QDBusInterface scripting(QStringLiteral("org.kde.KWin"),
+                                 QStringLiteral("/Scripting"),
+                                 QStringLiteral("org.kde.kwin.Scripting"));
+        if (!scripting.isValid()) {
+            reportFailure(scripting.lastError().message());
+            return;
+        }
+        const QString script = qEnvironmentVariable("KOS_PLATFORM_KWIN_SCRIPT");
+        if (script.isEmpty() || !QFileInfo(script).isReadable()) {
+            reportFailure(QStringLiteral("KOS_PLATFORM_KWIN_SCRIPT is missing or unreadable: ") + script);
+            scriptLoader->stop();
+            return;
+        }
+        scripting.call(QStringLiteral("unloadScript"),
+                       QStringLiteral("kos-window-bridge"));
+        const QDBusReply<int> loaded = scripting.call(QStringLiteral("loadScript"),
+                                                    script,
+                                                    QStringLiteral("kos-window-bridge"));
+        if (!loaded.isValid() || loaded.value() < 0) {
+            reportFailure(loaded.isValid() ? QStringLiteral("loadScript returned a negative script id")
+                                           : loaded.error().message());
+            return;
+        }
+        const QDBusMessage started = scripting.call(QStringLiteral("start"));
+        if (started.type() == QDBusMessage::ErrorMessage) {
+            reportFailure(started.errorMessage());
+            return;
+        }
+        scriptLoader->stop();
+        // start() dispatches evaluation asynchronously; runtime JS errors are
+        // reported by KWin's scripting log, not by this D-Bus reply.
+        QTextStream(stderr) << "KWin window bridge start requested: " << script << Qt::endl;
+    });
+    scriptLoader->start(0);
+    return true;
+}
+
+bool enqueueKWinCommand(const QJsonObject &command)
+{
+    if (!g_bridge)
+        return false;
+    g_bridge->Enqueue(QString::fromUtf8(
+        QJsonDocument(command).toJson(QJsonDocument::Compact)));
+    return true;
+}
+
+} // namespace KosPlatform
+
+#include "KWinBridge.moc"

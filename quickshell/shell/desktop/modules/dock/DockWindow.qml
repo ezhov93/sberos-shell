@@ -1,0 +1,397 @@
+import Quickshell
+import Quickshell.Wayland
+import QtQuick
+import qs.desktop.modules.applauncher
+import qs.desktop.modules.dock
+import qs.desktop.modules.common
+import qs.desktop.modules.deskcenter
+import qs.desktop.modules.platform
+import qs.desktop.modules.wallpaper
+import "../../../Kos/Ui"
+import "DockMagnification.mjs" as Magnification
+
+// One concrete output-bound Dock layer surface.
+//
+// Hosts the DockAutoHideController (show-mode state machine) and slides the
+// dock glass around within this single, permanently-mapped surface. Hiding
+// never destroys the window, toggles visible, or changes anchors — it only
+// moves dockWrapper via the controller's single reveal-progress-derived offset,
+// and shapes the input region with a mask so transparent areas pass clicks
+// through (docs/DockArchitecture.md, "Visibility modes and auto-hide").
+PanelWindow {
+    id: root
+
+    // KWin maps this namespace to the Dock window type. An unrecognised name
+    // makes the transparent surface a normal window in Window View.
+    WlrLayershell.namespace: "dock"
+    color: "transparent"
+    exclusionMode: ExclusionMode.Normal
+    // The Dock lives on Top, but the fullscreen launcher (a Top surface
+    // covering the whole output) must render beneath the Dock. While that
+    // launcher is open, the Dock promotes to Overlay; the launcher demotes
+    // itself to Top in the same frame.
+    WlrLayershell.layer: (AppLauncherService.open && AppLauncherConfigService.displayMode === "fullscreen") ? WlrLayer.Overlay : WlrLayer.Top
+
+    WlrLayershell.keyboardFocus: dockContainer.statusCollectionExpanded || dockContainer.statusDragActive || (statusIslandLoader.item?.collectionExpanded ?? false) || (statusIslandLoader.item?.statusDragActive ?? false) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    // ── Position-aware anchoring ──
+    // The surface clings directly to the configured screen edge (margins = 0);
+    // the 5px float moves inside as an inset on dockWrapper, and the reveal
+    // handle tucks 6px inside the true edge, so the Home Indicator can sit
+    // right at the physical edge while the glass keeps breathing room (§9.2).
+    //
+    // A bottom surface spans the full screen width; a side surface spans the
+    // full screen height (anchored top+bottom). In dockSpan trigger mode, the
+    // input mask limits the reveal target to the glass's projection onto it.
+    //
+    // position is a per-edge literal baked into the matching Component in
+    // Dock.qml; switching edges recreates this window instead of patching a
+    // live one, so the anchors below are final from the first commit.
+    //
+    // A bottom dock spans the full screen width (left+right) and hangs from the
+    // bottom edge; a side dock spans the full screen height (top+bottom) on its
+    // edge. Anchoring only top (without bottom) would let a side surface
+    // collapse to the implicit thickness and become 0-height.
+    property string position: "bottom"
+    property Component leadingAccessory: null
+    property Component trailingAccessory: null
+    property Component centerAccessory: null
+    property Component clockAccessory: null
+    property bool clockInInfoCarousel: false
+    readonly property bool panelIslandLayout: AppearanceConfigService.barIntegratedWithDock && root.position === "bottom"
+    readonly property bool vertical: root.position === "left" || root.position === "right"
+    readonly property real dockThickness: root.vertical ? dockContainer.width : dockContainer.height
+    // A floating Dock breathes by a proportion of its own thickness, so a
+    // 100pt Dock does not retain the cramped inset intended for a 40pt one.
+    // Taskbar presentation is a true edge fill and therefore has no inset.
+    readonly property int edgeMargin: root.panelIslandLayout ? 8 : (ConfigService.dockStyle === "taskbar" ? 0 : Math.max(4, Math.round(root.dockThickness * 0.12)))
+    // Keep the opposite edge airy as well: maximised windows stop before the
+    // floating glass instead of touching its top/inner edge. This follows the
+    // Dock thickness just like edgeMargin, while a taskbar remains flush.
+    readonly property int workspaceMargin: root.panelIslandLayout ? 8 : (ConfigService.dockStyle === "taskbar" ? 0 : Math.max(4, Math.round(root.dockThickness * 0.12)))
+    // Wayland does not expose a trustworthy QWindow global position to QML.
+    // Derive this layer surface's compositor-global origin from the output it
+    // is explicitly bound to and from the anchors declared below.
+    readonly property real surfaceGlobalX: (root.screen ? root.screen.x : 0) + (root.position === "right" ? (root.screen ? root.screen.width : root.width) - root.width : 0)
+    readonly property real surfaceGlobalY: (root.screen ? root.screen.y : 0) + (root.position === "bottom" ? (root.screen ? root.screen.height : root.height) - root.height : 0)
+
+    anchors: ({
+            top: root.vertical,
+            bottom: true,
+            left: root.position === "bottom" || root.position === "left",
+            right: root.position === "bottom" || root.position === "right"
+        })
+    margins {
+        left: 0
+        top: 0
+        right: 0
+        bottom: 0
+    }
+
+    // Room inside the surface for a magnified icon. The icon grows over its
+    // fixed slot and lifts; whichever part of that overflows the container's
+    // top edge (inner edge for side Docks) would be cut off by the surface, so
+    // it has to live inside the window. The glass, the wrapper and the input
+    // mask keep their own size and position — this area is transparent and
+    // click-through, it only stops the compositor from clipping the artwork.
+    // Reserve launch + maximum hover together even before the first click,
+    // so starting a bounce never resizes/repositions the Wayland surface.
+    // dockHoverRegion below uses this same budget on all three edges.
+    readonly property real hoverHeadroom: Magnification.visualHeadroom(dockContainer.iconSize, dockContainer.activeBackgroundGap, ConfigService.effectiveHoverScale, ConfigService.effectiveHoverLift, root.dockThickness, DockAnimation.launchBounceHeightRatio)
+    // Label paint stays in this surface. Its additional space is deliberately
+    // excluded from dockHoverRegion/input masks, so labels remain click-through.
+    readonly property real nameHeadroom: DockAnimation.nameLabelGap + (root.vertical ? DockAnimation.nameLabelMaximumWidth : DockAnimation.nameLabelMaximumHeight)
+    // Cross-edge thickness = glass + float. Length is forced by the anchors
+    // (full screen along the anchored edge); these set the other dimension.
+    implicitHeight: root.vertical ? 0 : dockContainer.height + root.edgeMargin + root.workspaceMargin + root.hoverHeadroom + root.nameHeadroom
+    implicitWidth: root.vertical ? dockContainer.width + root.edgeMargin + root.workspaceMargin + root.hoverHeadroom + root.nameHeadroom : 0
+
+    // ── Auto-hide controller ──
+    // One controller per surface; inputs come from the singleton services and
+    // the container's interaction state. It owns revealProgress, timers and
+    // the reveal animation.
+    DockAutoHideController {
+        id: hide
+        mode: ConfigService.visibilityMode
+        configReady: ConfigService.ready
+        windowDataReady: WindowService.providerReady
+        position: root.position
+        targetScreen: root.screen
+        dockWidth: dockContainer.width
+        dockHeight: dockContainer.height
+        edgeMargin: root.edgeMargin
+        pointerInsideDock: dockContainer.pointerInside || leadingIslandHover.hovered || centerIslandHover.hovered || statusIslandHover.hovered || clockIslandHover.hovered
+        editing: dockContainer.editMode
+        dragging: dockContainer.draggedPinnedLoader !== null || dockContainer.statusDragActive
+        popupOpen: DockModelService.activeDockPopup !== null || dockContainer.accessoryInteractionActive || (leadingIslandLoader.item?.menuOpen ?? false) || (statusIslandLoader.item?.keepBarOpen ?? false)
+        launcherOpen: AppLauncherService.open
+    }
+
+    // Only a permanently visible Dock reserves workspace. Hide modes keep the
+    // zone at 0 so windows do not reflow whenever the Dock reveals or hides.
+    // A permanently visible Dock reserves exactly the band its glass occupies:
+    // the height plus the inset that keeps the glass off the physical edge.
+    // Floating mode also reserves its proportional inner breathing space;
+    // taskbar mode remains a flush edge fill.
+    exclusiveZone: ConfigService.visibilityMode === "always" ? (root.vertical ? dockContainer.width + root.edgeMargin + root.workspaceMargin : dockContainer.height + root.edgeMargin + root.workspaceMargin) : 0
+
+    // A taskbar spans the edge. A floating Dock remains centred along its
+    // edge; content distribution is controlled inside DockContainer instead
+    // of moving the whole surface around the screen.
+    readonly property bool stretched: ConfigService.dockStyle === "taskbar"
+    readonly property real stretchInset: 0
+    // Side docks start below the standalone top bar; a fused bar reserves
+    // nothing. Mirrors DockContainer.reservedBarHeight so the glass never
+    // slides underneath the bar it is meant to sit beside.
+    readonly property real reservedTop: AppearanceConfigService.barIntegratedWithDock ? 0 : ConfigService.barHeight
+
+    readonly property real islandLeadingWidth: root.panelIslandLayout && leadingIslandLoader.item ? leadingIslandLoader.width : 0
+    readonly property real islandCenterWidth: root.panelIslandLayout && centerIslandLoader.item ? centerIslandLoader.width : 0
+    readonly property real appIslandAvailableLength: root.panelIslandLayout ? Math.max(dockContainer.baseHeight, root.width / 2 - root.edgeMargin - root.islandLeadingWidth - root.islandCenterWidth / 2 - 24) : -1
+
+    // Stable, full-reveal position of the glass inside the surface. Always
+    // derived from surface/container size — never the animated transform.
+    readonly property real restX: root.vertical ? (root.position === "right" ? root.width - root.edgeMargin - dockContainer.width : root.edgeMargin) : (root.panelIslandLayout ? root.edgeMargin + root.islandLeadingWidth + 16 : (root.stretched ? root.stretchInset : (root.width - dockContainer.width) / 2 + dockContainer.hoverGlassShift))
+    readonly property real restY: root.vertical ? (root.stretched ? root.reservedTop + root.stretchInset : (root.reservedTop + (root.height - root.reservedTop - dockContainer.height) / 2 + dockContainer.hoverGlassShift)) : root.height - root.edgeMargin - dockContainer.height
+
+    readonly property real restingDockWidth: root.vertical ? dockContainer.computedDockHeight : dockContainer.restingComputedWidth
+    readonly property real restingDockHeight: root.vertical ? dockContainer.restingComputedWidth : dockContainer.computedDockHeight
+    readonly property rect workspaceDockRect: Qt.rect(root.surfaceGlobalX + (root.vertical ? (root.position === "right" ? root.width - root.edgeMargin - root.restingDockWidth : root.edgeMargin) : (root.panelIslandLayout ? root.restX : (root.stretched ? root.stretchInset : (root.width - root.restingDockWidth) / 2))), root.surfaceGlobalY + (root.vertical ? (root.stretched ? root.reservedTop + root.stretchInset : root.reservedTop + (root.height - root.reservedTop - root.restingDockHeight) / 2) : root.height - root.edgeMargin - root.restingDockHeight), root.restingDockWidth, root.restingDockHeight)
+
+    function publishWorkspaceLayout() {
+        if (!root.screen || root.restingDockWidth <= 0 || root.restingDockHeight <= 0)
+            return;
+        // Publish resting physical axes on every edge. The visual glass shift
+        // and live hover length must never enter the workspace contract.
+        WorkspaceLayoutService.updateDock(root.screen, root.position, {
+            x: root.workspaceDockRect.x,
+            y: root.workspaceDockRect.y,
+            width: root.workspaceDockRect.width,
+            height: root.workspaceDockRect.height
+        }, root.workspaceMargin);
+    }
+
+    Timer {
+        id: layoutPublishTimer
+        interval: 0
+        repeat: false
+        onTriggered: root.publishWorkspaceLayout()
+    }
+
+    onScreenChanged: layoutPublishTimer.restart()
+    onPositionChanged: layoutPublishTimer.restart()
+    onWorkspaceDockRectChanged: layoutPublishTimer.restart()
+    onWorkspaceMarginChanged: layoutPublishTimer.restart()
+
+    Timer {
+        interval: 67
+        repeat: true
+        triggeredOnStart: true
+        running: ThemeWallpaperService.active && root.visible
+        onTriggered: {
+            const p = dockWrapper.mapToItem(root.contentItem, 0, 0);
+            ThemeWallpaperService.setDockRect(root.screen?.name, dockWrapper.opacity > 0.05 ? {
+                x: root.surfaceGlobalX + p.x - (root.screen?.x ?? 0),
+                y: root.surfaceGlobalY + p.y - (root.screen?.y ?? 0),
+                width: dockWrapper.width * dockWrapper.scale,
+                height: dockWrapper.height * dockWrapper.scale
+            } : null);
+        }
+    }
+
+    Component.onCompleted: layoutPublishTimer.restart()
+
+    Item {
+        id: dockWrapper
+        // Slide along toward the edge as revealProgress reaches 0. The mask
+        // region (dockHitRegion) shares these exact coordinates so input tracks
+        // the moving glass.
+        x: hide.offsetX + root.restX
+        y: hide.offsetY + root.restY
+        width: dockContainer.width
+        height: dockContainer.height
+        opacity: hide.dockOpacity
+        scale: hide.dockScale
+        transformOrigin: root.vertical ? (root.position === "right" ? Item.Right : Item.Left) : Item.Bottom
+
+        // Opaque capsule behind the Dock content. The surrounding window stays
+        // transparent so gaps outside the input mask pass clicks through.
+        TapHandler {
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            enabled: dockContainer.statusCollectionExpanded
+            onTapped: point => dockContainer.closeStatusCollectionOutside(point.scenePosition.x, point.scenePosition.y)
+        }
+
+        FrostedSurface {
+            id: pill
+            anchors.fill: parent
+            z: -1
+            // Once fully off-screen, retire the capsule surface.
+            visible: hide.revealProgress > 0
+            radius: 24
+        }
+
+        DockContainer {
+            id: dockContainer
+            launchAnimationVisible: root.visible && hide.revealProgress > 0 && dockWrapper.opacity > 0.05
+            nameLabelHost: root.contentItem
+            nameLabelsEnabled: hide.revealProgress > 0 && dockWrapper.opacity > 0.05
+            pointerInputItem: dockHoverRegion
+            pointerEventRoot: root.contentItem
+            targetScreen: root.screen
+            mockPanelMode: root.panelIslandLayout
+            surfaceOriginX: root.surfaceGlobalX
+            surfaceOriginY: root.surfaceGlobalY
+            leadingAccessory: root.panelIslandLayout ? null : root.leadingAccessory
+            trailingAccessory: root.panelIslandLayout ? null : root.trailingAccessory
+            clockInInfoCarousel: root.panelIslandLayout ? false : root.clockInInfoCarousel
+            layoutAvailableLength: root.appIslandAvailableLength
+        }
+    }
+
+    // A unified SberOS panel uses five frosted islands in this one transparent
+    // layer surface. The gaps remain outside the input mask and pass clicks through.
+    Loader {
+        id: leadingIslandLoader
+        active: root.panelIslandLayout && root.leadingAccessory !== null
+        sourceComponent: root.leadingAccessory
+        x: root.edgeMargin + 8
+        y: hide.offsetY + root.restY + (dockContainer.height - height) / 2
+        opacity: hide.dockOpacity
+        visible: active && item !== null
+        onXChanged: item?.updateMenuAnchor?.()
+        onYChanged: item?.updateMenuAnchor?.()
+        HoverHandler {
+            id: leadingIslandHover
+        }
+    }
+
+    Loader {
+        id: centerIslandLoader
+        active: root.panelIslandLayout && root.centerAccessory !== null
+        sourceComponent: root.centerAccessory
+        x: (root.width - width) / 2
+        y: hide.offsetY + root.restY + (dockContainer.height - height) / 2
+        opacity: hide.dockOpacity
+        visible: active && item !== null
+        HoverHandler {
+            id: centerIslandHover
+        }
+    }
+
+    Loader {
+        id: clockIslandLoader
+        active: root.panelIslandLayout && root.clockAccessory !== null
+        sourceComponent: root.clockAccessory
+        x: root.width - root.edgeMargin - 8 - width
+        y: hide.offsetY + root.restY + (dockContainer.height - height) / 2
+        opacity: hide.dockOpacity
+        visible: active && item !== null
+        HoverHandler {
+            id: clockIslandHover
+        }
+    }
+
+    Loader {
+        id: statusIslandLoader
+        active: root.panelIslandLayout && root.trailingAccessory !== null
+        sourceComponent: root.trailingAccessory
+        x: root.width - root.edgeMargin - 16 - clockIslandLoader.width - width
+        y: hide.offsetY + root.restY + (dockContainer.height - height) / 2
+        opacity: hide.dockOpacity
+        visible: active && item !== null
+        HoverHandler {
+            id: statusIslandHover
+        }
+    }
+
+    // Input mask for the dock body. Invisible; its geometry equals
+    // dockWrapper's (including the hide offset). Keeping it a sibling (rather
+    // than using dockWrapper directly) lets the mask region move independently
+    // of the visual wrapper (opacity/scale) while still matching its area.
+    Item {
+        id: dockHitRegion
+        x: hide.offsetX + root.restX
+        y: hide.offsetY + root.restY
+        width: dockContainer.width
+        height: dockContainer.height
+        visible: false
+    }
+
+    // A stable input rectangle covers the maximum hover envelope. Idle input
+    // is still limited to the glass; while magnifying, elevated artwork remains
+    // interactive. Never derive this sensor's origin from the live glass width.
+    Item {
+        id: dockHoverRegion
+        readonly property real spread: (dockContainer.magnificationRadius * 4 / 3 + dockContainer.iconSize + dockContainer.activeBackgroundGap * 2) * Math.max(0, ConfigService.effectiveHoverScale - 1)
+        x: root.vertical ? (root.position === "right" ? dockHitRegion.x - root.hoverHeadroom : dockHitRegion.x) : hide.offsetX + (root.width - dockContainer.restingComputedWidth - spread) / 2
+        y: root.vertical ? hide.offsetY + root.reservedTop + (root.height - root.reservedTop - dockContainer.restingComputedWidth - spread) / 2 : dockHitRegion.y - root.hoverHeadroom
+        width: root.vertical ? dockContainer.width + root.hoverHeadroom : dockContainer.restingComputedWidth + spread
+        height: root.vertical ? dockContainer.restingComputedWidth + spread : dockContainer.height + root.hoverHeadroom
+    }
+    Item {
+        id: hoverHitRegion
+        x: dockHoverRegion.x
+        y: dockHoverRegion.y
+        width: dockContainer.pointerInside && hide.revealProgress > 0 ? dockHoverRegion.width : 0
+        height: dockContainer.pointerInside && hide.revealProgress > 0 ? dockHoverRegion.height : 0
+        visible: false
+    }
+
+    // White Home Indicator + pointer hit target, parked at the true screen edge.
+    DockRevealHandle {
+        id: revealHandle
+        position: root.position
+        windowWidth: root.width
+        windowHeight: root.height
+        fadeOpacity: hide.handleOpacity
+        dockX: root.restX
+        dockY: root.restY
+        dockWidth: dockContainer.width
+        dockHeight: dockContainer.height
+        // dockSpan keeps the edge-to-glass gap interactive while showing/shown/
+        // hiding, but not while waiting for the initial reveal delay.
+        expanded: hide.revealProgress > 0 || hide.phase === "Showing"
+        active: hide.handleActive
+        showIndicator: ConfigService.showRevealIndicator
+        onEntered: hide.handleEntered()
+        onExited: hide.handleExited()
+        onClicked: hide.handleClicked()
+    }
+
+    // §5.8: a window becoming urgent (non-fullscreen) temporarily reveals the
+    // dock for 2200ms; the temp-clear handler then re-evaluates per show mode.
+    Connections {
+        target: DockModelService
+        function onUrgentWindowAppeared() {
+            hide.requestReveal("urgent", DockAnimation.smartHideUrgentRevealMs);
+        }
+    }
+
+    // Shape the input region to the moving dock glass + the reveal handle hit
+    // target (union). Everything else in this transparent surface passes clicks
+    // through. In "always" mode the handle target collapses to zero.
+    mask: Region {
+        Region {
+            item: dockHitRegion
+        }
+        Region {
+            item: hoverHitRegion
+        }
+        Region {
+            item: revealHandle.hitTarget
+        }
+        Region {
+            item: leadingIslandLoader
+        }
+        Region {
+            item: centerIslandLoader
+        }
+        Region {
+            item: statusIslandLoader
+        }
+        Region {
+            item: clockIslandLoader
+        }
+    }
+}

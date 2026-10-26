@@ -1,0 +1,1414 @@
+import QtQuick
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Widgets
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.common
+import qs.desktop.modules.dock
+import "../../../Kos/Ui"
+import "ClipboardPlacement.mjs" as ClipboardPlacement
+
+// Focusable full-screen layer containing search or anchored clipboard history.
+PanelWindow {
+    id: root
+
+    // Keep a stable layer-shell namespace for window identification.
+    WlrLayershell.namespace: "quickshell-quicksearch"
+
+    property bool open: false
+    property string mode: "window"
+    property string viewMode: "list"
+    property string initialQuery: ""
+    property var clipboardAnchor: null
+    readonly property var placementScreen: ({
+            x: screen?.x || 0,
+            y: screen?.y || 0,
+            width: width,
+            height: height
+        })
+    readonly property var placementBounds: ClipboardPlacement.bounds(placementScreen, mode === "clipboard" ? clipboardAnchor : null)
+    readonly property var clipboardPosition: ClipboardPlacement.place(placementScreen, clipboardAnchor, dialog.width, dialog.height)
+    property string query: ""
+    property int selectedIndex: 0
+    // Keep this deliberately minimal: QuickSearch is a high-frequency
+    // shortcut surface, so a brief fade is clearer and faster than a sheet
+    // transition or scale animation.
+    readonly property real revealProgress: popupMotion.progress
+    PopupMotion {
+        id: popupMotion
+        openDuration: 90
+        closeDuration: 90
+    }
+
+    signal closeRequested
+    signal queryEdited(string value)
+    signal modeCycleRequested
+    signal viewModeToggleRequested
+    // The controller turns this into "copy, then inject Ctrl+V into the window
+    // that had focus before the panel opened". copyOnly stops after the copy.
+    // The item is passed whole so a pinned row and a history row share one path.
+    signal pasteRequested(var item, bool copyOnly)
+
+    readonly property string modeTitle: mode === "app" ? I18n.tr("Apps") : (mode === "clipboard" ? I18n.tr("Clipboard") : I18n.tr("Windows"))
+    readonly property string placeholder: mode === "app" ? I18n.tr("Search installed apps") : (mode === "clipboard" ? I18n.tr("Search clipboard history") : I18n.tr("Search open windows"))
+
+    readonly property var windowResults: {
+        // Explicitly depend on the service revision so title, activation, and
+        // window lifecycle changes immediately refresh the search results.
+        WindowService.revision;
+        const needle = query.trim().toLowerCase();
+        const matches = [];
+        const records = WindowService.records || [];
+        for (let i = 0; i < records.length; i++) {
+            const record = records[i];
+            const haystack = (record.title + " " + (record.identity?.name ?? "") + " " + (record.identity?.desktopId ?? "")).toLowerCase();
+            if (!needle || haystack.includes(needle))
+                matches.push({
+                    kind: "window",
+                    title: record.title,
+                    subtitle: record.identity?.name ?? record.identity?.desktopId ?? "",
+                    icon: record.iconSource ?? "",
+                    windowId: record.windowId
+                });
+        }
+        matches.sort((left, right) => left.title.localeCompare(right.title));
+        return matches;
+    }
+    readonly property var appResults: {
+        AppPresentationService.catalogRevision;
+        AppPresentationService.revision;
+        const needle = query.trim().toLowerCase();
+        const matches = [];
+        const catalogue = AppPresentationService.catalog();
+        for (let i = 0; i < catalogue.length; i++) {
+            const presentation = catalogue[i];
+            const title = presentation.displayName;
+            const haystack = (title + " " + presentation.desktopId).toLowerCase();
+            if (!needle || haystack.includes(needle)) {
+                matches.push({
+                    kind: "app",
+                    title: title,
+                    subtitle: presentation.desktopId,
+                    icon: presentation.iconSource,
+                    desktopId: presentation.desktopId
+                });
+            }
+        }
+        return matches;
+    }
+    readonly property var clipboardResults: {
+        ClipboardService.revision;
+        ClipboardService.pinnedRevision;
+        const needle = query.trim().toLowerCase();
+        const matches = [];
+
+        if (root.clipboardPinnedOnly) {
+            const pinned = ClipboardService.pinned || [];
+            for (let i = 0; i < pinned.length; i++) {
+                const item = pinned[i];
+                const title = item.isImage ? I18n.tr("Image") : item.preview;
+                if (needle && !title.toLowerCase().includes(needle))
+                    continue;
+                matches.push({
+                    kind: "clipboard",
+                    title: title,
+                    subtitle: item.isImage ? I18n.tr("Pinned image · Enter to copy") : I18n.tr("Pinned text · Enter to copy"),
+                    icon: BundledIcons.source(item.isImage ? "image-x-generic" : "edit-paste"),
+                    isImage: item.isImage,
+                    preview: item.preview,
+                    selectionRecord: "",
+                    pinId: item.pinId,
+                    pinned: true,
+                    thumbnailSource: item.thumbnailPath ? "file://" + item.thumbnailPath : ""
+                });
+            }
+            return matches;
+        }
+
+        const entries = ClipboardService.entries || [];
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            if (!needle || entry.preview.toLowerCase().includes(needle)) {
+                const pinId = ClipboardService.pinIdFor(entry);
+                matches.push({
+                    kind: "clipboard",
+                    title: entry.isImage ? I18n.tr("Image") : entry.preview,
+                    subtitle: entry.isImage ? I18n.tr("Image clipboard · %1").arg(entry.preview.slice(2, -2)) : I18n.tr("Text clipboard · Enter to copy"),
+                    icon: BundledIcons.source(entry.isImage ? "image-x-generic" : "edit-paste"),
+                    isImage: entry.isImage,
+                    preview: entry.preview,
+                    selectionRecord: entry.record,
+                    pinId: pinId,
+                    pinned: pinId !== "",
+                    thumbnailSource: ""
+                });
+            }
+        }
+        return matches;
+    }
+    readonly property var results: mode === "app" ? appResults : (mode === "clipboard" ? clipboardResults : windowResults)
+    readonly property int resultCount: results.length
+    readonly property int visibleResultCount: Math.min(6, resultCount)
+    readonly property int gridColumnCount: mode === "app" ? 4 : 5
+    readonly property int visibleGridRowCount: Math.min(mode === "app" ? 5 : 3, Math.ceil(resultCount / gridColumnCount))
+
+    visible: popupMotion.mapped
+    color: "transparent"
+    // Anchor coordinates are relative to the whole output. If layer-shell
+    // also offsets this surface around panels, their reservation is applied
+    // twice. The card itself is clamped to KWin's placement area instead.
+    exclusionMode: mode === "clipboard" ? ExclusionMode.Ignore : ExclusionMode.Auto
+    focusable: open
+    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    contentItem.enabled: open
+    mask: open ? null : emptyInputRegion
+    Region {
+        id: emptyInputRegion
+    }
+    anchors {
+        top: true
+        left: true
+        right: true
+        bottom: true
+    }
+
+    // QuickSearch result icon with the same appearance settings as Dock.
+    // Unlike the shared AppIcon component, this samples IconImage's backing
+    // texture directly. It deliberately avoids ShaderEffectSource: QuickSearch
+    // repeatedly hides and re-shows its PanelWindow, and a source-item capture
+    // can retain the old QQuickWindow across that transition.
+    component ResultIcon: Item {
+        id: resultIcon
+        property string iconSource: ""
+
+        // Color mode with no tint/desaturation renders the icon unchanged, so
+        // draw it directly and skip the ShaderEffect pass entirely.
+        readonly property bool needsEffect: IconAppearanceService.mode !== "color" || IconAppearanceService.saturation !== 1.0 || IconAppearanceService.tintEnabled !== 0.0
+
+        IconImage {
+            id: sourceImage
+            anchors.fill: parent
+            source: resultIcon.iconSource
+            smooth: true
+            // Theme icon: synchronous, see AppIcon.qml.
+            asynchronous: false
+            // Match AppIcon: cache the overwhelmingly common direct-color
+            // path, but leave the live ShaderEffect source uncached.
+            backer.cache: !resultIcon.needsEffect && IconThemeReloadService.pixmapCacheAllowed
+            visible: !resultIcon.needsEffect
+        }
+
+        ShaderEffect {
+            anchors.fill: parent
+            visible: resultIcon.needsEffect
+            property variant source: sourceImage.backer
+            property real opacityMult: IconAppearanceService.mode === "color" ? 1.0 : IconAppearanceService.opacity
+            property real sat: IconAppearanceService.mode === "color" ? 1.0 : IconAppearanceService.saturation
+            property real iconTintEnabled: IconAppearanceService.tintEnabled
+            property color iconTintColor: IconAppearanceService.tintColor
+            fragmentShader: Qt.resolvedUrl("../../shaders/icon_effect.frag.qsb")
+        }
+    }
+
+    property bool clipboardSettingsOpen: false
+    // Clipboard list is narrowed to the pin store.
+    property bool clipboardPinnedOnly: false
+
+    // Star toggles the pin; the platform owns both the payload and its preview
+    // file, so unpinning is also what deletes them from disk.
+    function togglePin(item) {
+        if (!item)
+            return;
+        if (item.pinId)
+            ClipboardService.unpinById(item.pinId);
+        else if (item.selectionRecord)
+            ClipboardService.pinEntry(item.selectionRecord, item.preview);
+    }
+
+    // Removing a row: in the pin view it drops the pin, in the history view it
+    // drops the history entry (the platform takes that entry's preview with
+    // it). A pinned history entry survives, which is what pinning promised.
+    function removeItem(item) {
+        if (!item)
+            return;
+        if (root.clipboardPinnedOnly) {
+            if (item.pinId)
+                ClipboardService.unpinById(item.pinId);
+            return;
+        }
+        if (item.selectionRecord)
+            ClipboardService.deleteEntry(item.selectionRecord);
+    }
+
+    function thumbnailForResult(item) {
+        ClipboardService.thumbnailRevision;
+        if (!item?.isImage)
+            return "";
+        if (item.pinId && !item.selectionRecord)
+            return item.thumbnailSource ?? "";
+        return ClipboardService.thumbnailSourceFor({
+            isImage: true,
+            record: item.selectionRecord
+        });
+    }
+
+    function reset(queryText) {
+        query = String(queryText ?? "");
+        clipboardSettingsOpen = false;
+        clipboardPinnedOnly = false;
+        // Start at the first result in the current mode and ordering.
+        selectedIndex = 0;
+        focusTimer.restart();
+        if (mode === "clipboard") {
+            if (viewMode === "grid")
+                gridView.positionViewAtBeginning();
+            else
+                resultView.positionViewAtBeginning();
+        }
+    }
+
+    function deleteCurrentSelection() {
+        if (root.mode !== "clipboard" || root.selectedIndex < 0 || root.selectedIndex >= root.resultCount)
+            return;
+        root.removeItem(root.results[root.selectedIndex]);
+    }
+
+    function moveSelection(delta) {
+        if (resultCount === 0)
+            return;
+        selectedIndex = (selectedIndex + delta + resultCount) % resultCount;
+        if (viewMode === "grid")
+            gridView.positionViewAtIndex(selectedIndex, GridView.Contain);
+        else
+            resultView.positionViewAtIndex(selectedIndex, ListView.Contain);
+    }
+
+    function activateSelection(copyOnly) {
+        if (selectedIndex < 0 || selectedIndex >= resultCount)
+            return;
+        const result = results[selectedIndex];
+        if (result.kind === "window") {
+            // Use the Dock facade so its shared active indicator can begin
+            // travelling before this focusable search layer closes.
+            DockModelService.activateWindow(result.windowId);
+        } else if (result.kind === "clipboard") {
+            // Closing is what hands keyboard focus back; the controller injects
+            // Ctrl+V once that has actually happened.
+            root.pasteRequested(result, copyOnly === true);
+        } else {
+            // App results carry a desktopId only. launch() resolves the live
+            // entry itself, so nothing here holds a DesktopEntry reference.
+            AppActionService.launch(result);
+        }
+        closeRequested();
+    }
+
+    onOpenChanged: {
+        if (open)
+            popupMotion.open();
+        else
+            popupMotion.close();
+        if (open) {
+            reset(initialQuery);
+            if (mode === "clipboard") {
+                ClipboardService.refresh();
+                ClipboardService.refreshPinned();
+            }
+        }
+    }
+    Component.onCompleted: {
+        if (open)
+            popupMotion.open();
+    }
+    onModeChanged: {
+        if (open)
+            reset(initialQuery);
+    }
+    onInitialQueryChanged: if (open && query !== initialQuery)
+        query = initialQuery
+    onResultsChanged: {
+        if (selectedIndex >= resultCount)
+            selectedIndex = Math.max(0, resultCount - 1);
+    }
+    Timer {
+        id: focusTimer
+        interval: 1
+        repeat: false
+        onTriggered: {
+            if (root.open)
+                searchInput.forceActiveFocus();
+        }
+    }
+
+    // A copy can arrive while the palette is already open. Refreshing the
+    // light-weight cliphist index here makes it appear without reopening.
+    Timer {
+        interval: 800
+        repeat: true
+        running: root.open && root.mode === "clipboard"
+        onTriggered: ClipboardService.refresh()
+    }
+
+    // There is intentionally no dimmed visual overlay. This transparent input
+    // catcher preserves the natural Spotlight behaviour: a click outside the
+    // compact search card simply dismisses it.
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        onClicked: {
+            if (root.clipboardSettingsOpen) {
+                root.clipboardSettingsOpen = false;
+                return;
+            }
+            root.closeRequested();
+        }
+    }
+
+    Rectangle {
+        id: dialog
+        objectName: "quicksearch-dialog"
+        width: root.mode === "app" ? 456 : (root.mode === "clipboard" ? Math.min(580, Math.max(1, root.placementBounds.width - 24)) : 580)
+        height: root.mode === "app" ? 653 : (root.resultCount > 0 ? (searchHeader.height + 6 + 6 + (root.viewMode === "grid" ? gridView.height : resultView.height) + 10) : (searchHeader.height + 6 + 50))
+        // Shared readability outline so foreground text stays legible on
+        // varying wallpapers. Dark themes use a dark outline for light text;
+        // light themes use a light outline for dark text.
+        readonly property color textOutlineColor: ThemeService.isDark ? Qt.rgba(0.05, 0.08, 0.12, 0.38) : Qt.rgba(1, 1, 1, 0.50)
+        x: root.mode === "clipboard" ? root.clipboardPosition.x : (parent.width - width) / 2
+        y: root.mode === "clipboard" ? root.clipboardPosition.y : (root.mode === "app" ? parent.height - height - 8 : Math.round(parent.height * 0.16))
+        radius: root.mode === "app" ? 24 : AppearanceTokens.shape.extraLarge
+        color: "transparent"
+        opacity: root.revealProgress
+
+        FrostedSurface {
+            id: dialogSurface
+            anchors.fill: parent
+            radius: dialog.radius
+        }
+
+        Item {
+            id: searchHeader
+            anchors {
+                top: root.mode === "app" ? undefined : parent.top
+                bottom: root.mode === "app" ? parent.bottom : undefined
+                left: parent.left
+                right: parent.right
+                topMargin: root.mode === "app" ? undefined : 6
+                bottomMargin: root.mode === "app" ? 9 : undefined
+                leftMargin: root.mode === "app" ? 7 : 0
+                rightMargin: root.mode === "app" ? 7 : 0
+            }
+            height: root.mode === "app" ? 56 : 44
+            z: 1
+
+            // The editable search field uses the same opaque UI Kit surface.
+            OpaqueSurface {
+                id: fieldPill
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    leftMargin: root.mode === "app" ? 0 : 12
+                    rightMargin: root.mode === "app" ? 0 : 12
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                radius: root.mode === "app" ? 17 : AppearanceTokens.shape.medium
+                // Focus ring over the field surface.
+                Rectangle {
+                    anchors.fill: parent
+                    radius: fieldPill.contentRadius
+                    color: "transparent"
+                    border.width: searchInput.activeFocus ? 1 : 0
+                    border.color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.40) : Qt.rgba(0, 0, 0, 0.25)
+                }
+            }
+
+            Image {
+                anchors {
+                    left: fieldPill.left
+                    leftMargin: 8
+                    verticalCenter: fieldPill.verticalCenter
+                }
+                width: 40
+                height: 40
+                source: Qt.resolvedUrl("../../assets/oska-avatar.svg")
+                fillMode: Image.PreserveAspectFit
+                visible: root.mode === "app"
+            }
+
+            ThemeText {
+                anchors {
+                    left: fieldPill.left
+                    leftMargin: 14
+                    verticalCenter: fieldPill.verticalCenter
+                }
+                text: "⌕"
+                color: AppearanceTokens.content.shellInk(0.72)
+                font.pixelSize: 20
+                style: ThemeService.isDark ? Text.Outline : Text.Normal
+                styleColor: dialog.textOutlineColor
+                visible: root.mode !== "app"
+            }
+
+            TextInput {
+                id: searchInput
+                objectName: "quicksearch-input"
+                anchors {
+                    left: fieldPill.left
+                    leftMargin: root.mode === "app" ? 60 : 44
+                    right: fieldPill.right
+                    rightMargin: root.mode === "app" ? 8 : (root.mode === "clipboard" ? 180 : 130)
+                    verticalCenter: fieldPill.verticalCenter
+                }
+                color: ThemeService.foregroundColor
+                font {
+                    family: "Noto Sans CJK SC"
+                    pixelSize: 15
+                }
+                clip: true
+                selectByMouse: true
+                text: root.query
+                onTextEdited: {
+                    root.queryEdited(text);
+                    root.selectedIndex = 0;
+                }
+                Keys.onPressed: function (event) {
+                    const control = (event.modifiers & Qt.ControlModifier) !== 0;
+                    if (event.key === Qt.Key_Down || (control && event.key === Qt.Key_N)) {
+                        root.moveSelection(1);
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Up || (control && event.key === Qt.Key_P)) {
+                        root.moveSelection(-1);
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        root.activateSelection();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Escape) {
+                        if (root.clipboardSettingsOpen) {
+                            root.clipboardSettingsOpen = false;
+                            event.accepted = true;
+                        } else {
+                            root.closeRequested();
+                            event.accepted = true;
+                        }
+                    } else if (event.key === Qt.Key_Tab) {
+                        root.modeCycleRequested();
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Delete && control && (event.modifiers & Qt.ShiftModifier)) {
+                        if (root.mode === "clipboard") {
+                            root.deleteCurrentSelection();
+                            event.accepted = true;
+                        }
+                    }
+                }
+
+                ThemeText {
+                    anchors.fill: parent
+                    visible: !searchInput.text && !searchInput.inputMethodComposing
+                    text: root.placeholder
+                    color: AppearanceTokens.content.shellInk(0.54)
+                    font: searchInput.font
+                    verticalAlignment: Text.AlignVCenter
+                    style: ThemeService.isDark ? Text.Outline : Text.Normal
+                    styleColor: dialog.textOutlineColor
+                }
+            }
+
+            Row {
+                anchors {
+                    right: fieldPill.right
+                    rightMargin: 10
+                    verticalCenter: fieldPill.verticalCenter
+                }
+                spacing: 6
+
+                ThemeText {
+                    visible: root.mode !== "app"
+                    text: root.modeTitle + (root.mode === "clipboard" ? (root.clipboardPinnedOnly ? I18n.tr(" · Pinned") : I18n.tr(" · Newest first")) : "") + I18n.tr(" · Tab")
+                    color: AppearanceTokens.content.shellInk(0.46)
+                    font.pixelSize: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                    style: ThemeService.isDark ? Text.Outline : Text.Normal
+                    styleColor: dialog.textOutlineColor
+                }
+
+                // Clear all clipboard history button
+                Item {
+                    visible: root.mode === "clipboard" && root.resultCount > 0
+                    width: clearText.implicitWidth + 12
+                    height: 22
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 6
+                        color: clearMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 0.3, 0.3, 0.22) : Qt.rgba(0.9, 0.1, 0.1, 0.12)) : "transparent"
+                    }
+
+                    ThemeText {
+                        id: clearText
+                        anchors.centerIn: parent
+                        text: I18n.tr("Clear")
+                        color: clearMouse.containsMouse ? "#ff453a" : AppearanceTokens.content.shellInk(0.60)
+                        font.pixelSize: 11
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    MouseArea {
+                        id: clearMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ClipboardService.clearAll()
+                    }
+                }
+
+                // Pinned-only filter. A chip rather than a second tab row keeps
+                // the palette height it already had.
+                Item {
+                    visible: root.mode === "clipboard"
+                    width: pinFilterText.implicitWidth + 12
+                    height: 22
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 6
+                        color: root.clipboardPinnedOnly ? (ThemeService.isDark ? Qt.rgba(0.30, 0.56, 0.94, 0.32) : Qt.rgba(0.0, 0.50, 0.90, 0.18)) : (pinFilterMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : "transparent")
+                        border.width: root.clipboardPinnedOnly ? 1 : 0
+                        border.color: ThemeService.isDark ? Qt.rgba(0.66, 0.82, 1, 0.40) : Qt.rgba(0.0, 0.50, 0.90, 0.30)
+                    }
+
+                    ThemeText {
+                        id: pinFilterText
+                        anchors.centerIn: parent
+                        text: I18n.tr("Pinned %1").arg(ClipboardService.pinnedCount)
+                        color: root.clipboardPinnedOnly ? (ThemeService.isDark ? Qt.rgba(0.84, 0.93, 1, 0.96) : "#0066cc") : AppearanceTokens.content.shellInk(0.60)
+                        font.pixelSize: 11
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    MouseArea {
+                        id: pinFilterMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.clipboardPinnedOnly = !root.clipboardPinnedOnly;
+                            root.selectedIndex = 0;
+                        }
+                    }
+                }
+
+                // Settings button (toggles clipboard settings popover)
+                Item {
+                    visible: root.mode === "clipboard"
+                    width: 22
+                    height: 22
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 6
+                        color: (settingsMouse.containsMouse || root.clipboardSettingsOpen) ? (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
+                    }
+
+                    ThemeText {
+                        anchors.centerIn: parent
+                        text: "⚙"
+                        color: root.clipboardSettingsOpen ? (ThemeService.isDark ? "#64b5ff" : "#0066cc") : AppearanceTokens.content.shellInk(0.70)
+                        font.pixelSize: 13
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    MouseArea {
+                        id: settingsMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.clipboardSettingsOpen = !root.clipboardSettingsOpen
+                    }
+                }
+
+                Item {
+                    visible: root.mode !== "app"
+                    width: 22
+                    height: 22
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 6
+                        color: viewToggle.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                    }
+
+                    ThemeText {
+                        anchors.centerIn: parent
+                        // The button advertises the layout selected by a click.
+                        text: root.viewMode === "list" ? "▦" : "☷"
+                        color: AppearanceTokens.content.shellInk(0.76)
+                        font.pixelSize: 16
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    MouseArea {
+                        id: viewToggle
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.viewModeToggleRequested()
+                    }
+                }
+            }
+        }
+
+        // Settings popover panel
+        Rectangle {
+            id: settingsPopover
+            opacity: root.mode === "clipboard" && root.clipboardSettingsOpen ? 1 : 0
+            visible: (root.mode === "clipboard" && root.clipboardSettingsOpen) || opacity > 0
+            enabled: root.mode === "clipboard" && root.clipboardSettingsOpen
+            scale: 0.96 + 0.04 * opacity
+            transformOrigin: Item.TopRight
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: AppearanceTokens.motion.fastDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
+            z: 20
+            width: 320
+            height: settingsContent.implicitHeight + 24
+            radius: 18
+            color: "transparent"
+            anchors {
+                top: searchHeader.bottom
+                topMargin: 4
+                right: parent.right
+                rightMargin: 12
+            }
+
+            OpaqueSurface {
+                anchors.fill: parent
+                radius: settingsPopover.radius
+            }
+
+            Column {
+                id: settingsContent
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: parent.top
+                    margins: 12
+                }
+                spacing: 10
+
+                // Header
+                Row {
+                    width: parent.width
+                    ThemeText {
+                        width: parent.width - 24
+                        text: I18n.tr("Clipboard Preferences")
+                        font {
+                            pixelSize: 13
+                            bold: true
+                            family: "Noto Sans CJK SC"
+                        }
+                        color: ThemeService.foregroundColor
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+                    ThemeText {
+                        width: 24
+                        horizontalAlignment: Text.AlignRight
+                        text: "×"
+                        font.pixelSize: 18
+                        color: AppearanceTokens.content.shellInk(0.60)
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.clipboardSettingsOpen = false
+                        }
+                    }
+                }
+
+                // Divider
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+                }
+
+                // Watch Images row
+                Row {
+                    width: parent.width
+                    Column {
+                        width: parent.width - 46
+                        spacing: 2
+                        ThemeText {
+                            text: I18n.tr("Monitor image content")
+                            font {
+                                pixelSize: 12
+                                weight: Font.Medium
+                                family: "Noto Sans CJK SC"
+                            }
+                            color: ThemeService.foregroundColor
+                            style: ThemeService.isDark ? Text.Outline : Text.Normal
+                            styleColor: dialog.textOutlineColor
+                        }
+                        ThemeText {
+                            text: I18n.tr("Automatically record screenshots and copied images")
+                            font.pixelSize: 10
+                            color: AppearanceTokens.content.shellInk(0.55)
+                            style: ThemeService.isDark ? Text.Outline : Text.Normal
+                            styleColor: dialog.textOutlineColor
+                        }
+                    }
+                    // iOS switch pill
+                    Rectangle {
+                        width: 40
+                        height: 22
+                        radius: 11
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: ClipboardService.watchImages ? "#34c759" : (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.15))
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 150
+                            }
+                        }
+
+                        Rectangle {
+                            width: 18
+                            height: 18
+                            radius: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: ClipboardService.watchImages ? parent.width - width - 2 : 2
+                            Behavior on x {
+                                NumberAnimation {
+                                    duration: 150
+                                    easing.type: Easing.OutQuad
+                                }
+                            }
+                            color: "#ffffff"
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: ClipboardService.setWatchImages(!ClipboardService.watchImages)
+                        }
+                    }
+                }
+
+                // Max history limit row
+                Column {
+                    width: parent.width
+                    spacing: 6
+
+                    ThemeText {
+                        text: I18n.tr("History size")
+                        font {
+                            pixelSize: 12
+                            weight: Font.Medium
+                            family: "Noto Sans CJK SC"
+                        }
+                        color: ThemeService.foregroundColor
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    Row {
+                        spacing: 6
+                        Repeater {
+                            model: [50, 100, 200, 500]
+                            Rectangle {
+                                width: (settingsContent.width - 18) / 4
+                                height: 26
+                                radius: 6
+                                color: ClipboardService.maxItems === modelData ? (ThemeService.isDark ? Qt.rgba(0.20, 0.50, 0.95, 0.40) : Qt.rgba(0.0, 0.45, 0.85, 0.20)) : (itemMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)))
+                                border.width: 1
+                                border.color: ClipboardService.maxItems === modelData ? (ThemeService.isDark ? Qt.rgba(0.40, 0.70, 1, 0.60) : Qt.rgba(0.0, 0.45, 0.85, 0.50)) : "transparent"
+
+                                ThemeText {
+                                    anchors.centerIn: parent
+                                    text: I18n.tr("%1 entries").arg(modelData)
+                                    font.pixelSize: 11
+                                    color: ClipboardService.maxItems === modelData ? (ThemeService.isDark ? "#64b5ff" : "#0066cc") : ThemeService.foregroundColor
+                                    style: ThemeService.isDark ? Text.Outline : Text.Normal
+                                    styleColor: dialog.textOutlineColor
+                                }
+
+                                MouseArea {
+                                    id: itemMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: ClipboardService.setMaxItems(modelData)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Divider
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+                }
+
+                // Global Shortcuts entry
+                Rectangle {
+                    width: parent.width
+                    height: 32
+                    radius: 8
+                    color: shortcutMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        ThemeText {
+                            width: parent.width - 20
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: I18n.tr("⌨ Configure global shortcut (Meta+V)")
+                            font {
+                                pixelSize: 11
+                                family: "Noto Sans CJK SC"
+                            }
+                            color: ThemeService.foregroundColor
+                            style: ThemeService.isDark ? Text.Outline : Text.Normal
+                            styleColor: dialog.textOutlineColor
+                        }
+                        ThemeText {
+                            width: 20
+                            horizontalAlignment: Text.AlignRight
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "›"
+                            font.pixelSize: 16
+                            color: AppearanceTokens.content.shellInk(0.40)
+                        }
+                    }
+
+                    MouseArea {
+                        id: shortcutMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            ClipboardService.openShortcutSettings();
+                            root.clipboardSettingsOpen = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        OpaqueSurface {
+            anchors.fill: resultView
+            radius: 20
+            visible: root.mode === "app"
+        }
+
+        ThemeText {
+            x: 23
+            y: 19
+            text: I18n.tr("Apps")
+            font.pixelSize: 16
+            font.weight: Font.DemiBold
+            visible: root.mode === "app"
+        }
+
+        ThemeText {
+            anchors.centerIn: resultView
+            text: I18n.tr("No apps found")
+            color: AppearanceTokens.colors.surfaceVariantForeground
+            visible: root.mode === "app" && root.resultCount === 0
+        }
+
+        ListView {
+            id: resultView
+            visible: root.mode !== "app" && root.viewMode === "list"
+            anchors {
+                top: root.mode === "app" ? parent.top : searchHeader.bottom
+                left: parent.left
+                right: parent.right
+                topMargin: root.mode === "app" ? 7 : 4
+                bottomMargin: root.mode === "app" ? 8 : undefined
+                leftMargin: root.mode === "app" ? 23 : 8
+                rightMargin: root.mode === "app" ? 23 : 8
+            }
+            height: root.mode === "app" ? Math.max(0, parent.height - searchHeader.height - 24) : (root.mode === "clipboard" ? Math.min(root.visibleResultCount * 52, Math.max(0, root.placementBounds.height - 90)) : root.visibleResultCount * 52)
+            clip: true
+            model: root.visible && visible ? root.results : null
+            currentIndex: root.selectedIndex
+
+            delegate: Item {
+                id: resultItem
+                readonly property string thumbnailSource: root.open && resultView.visible && y + height > resultView.contentY && y < resultView.contentY + resultView.height ? root.thumbnailForResult(modelData) : ""
+                required property var modelData
+                required property int index
+                width: resultView.width
+                height: 52
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 20
+                    visible: resultItem.index === root.selectedIndex || resultMouse.containsMouse || resultMouse.pressed
+                    color: resultItem.index === root.selectedIndex ? AppearanceTokens.state.selected : resultMouse.pressed ? AppearanceTokens.state.pressed : AppearanceTokens.state.hover
+                    z: -1
+                }
+
+                Rectangle {
+                    width: 30
+                    height: 30
+                    radius: 8
+                    anchors {
+                        left: parent.left
+                        leftMargin: 12
+                        verticalCenter: parent.verticalCenter
+                    }
+                    visible: resultItem.modelData.isImage ?? false
+                    color: Qt.rgba(0.30, 0.56, 0.94, 0.34)
+                    border.width: 1
+                    border.color: Qt.rgba(0.66, 0.82, 1, 0.42)
+
+                    // The platform's rendered preview. Inset by the frame
+                    // instead of corner-masked: a mask needs a captured backing
+                    // texture, which this panel cannot hold across its rapid
+                    // hide/show cycles (see the ResultIcon note below).
+                    Image {
+                        id: rowThumb
+                        anchors.centerIn: parent
+                        width: 26
+                        height: 26
+                        visible: resultItem.thumbnailSource !== ""
+                        source: resultItem.thumbnailSource
+                        sourceSize.width: 52
+                        sourceSize.height: 52
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        smooth: true
+                        cache: false
+                    }
+                }
+
+                ResultIcon {
+                    visible: resultItem.thumbnailSource === ""
+                    width: resultItem.modelData.isImage ? 20 : 30
+                    height: width
+                    anchors {
+                        left: parent.left
+                        leftMargin: resultItem.modelData.isImage ? 17 : 12
+                        verticalCenter: parent.verticalCenter
+                    }
+                    iconSource: resultItem.modelData.icon ?? ""
+                }
+
+                Column {
+                    anchors {
+                        left: parent.left
+                        leftMargin: 54
+                        right: parent.right
+                        // Clipboard rows carry a star next to the delete button:
+                        // 12 margin + 38 (latest badge) + 6 + 28 + 6 + 28.
+                        rightMargin: root.mode === "clipboard" ? 118 : 12
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 1
+
+                    ThemeText {
+                        width: parent.width
+                        text: resultItem.modelData.title
+                        color: ThemeService.foregroundColor
+                        elide: Text.ElideRight
+                        font {
+                            pixelSize: 14
+                            weight: Font.DemiBold
+                        }
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    ThemeText {
+                        width: parent.width
+                        text: resultItem.modelData.subtitle
+                        color: AppearanceTokens.content.shellInk(0.68)
+                        elide: Text.ElideRight
+                        font.pixelSize: 11
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+                }
+
+                // Right action badges. z lifts the star and delete buttons over
+                // the row-wide MouseArea declared below: input is delivered
+                // topmost first, so without it the row swallows every press and
+                // the icons are decoration. Same trick as the grid delete button.
+                Row {
+                    anchors {
+                        right: parent.right
+                        rightMargin: 12
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 6
+                    z: 2
+
+                    // Latest badge
+                    Rectangle {
+                        visible: root.mode === "clipboard" && !root.clipboardPinnedOnly && resultItem.index === 0
+                        width: 38
+                        height: 18
+                        radius: 9
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: ThemeService.isDark ? Qt.rgba(0.30, 0.56, 0.94, 0.32) : Qt.rgba(0.0, 0.50, 0.90, 0.18)
+                        border.width: 1
+                        border.color: ThemeService.isDark ? Qt.rgba(0.66, 0.82, 1, 0.40) : Qt.rgba(0.0, 0.50, 0.90, 0.30)
+
+                        ThemeText {
+                            anchors.centerIn: parent
+                            text: I18n.tr("Newest")
+                            color: ThemeService.isDark ? Qt.rgba(0.84, 0.93, 1, 0.94) : Qt.rgba(0.0, 0.45, 0.85, 1.0)
+                            font.pixelSize: 9
+                            font.weight: Font.DemiBold
+                            style: ThemeService.isDark ? Text.Outline : Text.Normal
+                            styleColor: dialog.textOutlineColor
+                        }
+                    }
+
+                    // Pin toggle. Stays visible while pinned so the state is
+                    // readable without hovering. The item is 28x28 around a
+                    // 22x22 chip: glyph and hover circle keep their size, only
+                    // the target grows, so a near miss lands on the star instead
+                    // of the row and never fires the paste.
+                    Item {
+                        visible: root.mode === "clipboard"
+                        width: 28
+                        height: 28
+                        anchors.verticalCenter: parent.verticalCenter
+                        // Own hover is part of the condition because the badge
+                        // sits above resultMouse: approaching from the screen
+                        // edge lands on the badge without the row ever seeing an
+                        // enter, and the icon must not be invisible-but-clickable.
+                        opacity: (resultItem.modelData.pinned ?? false) || pinButtonMouse.containsMouse || resultMouse.containsMouse || resultItem.index === root.selectedIndex ? 1.0 : 0.0
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 100
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: pinButtonMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.09)) : "transparent"
+                        }
+
+                        ThemeText {
+                            anchors.centerIn: parent
+                            text: (resultItem.modelData.pinned ?? false) ? "★" : "☆"
+                            color: (resultItem.modelData.pinned ?? false) ? (ThemeService.isDark ? "#ffd60a" : "#c08a00") : AppearanceTokens.content.shellInk(0.68)
+                            font.pixelSize: 13
+                            style: ThemeService.isDark ? Text.Outline : Text.Normal
+                            styleColor: dialog.textOutlineColor
+                        }
+
+                        MouseArea {
+                            id: pinButtonMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.togglePin(resultItem.modelData)
+                        }
+                    }
+
+                    // Delete single clipboard item button. Same 28x28 target
+                    // around a 22x22 chip as the pin toggle.
+                    Item {
+                        visible: root.mode === "clipboard"
+                        width: 28
+                        height: 28
+                        anchors.verticalCenter: parent.verticalCenter
+                        opacity: deleteBtnMouse.containsMouse || resultMouse.containsMouse || resultItem.index === root.selectedIndex ? 1.0 : 0.0
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 100
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: deleteBtnMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 0.3, 0.3, 0.30) : Qt.rgba(1, 0.2, 0.2, 0.15)) : "transparent"
+                        }
+
+                        ThemeText {
+                            anchors.centerIn: parent
+                            text: "×"
+                            color: deleteBtnMouse.containsMouse ? "#ff453a" : AppearanceTokens.content.shellInk(0.60)
+                            font.pixelSize: 16
+                            style: ThemeService.isDark ? Text.Outline : Text.Normal
+                            styleColor: dialog.textOutlineColor
+                        }
+
+                        MouseArea {
+                            id: deleteBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.removeItem(resultItem.modelData)
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: resultMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                    onEntered: root.selectedIndex = resultItem.index
+                    onClicked: function (mouse) {
+                        root.selectedIndex = resultItem.index;
+                        // Ctrl (or middle click) means "only put it on the
+                        // clipboard", for pasting somewhere else later.
+                        root.activateSelection((mouse.modifiers & Qt.ControlModifier) !== 0 || mouse.button === Qt.MiddleButton);
+                    }
+                }
+            }
+
+            // Smooth wheel scrolling keeps the selected result in context.
+            KosKineticScroll {
+                flickable: resultView
+            }
+        }
+
+        GridView {
+            id: gridView
+            visible: root.mode === "app" || root.viewMode === "grid"
+            anchors {
+                top: root.mode === "app" ? parent.top : searchHeader.bottom
+                left: parent.left
+                right: parent.right
+                topMargin: root.mode === "app" ? 47 : 4
+                bottomMargin: root.mode === "app" ? 8 : undefined
+                leftMargin: root.mode === "app" ? 23 : 8
+                rightMargin: root.mode === "app" ? 23 : 8
+            }
+            height: root.mode === "app" ? Math.max(0, parent.height - 47 - searchHeader.height - 9) : (root.mode === "clipboard" ? Math.min(root.visibleGridRowCount * 94, Math.max(0, root.placementBounds.height - 90)) : root.visibleGridRowCount * 94)
+            cellWidth: width / root.gridColumnCount
+            cellHeight: root.mode === "app" ? 96 : 94
+            clip: true
+            model: root.visible && visible ? root.results : null
+            currentIndex: root.selectedIndex
+
+            delegate: Item {
+                id: gridResultItem
+                readonly property string thumbnailSource: root.open && gridView.visible && y + height > gridView.contentY && y < gridView.contentY + gridView.height ? root.thumbnailForResult(modelData) : ""
+                required property var modelData
+                required property int index
+                width: gridView.cellWidth
+                height: gridView.cellHeight
+
+                Rectangle {
+                    anchors {
+                        fill: parent
+                        margins: 3
+                    }
+                    radius: 11
+                    visible: gridResultItem.index === root.selectedIndex || gridMouse.containsMouse || gridMouse.pressed
+                    color: gridResultItem.index === root.selectedIndex ? AppearanceTokens.state.selected : gridMouse.pressed ? AppearanceTokens.state.pressed : AppearanceTokens.state.hover
+                    z: -1
+                }
+
+                Rectangle {
+                    visible: root.mode === "clipboard" && !root.clipboardPinnedOnly && gridResultItem.index === 0
+                    width: 34
+                    height: 17
+                    radius: 8.5
+                    anchors {
+                        right: parent.right
+                        rightMargin: 7
+                        top: parent.top
+                        topMargin: 7
+                    }
+                    color: ThemeService.isDark ? Qt.rgba(0.30, 0.56, 0.94, 0.36) : Qt.rgba(0.0, 0.50, 0.90, 0.18)
+
+                    ThemeText {
+                        anchors.centerIn: parent
+                        text: I18n.tr("Newest")
+                        color: ThemeService.isDark ? Qt.rgba(0.84, 0.93, 1, 0.96) : Qt.rgba(0.0, 0.45, 0.85, 1.0)
+                        font.pixelSize: 8
+                        font.weight: Font.DemiBold
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+                }
+
+                // Delete button on grid item. 28x28 target, 20x20 chip: the
+                // margins shrink by 4 so the chip keeps its old position while
+                // the clickable area grows around it.
+                Item {
+                    visible: root.mode === "clipboard" && (gridMouse.containsMouse || gridResultItem.index === root.selectedIndex)
+                    width: 28
+                    height: 28
+                    anchors {
+                        left: parent.left
+                        leftMargin: 2
+                        top: parent.top
+                        topMargin: 2
+                    }
+                    z: 2
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 20
+                        height: 20
+                        radius: 10
+                        color: gridDeleteMouse.containsMouse ? (ThemeService.isDark ? Qt.rgba(1, 0.3, 0.3, 0.35) : Qt.rgba(1, 0.2, 0.2, 0.20)) : (ThemeService.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.60))
+                    }
+
+                    ThemeText {
+                        anchors.centerIn: parent
+                        text: "×"
+                        color: gridDeleteMouse.containsMouse ? "#ff453a" : AppearanceTokens.content.shellInk(0.80)
+                        font.pixelSize: 14
+                        style: ThemeService.isDark ? Text.Outline : Text.Normal
+                        styleColor: dialog.textOutlineColor
+                    }
+
+                    MouseArea {
+                        id: gridDeleteMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.removeItem(gridResultItem.modelData)
+                    }
+                }
+
+                Rectangle {
+                    width: 50
+                    height: 50
+                    radius: 13
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        top: parent.top
+                        topMargin: 5
+                    }
+                    visible: gridResultItem.modelData.isImage ?? false
+                    color: Qt.rgba(0.30, 0.56, 0.94, 0.34)
+                    border.width: 1
+                    border.color: Qt.rgba(0.66, 0.82, 1, 0.42)
+
+                    Image {
+                        anchors.centerIn: parent
+                        width: 42
+                        height: 42
+                        visible: gridResultItem.thumbnailSource !== ""
+                        source: gridResultItem.thumbnailSource
+                        sourceSize.width: 84
+                        sourceSize.height: 84
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        smooth: true
+                        cache: false
+                    }
+                }
+
+                ResultIcon {
+                    visible: gridResultItem.thumbnailSource === ""
+                    width: root.mode === "app" ? 64 : (gridResultItem.modelData.isImage ? 34 : 42)
+                    height: width
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        top: parent.top
+                        topMargin: root.mode === "app" ? 9 : (gridResultItem.modelData.isImage ? 13 : 9)
+                    }
+                    iconSource: gridResultItem.modelData.icon ?? ""
+                }
+
+                ThemeText {
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        leftMargin: 7
+                        rightMargin: 7
+                        top: parent.top
+                        topMargin: root.mode === "app" ? 72 : 56
+                    }
+                    text: gridResultItem.modelData.title
+                    color: ThemeService.foregroundColor
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    font {
+                        pixelSize: root.mode === "app" ? 12 : 11
+                        weight: Font.DemiBold
+                    }
+                    style: ThemeService.isDark ? Text.Outline : Text.Normal
+                    styleColor: dialog.textOutlineColor
+                }
+
+                ThemeText {
+                    visible: gridResultItem.modelData.isImage ?? false
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        leftMargin: 6
+                        rightMargin: 6
+                        top: parent.top
+                        topMargin: 71
+                    }
+                    text: gridResultItem.modelData.subtitle.replace(I18n.tr("Image clipboard · %1").arg(""), "")
+                    color: AppearanceTokens.content.shellInk(0.54)
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    font.pixelSize: 9
+                    style: ThemeService.isDark ? Text.Outline : Text.Normal
+                    styleColor: dialog.textOutlineColor
+                }
+
+                MouseArea {
+                    id: gridMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                    onEntered: root.selectedIndex = gridResultItem.index
+                    onClicked: function (mouse) {
+                        root.selectedIndex = gridResultItem.index;
+                        root.activateSelection((mouse.modifiers & Qt.ControlModifier) !== 0 || mouse.button === Qt.MiddleButton);
+                    }
+                }
+            }
+
+            KosKineticScroll {
+                flickable: gridView
+            }
+        }
+
+        ThemeText {
+            visible: root.resultCount === 0 && root.mode !== "app"
+            anchors {
+                top: searchHeader.bottom
+                topMargin: 8
+                left: parent.left
+                right: parent.right
+            }
+            height: 40
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            text: root.mode === "app" ? I18n.tr("No matching apps") : (root.mode === "clipboard" ? (root.clipboardPinnedOnly ? I18n.tr("Nothing pinned yet") : I18n.tr("Clipboard history is empty")) : I18n.tr("No matching windows"))
+            color: AppearanceTokens.content.shellInk(0.52)
+            font.pixelSize: 13
+            style: ThemeService.isDark ? Text.Outline : Text.Normal
+            styleColor: dialog.textOutlineColor
+        }
+    }
+}

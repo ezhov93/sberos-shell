@@ -1,0 +1,731 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import "../../../shared/qml/i18n"
+import qs.desktop.modules.common
+import qs.desktop.modules.platform
+
+// AppLauncherConfigService — persistent launcher-only layout data.
+//
+// This must stay separate from DockConfigService: Dock pins and launcher
+// folders have different lifecycles. Root order and folder membership are
+// persisted together; search projects the same catalogue as a flat list.
+QtObject {
+    id: service
+
+    readonly property string configDir: Quickshell.stateDir + "/applauncher"
+    readonly property string configPath: configDir + "/config.json"
+    property string displayMode: "fullscreen"
+    // Each presentation has its own intentionally semantic layout profile.
+    // Pixels remain an implementation detail so a profile can be tuned per
+    // presentation without exposing fragile spacing math in Settings.
+    property var layoutProfiles: ({
+            bottom: {
+                iconSize: "medium",
+                density: "compact",
+                fontWeight: "normal"
+            },
+            bottomWide: {
+                iconSize: "medium",
+                density: "compact",
+                fontWeight: "normal"
+            },
+            center: {
+                iconSize: "medium",
+                density: "balanced",
+                fontWeight: "normal"
+            },
+            fullscreen: {
+                iconSize: "large",
+                density: "compact",
+                fontWeight: "medium"
+            }
+        })
+    property var rootItems: []
+    property var hiddenAppIds: []
+    property var appOverrides: ({})
+    signal customIconImportFinished(string appId, string path, bool success)
+
+    function isValidDisplayMode(mode) {
+        return mode === "fullscreen";
+    }
+
+    function isValidFontWeight(weight) {
+        return weight === "normal" || weight === "medium" || weight === "bold";
+    }
+
+    function isValidIconSize(size) {
+        return size === "small" || size === "medium" || size === "large";
+    }
+
+    function isValidDensity(density) {
+        return density === "compact" || density === "balanced" || density === "spacious";
+    }
+
+    function _defaultProfile(mode) {
+        if (mode === "fullscreen")
+            return {
+                iconSize: "large",
+                density: "compact",
+                fontWeight: "medium"
+            };
+        if (mode === "bottom" || mode === "bottomWide")
+            return {
+                iconSize: "medium",
+                density: "compact",
+                fontWeight: "normal"
+            };
+        return {
+            iconSize: "medium",
+            density: "balanced",
+            fontWeight: "normal"
+        };
+    }
+
+    function _normalizedProfile(raw, mode) {
+        const fallback = _defaultProfile(mode);
+        const candidate = raw && typeof raw === "object" ? raw : ({});
+        return {
+            iconSize: isValidIconSize(candidate.iconSize) ? candidate.iconSize : fallback.iconSize,
+            density: isValidDensity(candidate.density) ? candidate.density : fallback.density,
+            fontWeight: isValidFontWeight(candidate.fontWeight) ? candidate.fontWeight : fallback.fontWeight
+        };
+    }
+
+    function _normalizedProfiles(raw) {
+        const candidate = raw && typeof raw === "object" ? raw : ({});
+        return {
+            bottom: _normalizedProfile(candidate.bottom, "bottom"),
+            bottomWide: _normalizedProfile(candidate.bottomWide, "bottomWide"),
+            center: _normalizedProfile(candidate.center, "center"),
+            fullscreen: _normalizedProfile(candidate.fullscreen, "fullscreen")
+        };
+    }
+
+    function profileForMode(mode) {
+        const resolvedMode = isValidDisplayMode(mode) ? mode : "fullscreen";
+        return _normalizedProfile(layoutProfiles[resolvedMode], resolvedMode);
+    }
+
+    // Semantic profiles deliberately map to different physical values in each
+    // presentation: a "large" full-screen Launchpad icon should be larger
+    // than a "large" bottom-sheet icon, while their visual hierarchy remains
+    // equivalent.
+    function iconPixelSize(mode) {
+        const profile = profileForMode(mode);
+        const values = mode === "fullscreen" ? ({
+                small: 88,
+                medium: 104,
+                large: 120
+            }) : (mode === "center" ? ({
+                    small: 48,
+                    medium: 58,
+                    large: 68
+                }) : ({
+                    small: 44,
+                    medium: 52,
+                    large: 62
+                }));
+        return values[profile.iconSize];
+    }
+
+    function fontPixelSize(mode) {
+        const size = profileForMode(mode).iconSize;
+        const values = mode === "fullscreen" ? ({
+                small: 12,
+                medium: 13,
+                large: 14
+            }) : ({
+                small: 10,
+                medium: 11,
+                large: 12
+            });
+        return values[size];
+    }
+
+    function gridGap(mode) {
+        const density = profileForMode(mode).density;
+        const values = mode === "fullscreen" ? ({
+                compact: 16,
+                balanced: 26,
+                spacious: 38
+            }) : ({
+                compact: 10,
+                balanced: 22,
+                spacious: 36
+            });
+        return values[density];
+    }
+
+    function _updateProfile(mode, field, value) {
+        if (!isValidDisplayMode(mode))
+            return false;
+        const current = profileForMode(mode);
+        if (current[field] === value)
+            return false;
+        const next = _normalizedProfiles(layoutProfiles);
+        next[mode][field] = value;
+        layoutProfiles = next;
+        scheduleSave();
+        return true;
+    }
+
+    function updateProfileIconSize(mode, size) {
+        return isValidIconSize(size) && _updateProfile(mode, "iconSize", size);
+    }
+
+    function updateProfileDensity(mode, density) {
+        return isValidDensity(density) && _updateProfile(mode, "density", density);
+    }
+
+    function updateProfileFontWeight(mode, weight) {
+        return isValidFontWeight(weight) && _updateProfile(mode, "fontWeight", weight);
+    }
+
+    function resetProfile(mode) {
+        if (!isValidDisplayMode(mode))
+            return false;
+        const next = _normalizedProfiles(layoutProfiles);
+        const profile = _defaultProfile(mode);
+        if (JSON.stringify(next[mode]) === JSON.stringify(profile))
+            return false;
+        next[mode] = profile;
+        layoutProfiles = next;
+        scheduleSave();
+        return true;
+    }
+
+    // Layout remains launcher-local; presentation overrides are published to
+    // the common service so Dock and QuickSearch consume the same record.
+    function _publishPresentationOverrides() {
+        AppPresentationService.setOverrides(appOverrides);
+    }
+
+    function _normalizeRootItems(rawItems) {
+        const normalized = [];
+        const seenApps = ({});
+        const items = Array.isArray(rawItems) ? rawItems : [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (!item || typeof item !== "object")
+                continue;
+            if (item.type === "app" && typeof item.appId === "string" && item.appId.length > 0 && !seenApps[item.appId]) {
+                seenApps[item.appId] = true;
+                normalized.push({
+                    type: "app",
+                    appId: item.appId
+                });
+            } else if (item.type === "folder" && typeof item.id === "string" && typeof item.name === "string" && Array.isArray(item.appIds)) {
+                // Normalize folder members before projecting them into the grid.
+                const appIds = item.appIds.filter(function (appId) {
+                    return typeof appId === "string" && appId.length > 0;
+                });
+                normalized.push({
+                    type: "folder",
+                    id: item.id,
+                    name: item.name,
+                    appIds: appIds
+                });
+            }
+        }
+        return normalized;
+    }
+
+    function setRootItems(items) {
+        const normalized = _normalizeRootItems(items);
+        if (JSON.stringify(normalized) === JSON.stringify(rootItems))
+            return false;
+        rootItems = normalized;
+        scheduleSave();
+        return true;
+    }
+
+    // Current grid projection. Persisted app items keep their chosen order;
+    // newly installed apps follow alphabetically without silently modifying
+    // the user's layout. Search uses this flat projection across folders.
+    function orderedApplications(catalog) {
+        const apps = Array.isArray(catalog) ? catalog : [];
+        const byId = ({});
+        for (let i = 0; i < apps.length; i++)
+            byId[apps[i].id] = apps[i];
+
+        const ordered = [];
+        const used = ({});
+        for (let i = 0; i < rootItems.length; i++) {
+            const item = rootItems[i];
+            if (item.type === "app" && byId[item.appId]) {
+                ordered.push(byId[item.appId]);
+                used[item.appId] = true;
+            }
+        }
+        for (let i = 0; i < apps.length; i++) {
+            if (!used[apps[i].id])
+                ordered.push(apps[i]);
+        }
+        return ordered;
+    }
+
+    // Root-grid projection used by the normal launcher view. Folder children
+    // are deliberately marked as used, so they never also appear as loose
+    // root apps. Search uses `orderedApplications` separately and stays flat.
+    function rootGridItems(catalog) {
+        const apps = Array.isArray(catalog) ? catalog : [];
+        const byId = ({});
+        for (let i = 0; i < apps.length; i++)
+            byId[apps[i].id] = apps[i];
+
+        const items = [];
+        const used = ({});
+        for (let i = 0; i < rootItems.length; i++) {
+            const item = rootItems[i];
+            if (item.type === "app" && byId[item.appId]) {
+                items.push({
+                    type: "app",
+                    app: byId[item.appId]
+                });
+                used[item.appId] = true;
+            } else if (item.type === "folder") {
+                const folderApps = [];
+                for (let j = 0; j < item.appIds.length; j++) {
+                    const app = byId[item.appIds[j]];
+                    if (app) {
+                        folderApps.push(app);
+                        used[app.id] = true;
+                    }
+                }
+                if (folderApps.length > 0)
+                    items.push({
+                        type: "folder",
+                        id: item.id,
+                        name: item.name,
+                        apps: folderApps
+                    });
+            }
+        }
+        for (let i = 0; i < apps.length; i++) {
+            if (!used[apps[i].id])
+                items.push({
+                    type: "app",
+                    app: apps[i]
+                });
+        }
+        return items;
+    }
+
+    function createFolder(sourceAppId, targetAppId, catalog) {
+        if (!sourceAppId || !targetAppId || sourceAppId === targetAppId)
+            return false;
+        const grid = rootGridItems(catalog);
+        let sourceIndex = -1;
+        let targetIndex = -1;
+        for (let i = 0; i < grid.length; i++) {
+            if (grid[i].type !== "app")
+                continue;
+            if (grid[i].app.id === sourceAppId)
+                sourceIndex = i;
+            if (grid[i].app.id === targetAppId)
+                targetIndex = i;
+        }
+        if (sourceIndex < 0 || targetIndex < 0)
+            return false;
+
+        const folder = {
+            type: "folder",
+            id: "folder-" + Date.now() + "-" + Math.floor(Math.random() * 1000000),
+            name: I18n.tr("Folder"),
+            appIds: [targetAppId, sourceAppId]
+        };
+        const replacementIndex = Math.min(sourceIndex, targetIndex);
+        const next = [];
+        for (let i = 0; i < grid.length; i++) {
+            if (i === replacementIndex)
+                next.push(folder);
+            const item = grid[i];
+            if (item.type === "app" && (item.app.id === sourceAppId || item.app.id === targetAppId))
+                continue;
+            if (item.type === "app")
+                next.push({
+                    type: "app",
+                    appId: item.app.id
+                });
+            else
+                next.push({
+                    type: "folder",
+                    id: item.id,
+                    name: item.name,
+                    appIds: item.apps.map(app => app.id)
+                });
+        }
+        return setRootItems(next);
+    }
+
+    function addApplicationToFolder(appId, folderId, catalog) {
+        // Work from the persisted tree itself. Rebuilding from a visual grid
+        // can omit unavailable apps or accidentally rewrite a folder's prior
+        // children; this transaction changes exactly two records only.
+        let next = _normalizeRootItems(rootItems);
+        let sourceIndex = -1;
+        let folderIndex = -1;
+        for (let i = 0; i < next.length; i++) {
+            if (next[i].type === "app" && next[i].appId === appId)
+                sourceIndex = i;
+            if (next[i].type === "folder" && next[i].id === folderId)
+                folderIndex = i;
+        }
+
+        // A newly installed app may not yet have been materialized into the
+        // first saved root layout. Materialize once, then retry the same safe
+        // direct mutation against that complete sequence.
+        if (sourceIndex < 0) {
+            next = rootGridItems(catalog).map(function (item) {
+                return item.type === "app" ? {
+                    type: "app",
+                    appId: item.app.id
+                } : {
+                    type: "folder",
+                    id: item.id,
+                    name: item.name,
+                    appIds: item.apps.map(app => app.id)
+                };
+            });
+            for (let i = 0; i < next.length; i++) {
+                if (next[i].type === "app" && next[i].appId === appId)
+                    sourceIndex = i;
+                if (next[i].type === "folder" && next[i].id === folderId)
+                    folderIndex = i;
+            }
+        }
+        if (sourceIndex < 0 || folderIndex < 0)
+            return false;
+
+        const folder = next[folderIndex];
+        if (folder.appIds.indexOf(appId) >= 0)
+            return false;
+        folder.appIds = folder.appIds.concat([appId]);
+        next.splice(sourceIndex, 1);
+        console.log("[AppLauncherConfig] add app=" + appId + " folder=" + folderId + " members=" + JSON.stringify(folder.appIds));
+        return setRootItems(next);
+    }
+
+    // Keep a folder's child order separate from the root-grid order. This is
+    // a small direct transaction, so dragging within an open folder cannot
+    // flatten folders or disturb unrelated root applications.
+    function moveApplicationWithinFolder(appId, folderId, targetIndex) {
+        const next = _normalizeRootItems(rootItems);
+        for (let i = 0; i < next.length; i++) {
+            const folder = next[i];
+            if (folder.type !== "folder" || folder.id !== folderId)
+                continue;
+            const sourceIndex = folder.appIds.indexOf(appId);
+            if (sourceIndex < 0)
+                return false;
+            const destination = Math.max(0, Math.min(folder.appIds.length - 1, Math.round(targetIndex)));
+            if (sourceIndex === destination)
+                return false;
+            const appIds = folder.appIds.slice();
+            const moved = appIds.splice(sourceIndex, 1)[0];
+            appIds.splice(destination, 0, moved);
+            folder.appIds = appIds;
+            return setRootItems(next);
+        }
+        return false;
+    }
+
+    // Removing an app materializes it immediately after its former folder.
+    // A one-app folder has no useful meaning, so it dissolves into two normal
+    // root entries while preserving the remaining app and the removed app.
+    function removeApplicationFromFolder(appId, folderId) {
+        const next = _normalizeRootItems(rootItems);
+        for (let i = 0; i < next.length; i++) {
+            const folder = next[i];
+            if (folder.type !== "folder" || folder.id !== folderId)
+                continue;
+            const sourceIndex = folder.appIds.indexOf(appId);
+            if (sourceIndex < 0)
+                return false;
+            const remaining = folder.appIds.slice();
+            remaining.splice(sourceIndex, 1);
+            if (remaining.length < 2) {
+                const replacement = remaining.map(function (id) {
+                    return {
+                        type: "app",
+                        appId: id
+                    };
+                });
+                replacement.push({
+                    type: "app",
+                    appId: appId
+                });
+                next.splice.apply(next, [i, 1].concat(replacement));
+            } else {
+                folder.appIds = remaining;
+                next.splice(i + 1, 0, {
+                    type: "app",
+                    appId: appId
+                });
+            }
+            console.log("[AppLauncherConfig] remove app=" + appId + " folder=" + folderId + " remaining=" + JSON.stringify(remaining));
+            return setRootItems(next);
+        }
+        return false;
+    }
+
+    function renameFolder(folderId, requestedName) {
+        const name = (requestedName || "").trim() || I18n.tr("Folder");
+        const next = _normalizeRootItems(rootItems);
+        for (let i = 0; i < next.length; i++) {
+            const folder = next[i];
+            if (folder.type !== "folder" || folder.id !== folderId)
+                continue;
+            if (folder.name === name)
+                return false;
+            folder.name = name;
+            console.log("[AppLauncherConfig] rename folder=" + folderId + " name=" + name);
+            return setRootItems(next);
+        }
+        return false;
+    }
+
+    // Per-app presentation is persisted here and shared across shell surfaces.
+    // Keep the original desktop-entry
+    // metadata untouched so users can always return to the system defaults.
+    function updateAppOverride(appId, requestedName, requestedIcon, defaultName, defaultIcon) {
+        if (!appId)
+            return false;
+        const name = (requestedName || "").trim();
+        const icon = (requestedIcon || "").trim();
+        const override = ({});
+        if (name && name !== defaultName)
+            override.name = name;
+        if (icon && icon !== defaultIcon)
+            override.icon = icon;
+
+        const next = Object.assign({}, appOverrides);
+        if (Object.keys(override).length > 0)
+            next[appId] = override;
+        else
+            delete next[appId];
+        if (JSON.stringify(next) === JSON.stringify(appOverrides)) {
+            // A shell surface can be recreated while this singleton retains
+            // disk state. Re-publish even an unchanged save so Dock never
+            // waits for a full Quickshell restart to learn the override.
+            _publishPresentationOverrides();
+            return false;
+        }
+        appOverrides = next;
+        _publishPresentationOverrides();
+        scheduleSave();
+        console.log("[AppLauncherConfig] update app=" + appId + " override=" + JSON.stringify(override));
+        return true;
+    }
+
+    // Copy selected artwork into launcher-owned state. App overrides must
+    // never point at arbitrary user files that may later be moved or deleted.
+    function importCustomIcon(appId, fileUrl) {
+        if (!appId || !fileUrl)
+            return "";
+        const source = decodeURIComponent(String(fileUrl).replace(/^file:\/\//, ""));
+        const extensionMatch = source.match(/\.([A-Za-z0-9]{1,8})$/);
+        const extension = extensionMatch ? extensionMatch[1].toLowerCase() : "png";
+        const safeId = appId.replace(/[^A-Za-z0-9._-]/g, "_");
+        const destination = configDir + "/icons/" + safeId + "." + extension;
+        PlatformClient.request("file.copy", {
+            source: source,
+            destination: destination
+        }, function (response) {
+            if (!response?.ok)
+                console.warn("[AppLauncherConfig] icon import failed: " + (response?.error?.message || "platform unavailable"));
+            else
+                console.log("[AppLauncherConfig] icon imported app=" + appId);
+            service.customIconImportFinished(appId, destination, !!response?.ok);
+        });
+        return destination;
+    }
+
+    // Ask the platform service for a PNG snapshot so image MIME handling and
+    // destination validation stay in one desktop-integration boundary.
+    function importClipboardPngIcon(appId) {
+        if (!appId)
+            return "";
+        const safeId = appId.replace(/[^A-Za-z0-9._-]/g, "_");
+        const destination = configDir + "/icons/" + safeId + "-clipboard.png";
+        PlatformClient.request("clipboard.save-image", {
+            destination: destination
+        }, function (response) {
+            if (!response?.ok)
+                console.warn("[AppLauncherConfig] clipboard PNG import failed: " + (response?.error?.message || "platform unavailable"));
+            else
+                console.log("[AppLauncherConfig] clipboard icon imported app=" + appId);
+            service.customIconImportFinished(appId, destination, !!response?.ok);
+        });
+        return destination;
+    }
+
+    function hideApplication(appId) {
+        if (!appId || hiddenAppIds.indexOf(appId) >= 0)
+            return false;
+        hiddenAppIds = hiddenAppIds.concat([appId]);
+        scheduleSave();
+        console.log("[AppLauncherConfig] hide app=" + appId);
+        return true;
+    }
+
+    function unhideApplication(appId) {
+        const index = hiddenAppIds.indexOf(appId);
+        if (index < 0)
+            return false;
+        const next = hiddenAppIds.slice();
+        next.splice(index, 1);
+        hiddenAppIds = next;
+        scheduleSave();
+        return true;
+    }
+
+    // Reorder only root-grid entries. Rebuilding from `orderedApplications`
+    // would flatten folder children back into ordinary apps, so always use the
+    // typed grid projection here.
+    function moveApplication(appId, targetIndex, catalog) {
+        const ordered = rootGridItems(catalog);
+        let sourceIndex = -1;
+        for (let i = 0; i < ordered.length; i++) {
+            if (ordered[i].type === "app" && ordered[i].app.id === appId) {
+                sourceIndex = i;
+                break;
+            }
+        }
+        if (sourceIndex < 0)
+            return false;
+
+        const destination = Math.max(0, Math.min(ordered.length - 1, Math.round(targetIndex)));
+        if (sourceIndex === destination)
+            return false;
+
+        const moved = ordered.splice(sourceIndex, 1)[0];
+        ordered.splice(destination, 0, moved);
+        return setRootItems(ordered.map(function (item) {
+            if (item.type === "app")
+                return {
+                    type: "app",
+                    appId: item.app.id
+                };
+            return {
+                type: "folder",
+                id: item.id,
+                name: item.name,
+                appIds: item.apps.map(app => app.id)
+            };
+        }));
+    }
+
+    // Move either kind of root-grid entry. Folder membership is untouched;
+    // only the folder tile itself changes position among root applications.
+    function moveRootItem(itemType, itemKey, targetIndex, catalog) {
+        const ordered = rootGridItems(catalog);
+        let sourceIndex = -1;
+        for (let i = 0; i < ordered.length; i++) {
+            const item = ordered[i];
+            if ((itemType === "app" && item.type === "app" && item.app.id === itemKey) || (itemType === "folder" && item.type === "folder" && item.id === itemKey)) {
+                sourceIndex = i;
+                break;
+            }
+        }
+        if (sourceIndex < 0)
+            return false;
+        const destination = Math.max(0, Math.min(ordered.length - 1, Math.round(targetIndex)));
+        if (sourceIndex === destination)
+            return false;
+        const moved = ordered.splice(sourceIndex, 1)[0];
+        ordered.splice(destination, 0, moved);
+        return setRootItems(ordered.map(function (item) {
+            if (item.type === "app")
+                return {
+                    type: "app",
+                    appId: item.app.id
+                };
+            return {
+                type: "folder",
+                id: item.id,
+                name: item.name,
+                appIds: item.apps.map(app => app.id)
+            };
+        }));
+    }
+
+    property Timer _saveTimer: Timer {
+        interval: 500
+        repeat: false
+        onTriggered: service._save()
+    }
+    function scheduleSave() {
+        _saveTimer.restart();
+    }
+
+    function _save() {
+        const json = JSON.stringify({
+            version: 4,
+            displayMode: displayMode,
+            layoutProfiles: layoutProfiles,
+            rootItems: rootItems,
+            hiddenAppIds: hiddenAppIds,
+            appOverrides: appOverrides
+        }, null, 2);
+        JsonConfigStore.writePath(configPath, json);
+    }
+
+    function load() {
+        JsonConfigStore.readPath(configPath, function (data, exists) {
+            if (exists && data) {
+                try {
+                    const saved = JSON.parse(data);
+                    if (service.isValidDisplayMode(saved.displayMode))
+                        displayMode = saved.displayMode;
+                    if (saved.layoutProfiles) {
+                        layoutProfiles = _normalizedProfiles(saved.layoutProfiles);
+                    } else {
+                        // Migrate the previous single shared layout once. Old
+                        // numeric spacing was not a real visual gap, so map it
+                        // only to the closest semantic density.
+                        const oldSize = Number(saved.iconSize);
+                        const oldSpacing = Number(saved.iconSpacing);
+                        const oldIconSize = oldSize >= 64 ? "large" : (oldSize <= 48 ? "small" : "medium");
+                        const oldDensity = oldSpacing >= 34 ? "spacious" : (oldSpacing <= 18 ? "compact" : "balanced");
+                        const oldWeight = service.isValidFontWeight(saved.fontWeight) ? saved.fontWeight : "normal";
+                        layoutProfiles = {
+                            bottom: {
+                                iconSize: oldIconSize,
+                                density: oldDensity,
+                                fontWeight: oldWeight
+                            },
+                            bottomWide: {
+                                iconSize: oldIconSize,
+                                density: oldDensity,
+                                fontWeight: oldWeight
+                            },
+                            center: {
+                                iconSize: oldIconSize,
+                                density: oldDensity,
+                                fontWeight: oldWeight
+                            },
+                            fullscreen: {
+                                iconSize: oldIconSize,
+                                density: oldDensity,
+                                fontWeight: oldWeight
+                            }
+                        };
+                        scheduleSave();
+                    }
+                    rootItems = _normalizeRootItems(saved.rootItems);
+                    hiddenAppIds = Array.isArray(saved.hiddenAppIds) ? saved.hiddenAppIds : [];
+                    appOverrides = saved.appOverrides ?? ({});
+                    service._publishPresentationOverrides();
+                    console.log("[AppLauncherConfig] loaded roots=" + rootItems.length + " mode=" + displayMode);
+                } catch (error) {
+                    console.warn("[AppLauncherConfig] parse failed: " + error);
+                }
+            }
+        });
+    }
+
+    Component.onCompleted: load()
+}

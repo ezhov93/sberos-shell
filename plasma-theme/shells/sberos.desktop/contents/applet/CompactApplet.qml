@@ -243,7 +243,8 @@ PlasmaCore.ToolTipArea {
             }
 
             onActiveFocusChanged: {
-                if (activeFocus && fullRepresentation) {
+                if (activeFocus && fullRepresentation
+                        && !(root.plasmoidItem?.compactRepresentationItem?.searchActive ?? false)) {
                     fullRepresentation.forceActiveFocus()
                 }
             }

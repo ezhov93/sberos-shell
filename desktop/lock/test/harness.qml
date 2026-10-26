@@ -1,4 +1,4 @@
-// Preview of the Glass lock screen with a mock authenticator (never the real locker).
+// Preview of SberOS Lock with a mock authenticator (never the real locker).
 //   sirca-shell --qml-test harness.qml -- <W> <H> <rest|unlock|failed> <out.png> [ms] [wallpaper]
 // Without QT_QPA_PLATFORM=offscreen it opens a focus-free window for a moment and saves its own image (GPU effects on).
 import QtQuick
@@ -15,7 +15,7 @@ Window {
     visible: true
     color: "black"
     flags: Qt.Tool | Qt.WindowDoesNotAcceptFocus | Qt.FramelessWindowHint
-    title: "Glass lock preview"
+    title: "SberOS Lock preview"
     property string kscreenlocker_userName: "onur"
     property string kscreenlocker_userImage: "/var/lib/AccountsService/icons/onur"
     property alias wallpaper: previewWallpaper
@@ -48,7 +48,7 @@ Window {
     Loader {
         id: l
         anchors.fill: parent
-        source: "../onur.glasslock/contents/lockscreen/LockScreen.qml"
+        source: "../sberos.lock/contents/lockscreen/LockScreen.qml"
     }
     function ui() {
         return l.item.children[0];

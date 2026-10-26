@@ -1,6 +1,6 @@
-# Glass Lock installer
+# SberOS Lock installer
 
-`install.sh` installs the `onur.glasslock` Plasma/Shell package for the current
+`install.sh` installs the `sberos.lock` Plasma/Shell package for the current
 user and configures KScreenLocker to use it through the active KWin user unit.
 It does not change `plasmashellrc` / `ShellPackage`, install globally, or restart
 KWin. The greeter uses the selection when KWin next starts, normally after the
@@ -18,7 +18,9 @@ desktop/lock/install.sh uninstall
 `uninstall` (also `--undo`) removes the user-level package and only the exact
 KWin drop-in written by this installer. If that drop-in was edited or replaced
 with a symlink, the script stops and preserves it. System-wide packages and
-other KWin unit configuration are left alone.
+other KWin unit configuration are left alone. On upgrade it removes the known
+previous user package `onur.glasslock` and its exact `onur-glasslock.conf`; an
+edited legacy drop-in stops migration and is preserved.
 
 The installer requires `kpackagetool6`, `systemctl` with a working user manager,
 and basic Debian utilities (`grep`, `coreutils`). It checks these before making

@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly package_id="onur.glasslock"
-readonly package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/onur.glasslock" && pwd)"
+readonly package_id="sberos.lock"
+readonly package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/sberos.lock" && pwd)"
 readonly user_package_root="${XDG_DATA_HOME:-$HOME/.local/share}/plasma/shells"
 readonly systemd_user_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-readonly dropin_name="onur-glasslock.conf"
-readonly dropin_contents=$'[Service]\nEnvironment=PLASMA_DEFAULT_SHELL=onur.glasslock\n'
+readonly dropin_name="sberos-lock.conf"
+readonly dropin_contents=$'[Service]\nEnvironment=PLASMA_DEFAULT_SHELL=sberos.lock\n'
+readonly legacy_package_id="onur.glasslock"
+readonly legacy_dropin_name="onur-glasslock.conf"
+readonly legacy_dropin_contents=$'[Service]\nEnvironment=PLASMA_DEFAULT_SHELL=onur.glasslock\n'
 
 usage() {
     cat <<'EOF'
 Usage: desktop/lock/install.sh [install|uninstall|status]
 
-Install Glass Lock for the current user. The KWin drop-in selects it for the
+Install SberOS Lock for the current user. The KWin drop-in selects it for the
 KScreenLocker greeter on the next KWin start; this script does not restart KWin
 or change plasmashell's ShellPackage.
 EOF
@@ -93,6 +96,47 @@ dropin_path_for() {
     printf '%s/%s.d/%s\n' "$systemd_user_dir" "$1" "$dropin_name"
 }
 
+legacy_dropin_path_for() {
+    printf '%s/%s.d/%s\n' "$systemd_user_dir" "$1" "$legacy_dropin_name"
+}
+
+check_legacy_installation() {
+    local unit destination legacy_path
+
+    legacy_path="$user_package_root/$legacy_package_id"
+    [[ ! -L "$legacy_path" ]] \
+        || fail "путь старого пакета является symlink и не будет изменён: $legacy_path"
+
+    for unit in plasma-kwin_wayland.service plasma-kwin_x11.service; do
+        destination="$(legacy_dropin_path_for "$unit")"
+        if [[ -e "$destination" || -L "$destination" ]]; then
+            [[ ! -L "$destination" ]] \
+                || fail "старый drop-in является symlink и не будет изменён: $destination"
+            cmp -s <(printf '%s' "$legacy_dropin_contents") "$destination" \
+                || fail "старый drop-in изменён и не будет удалён: $destination"
+        fi
+    done
+}
+
+remove_legacy_installation() {
+    local unit destination legacy_path
+
+    legacy_path="$user_package_root/$legacy_package_id"
+    if [[ -d "$legacy_path" ]]; then
+        kpackagetool6 --type Plasma/Shell --remove "$legacy_package_id"
+        printf 'Удалён прежний пользовательский пакет %s.\n' "$legacy_package_id"
+    fi
+
+    for unit in plasma-kwin_wayland.service plasma-kwin_x11.service; do
+        destination="$(legacy_dropin_path_for "$unit")"
+        if [[ -f "$destination" ]] && cmp -s <(printf '%s' "$legacy_dropin_contents") "$destination"; then
+            rm -- "$destination"
+            rmdir --ignore-fail-on-non-empty "$(dirname -- "$destination")" 2>/dev/null || true
+            printf 'Удалён прежний KWin drop-in %s.\n' "$destination"
+        fi
+    done
+}
+
 write_dropin() {
     local destination="$1"
     local directory temporary
@@ -122,11 +166,13 @@ install_lock() {
 
     [[ -f "$package_dir/metadata.json" && -f "$package_dir/contents/lockscreen/LockScreen.qml" ]] \
         || fail "неполный пакет в $package_dir"
-    grep -Fq '"Id": "onur.glasslock"' "$package_dir/metadata.json" \
+    grep -Fq '"Id": "sberos.lock"' "$package_dir/metadata.json" \
         || fail "metadata.json не содержит ожидаемый ID $package_id"
 
     unit="$(select_kwin_unit)"
     destination="$(dropin_path_for "$unit")"
+
+    check_legacy_installation
 
     if [[ -L "$user_package_root/$package_id" ]]; then
         fail "путь установленного пакета является symlink и не будет перезаписан: $user_package_root/$package_id"
@@ -146,6 +192,7 @@ install_lock() {
     fi
 
     write_dropin "$destination"
+    remove_legacy_installation
     systemctl --user daemon-reload
 
     printf 'Установлен пользовательский lock screen %s.\n' "$package_id"

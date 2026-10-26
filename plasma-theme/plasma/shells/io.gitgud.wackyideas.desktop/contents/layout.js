@@ -29,7 +29,7 @@ if (panel.formFactor === "horizontal") {
 }
 
 panel.addWidget("io.gitgud.wackyideas.sbermenu")
-var applications = panel.addWidget("org.kde.plasma.icontasks")
+var applications = panel.addWidget("io.gitgud.wackyideas.smarttasks")
 applications.currentConfigGroup = ["General"]
 applications.writeConfig("launchers", "preferred://filemanager,preferred://browser,applications:org.kde.konsole.desktop,applications:systemsettings.desktop")
 

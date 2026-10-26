@@ -321,7 +321,7 @@ ContainmentItem {
                 required property int index
                 property Item dragging
                 property bool isAppletContainer: true
-                property bool isApplicationIsland: applet?.plasmoid?.pluginName === "org.kde.plasma.icontasks"
+                property bool isApplicationIsland: applet?.plasmoid?.pluginName === "io.gitgud.wackyideas.smarttasks"
                 property bool isMarginSeparator: ((applet.plasmoid?.constraintHints & Plasmoid.MarginAreasSeparator) == Plasmoid.MarginAreasSeparator)
                 property int appletIndex: index // To make sure it's always readable even inside other models
                 property bool inThickArea: false
@@ -383,7 +383,7 @@ ContainmentItem {
                 // https://bugs.kde.org/show_bug.cgi?id=473420
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                property bool wantsToFillWidth: applet?.plasmoid?.pluginName === "org.kde.plasma.icontasks"
+                property bool wantsToFillWidth: applet?.plasmoid?.pluginName === "io.gitgud.wackyideas.smarttasks"
                     ? false
                     : applet?.Layout.fillWidth
                 property bool wantsToFillHeight: applet?.Layout.fillHeight

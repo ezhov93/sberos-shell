@@ -1,0 +1,18 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "io.gitgud.wackyideas.smarttasks",
+        "Name": "Приложения",
+        "Description": "Плашка закреплённых и запущенных приложений SberOS",
+        "Icon": "view-app-grid-symbolic",
+        "Category": "Application Launchers",
+        "License": "GPL-2.0-or-later",
+        "Version": "1.0",
+        "Authors": [
+            {
+                "Name": "SberOS Shell contributors"
+            }
+        ]
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

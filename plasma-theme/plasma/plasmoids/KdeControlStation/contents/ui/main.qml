@@ -107,7 +107,7 @@ PlasmoidItem {
 
     switchHeight: fullRepWidth
     switchWidth: fullRepWidth
-    preferredRepresentation: inPanel ? Plasmoid.compactRepresentation : Plasmoid.fullRepresentation
+    preferredRepresentation: inPanel ? root.compactRepresentation : root.fullRepresentation
     fullRepresentation: FullRepresentation { }
     compactRepresentation: CompactRepresentation {}
 }

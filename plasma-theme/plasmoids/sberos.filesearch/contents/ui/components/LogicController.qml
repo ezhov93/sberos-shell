@@ -90,8 +90,6 @@ Item {
         return sanitized;
     }
 
-    Component.onCompleted: validateConfig()
-
     function getRecommendedIconSize() {
         return ConfigManager.getRecommendedIconSize(plasmoidConfig.displayMode, plasmoidConfig.viewMode);
     }
@@ -615,6 +613,7 @@ Item {
 
     onHistoryForceUpdate: historyVersion++ // Increment version to trigger bindings
     Component.onCompleted: {
+        validateConfig();
         loadHistory();
         loadPinned();
         loadCategorySettings();

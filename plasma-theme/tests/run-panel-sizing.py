@@ -13,12 +13,13 @@ p = argparse.ArgumentParser()
 p.add_argument('--source', required=True)
 p.add_argument('--output', required=True)
 p.add_argument('--platform', choices=['wayland'], default='wayland')
+p.add_argument('--themes', nargs='+', choices=['light', 'dark'], default=['light', 'dark'])
 p.add_argument('--capture-only', action='store_true')
 a = p.parse_args()
 source = pathlib.Path(a.source).resolve()
 output = pathlib.Path(a.output).resolve()
 output.mkdir(parents=True, exist_ok=False)
-for theme in ['light', 'dark']:
+for theme in a.themes:
     profile = output / theme
     profile.mkdir(exist_ok=True)
     for d in ['data', 'config', 'cache', 'state']:
@@ -126,15 +127,20 @@ for theme in ['light', 'dark']:
         for record in records:
             applets = sorted(record['applets'], key=lambda item: item['x'])
             for index, item in enumerate(applets):
-                assert abs(item['height'] - record['thickness']) < 1, (record['label'], item)
+                assert item['y'] >= -1 and item['y'] + item['height'] <= record['thickness'] + 1, (record['label'], item)
+                assert abs(item['y'] + item['height'] / 2 - record['thickness'] / 2) <= 1, (record['label'], item)
                 assert item['x'] >= -1 and item['x'] + item['width'] <= record['width'] + 1, (record['label'], item)
                 if index:
                     assert applets[index - 1]['x'] + applets[index - 1]['width'] <= item['x'] + 1, (record['label'], item)
             center = next((item for item in applets if item['plugin'] == 'com.mcc45tr.filesearch'))
             assert abs(center['x'] + center['width'] / 2 - record['width'] / 2) <= 1, record
         by_label = {record['label']: record for record in records}
-        assert by_label['many']['width'] > by_label['few']['width']
-        assert by_label['shrunk']['width'] < by_label['many']['width']
+        task_width = lambda label: next(
+            item['width'] for item in by_label[label]['applets']
+            if item['plugin'] == 'io.gitgud.wackyideas.smarttasks'
+        )
+        assert task_width('many') > task_width('few')
+        assert task_width('shrunk') < task_width('many')
         overflow = by_label['overflow']
         tasks = next((item for item in overflow['applets'] if item['plugin'] == 'io.gitgud.wackyideas.smarttasks'))
         assert tasks['width'] < tasks['preferred'], tasks

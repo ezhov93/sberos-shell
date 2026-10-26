@@ -339,6 +339,7 @@ ContainmentItem {
                                           0.22)
                     visible: root.isHorizontal
                         && applet?.plasmoid?.pluginName !== "org.kde.plasma.panelspacer"
+                        && applet?.plasmoid?.pluginName !== "io.gitgud.wackyideas.sbermenu"
                         && !(dropArea.hasSharedSystemIsland
                              && dropArea.systemIslandAppletNames.indexOf(applet?.plasmoid?.pluginName) !== -1)
                 }

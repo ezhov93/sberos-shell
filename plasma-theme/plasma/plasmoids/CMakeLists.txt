@@ -2,6 +2,7 @@ add_subdirectory(src)
 
 set(plasmoids
     io.gitgud.wackyideas.panel
+    io.gitgud.wackyideas.sbermenu
     io.gitgud.wackyideas.battery
     io.gitgud.wackyideas.digitalclocklite
     io.gitgud.wackyideas.win7showdesktop

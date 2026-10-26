@@ -28,7 +28,7 @@ if (panel.formFactor === "horizontal") {
     }
 }
 
-panel.addWidget("org.kde.plasma.kicker")
+panel.addWidget("io.gitgud.wackyideas.sbermenu")
 //panel.addWidget("org.kde.plasma.showActivityManager")
 panel.addWidget("org.kde.plasma.icontasks")
 

@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Category": "Utilities",
+        "Description": "Sber quick actions menu for the AeroThemePlasma panel",
+        "EnabledByDefault": true,
+        "Icon": "start-here-kde",
+        "Id": "io.gitgud.wackyideas.sbermenu",
+        "License": "GPL-2.0-or-later",
+        "Name": "Sber Menu",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

@@ -28,7 +28,7 @@ if (panel.formFactor === "horizontal") {
     }
 }
 
-panel.addWidget("org.kde.plasma.kicker")
+panel.addWidget("io.gitgud.wackyideas.sbermenu")
 panel.addWidget("org.kde.plasma.icontasks")
 
 /* Next up is determining whether to add the Input Method Panel

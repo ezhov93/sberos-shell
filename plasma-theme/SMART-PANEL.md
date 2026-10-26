@@ -153,9 +153,12 @@ ExecStart=/usr/bin/plasmashell --no-respawn --shell-plugin io.gitgud.wackyideas.
 
 Служба включена в `plasma-core.target`; настройка действует после перезапуска
 Plasma и при следующих входах пользователя. `install.sh` по-прежнему только
-устанавливает пакеты; основной запуск настроен отдельно. Для обновления
-установленных пакетов: `bash plasma-theme/install.sh`, затем
-`systemctl --user restart plasma-plasmashell.service`.
+устанавливает пакеты; основной запуск настроен отдельно. Чтобы установить
+обновлённые пакеты и сразу перезапустить основной shell, используйте
+`bash plasma-theme/install-and-restart.sh`. Для предварительной проверки без
+установки и перезапуска: `bash plasma-theme/install-and-restart.sh --dry-run`.
+Скрипт использует установщик с резервными копиями пакетов и отказывается
+перезапускать службу, если в ней не задан SberOS shell plugin.
 
 Для возврата удалить только этот drop-in, выполнить `systemctl --user daemon-reload`
 и `systemctl --user restart plasma-plasmashell.service`. Обычный профиль Plasma

@@ -103,11 +103,11 @@ Rectangle {
 
         onClicked: {
             if (root.resultCount > 0) {
-                var idx = root.resultsModel.index(0, 0)
-                var display = root.resultsModel.data(idx, Qt.DisplayRole) || ""
-                var decoration = root.resultsModel.data(idx, Qt.DecorationRole) || "accessories-calculator"
-                var category = root.resultsModel.data(idx, root.resultsModel.CategoryRole) || "Calculator"
-                root.resultClicked(idx, display, decoration, category)
+                var modelIndex = root.resultsModel.index(0, 0)
+                var display = root.resultsModel.data(modelIndex, Qt.DisplayRole) || ""
+                var decoration = root.resultsModel.data(modelIndex, Qt.DecorationRole) || "accessories-calculator"
+                var category = root.resultsModel.data(modelIndex, root.resultsModel.CategoryRole) || "Calculator"
+                root.resultClicked(0, display, decoration, category)
             }
         }
     }

@@ -89,10 +89,11 @@ Item {
         font.family: tickerContainer.fontFamily
     }
 
-    function splitTextIntoChunks(text, maxWidth) {
+    function splitTextIntoChunks(text, maxWidth, targetState) {
         if (!text || maxWidth <= 60) return [text || ""];
 
-        if (!rssShowFullHeadline && currentState === "rss") {
+        const effectiveState = targetState === undefined ? currentState : targetState;
+        if (!rssShowFullHeadline && effectiveState === "rss") {
             titleMetrics.text = text;
             if (titleMetrics.advanceWidth <= maxWidth) return [text];
             var truncated = text;
@@ -159,7 +160,7 @@ Item {
             chunks.push(getDecorated(currentRawPart, chunks.length === 0, true));
         }
 
-        if (chunks.length > 1) {
+        if (chunks.length > 1 && currentRawPart !== "") {
             var lastIdx = chunks.length - 1;
             chunks[lastIdx] = ".." + currentRawPart.trim();
         }
@@ -334,7 +335,7 @@ Item {
             if (availWidth <= 50) availWidth = tickerContainer.width - tickerContainer.rightMarginValue;
             if (availWidth <= 50) availWidth = 200;
 
-            var newChunks = tickerContainer.splitTextIntoChunks(newRawText, availWidth);
+            var newChunks = tickerContainer.splitTextIntoChunks(newRawText, availWidth, next.state);
             tickerContainer.titleChunks = newChunks;
             tickerContainer.currentChunkIndex = 0;
             tickerContainer.currentState = next.state;

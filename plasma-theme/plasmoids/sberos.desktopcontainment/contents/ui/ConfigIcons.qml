@@ -77,7 +77,6 @@ Item {
             CheckBox {
                 id: useCustomIcon
                 visible: isPopup
-                checked: cfg_useCustomIcon
                 text: i18n("Use a custom icon")
             }
 

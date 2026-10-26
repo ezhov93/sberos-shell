@@ -18,7 +18,7 @@ KCM.SimpleKCM {
 
             ButtonGroup {
                 id: group
-                onClicked: button => quickActionsForm.cfg_enableQuickActions = button.text === "Enabled"
+                onClicked: button => quickActionsForm.cfg_enableQuickActions = button === enabledQuickActions
             }
 
             ColumnLayout {
@@ -29,6 +29,7 @@ KCM.SimpleKCM {
                 }
 
                 RadioButton {
+                    id: enabledQuickActions
                     checked: quickActionsForm.cfg_enableQuickActions
                     text: qsTr("Enabled")
                     ButtonGroup.group: group

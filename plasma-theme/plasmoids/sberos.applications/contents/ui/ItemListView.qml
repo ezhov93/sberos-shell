@@ -47,7 +47,9 @@ FocusScope {
     }
 
     onExpandableChanged: {
-        expanded: false
+        if (!expandable) {
+            expanded = false
+        }
     }
 
     // onCurrentIndexChanged: {

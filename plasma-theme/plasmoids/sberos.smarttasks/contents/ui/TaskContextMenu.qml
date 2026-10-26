@@ -12,8 +12,17 @@ FocusScope {
     id: root
 
     property string appName
+    property int taskIndex: -1
     property var actions: []
     property int selectedActionIndex: 0
+    function resetSelection() {
+        selectedActionIndex = 0
+        if (!root.isAction(selectedActionIndex)) {
+            root.moveSelection(1)
+        }
+    }
+    onActionsChanged: resetSelection()
+    onTaskIndexChanged: resetSelection()
     signal triggered(string action)
     signal dismissed
 

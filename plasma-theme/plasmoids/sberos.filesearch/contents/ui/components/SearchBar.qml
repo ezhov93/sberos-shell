@@ -13,6 +13,7 @@ PlasmaExtras.SearchField {
 
     // Properties for compatibility with file-search logic
     property int resultCount: 0
+    property int selectedIndex: 0
     property var resultsModel: null
     property var logic: null
     property bool rssPlaceholderCycling: true
@@ -80,7 +81,7 @@ PlasmaExtras.SearchField {
 
     onAccepted: {
         if (text.length > 0) {
-            root.searchSubmitted(text, 0)
+            root.searchSubmitted(text, Math.max(0, root.selectedIndex))
         }
     }
 

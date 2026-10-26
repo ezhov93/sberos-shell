@@ -19,6 +19,12 @@ ConfigModel {
         source: "config/ConfigRSS.qml"
     }
 
+    ConfigCategory {
+        name: i18n("Preview")
+        icon: "document-preview"
+        source: "config/ConfigPreview.qml"
+    }
+
 
     ConfigCategory {
         name: i18n("Debug")

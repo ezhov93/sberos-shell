@@ -12,7 +12,6 @@ Item {
 
     property string viewMode: "date" // "date" = Calendar Only, "clock" = Clock Only
     property bool showClock: true
-    property bool showEvents: true
 
     // Timer to update time
     Timer {
@@ -119,9 +118,13 @@ Item {
 
         // --- CLOCK ONLY VIEW ---
         Item {
-            anchors.fill: parent
+            id: clockContainer
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: 12
-            visible: root.viewMode === "clock"
+            height: root.viewMode === "clock" ? parent.height - 24 : 190
+            visible: root.viewMode === "clock" || (root.viewMode === "date" && root.showClock)
 
             ColumnLayout {
                 anchors.centerIn: parent
@@ -174,8 +177,14 @@ Item {
         // --- CALENDAR ONLY VIEW ---
         Item {
             id: calendarContainer
-            anchors.fill: parent
-            anchors.margins: 20
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.topMargin: root.viewMode === "date" && root.showClock ? 202 : 20
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            anchors.bottomMargin: 20
             visible: root.viewMode === "date"
 
             // Adaptive Logic for Calendar Grid

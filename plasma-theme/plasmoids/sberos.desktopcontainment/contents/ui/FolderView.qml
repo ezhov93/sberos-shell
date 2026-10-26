@@ -659,7 +659,7 @@ FocusScope {
                 }
 
                 if (root.useListViewMode) {
-                    doCd(index);
+                    doCd(hoveredItem.index);
                 } else if (Plasmoid.configuration.popups) {
                     hoveredItem.openPopup();
                 }

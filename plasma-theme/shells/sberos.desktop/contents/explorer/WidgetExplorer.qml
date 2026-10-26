@@ -151,9 +151,10 @@ PC3.Page {
             enabled: !parent.disabled
             hoverEnabled: true
             onClicked: {
-                if(!debouncer.running)
+                if (!parent.debounce || !debouncer.running)
                     action();
-                debouncer.start()
+                if (parent.debounce)
+                    debouncer.start()
             }
         }
     }

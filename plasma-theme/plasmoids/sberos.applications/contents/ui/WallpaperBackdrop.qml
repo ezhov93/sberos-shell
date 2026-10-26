@@ -13,6 +13,8 @@ Item {
     readonly property url imageSource: imageView?.modelImage ?? ""
     readonly property bool useSnapshot: !imageSource.toString().length || imageSource.toString().indexOf("image://") === 0
     property bool captureRunning: false
+    property bool capturePending: false
+    property int captureGeneration: 0
     property var prepared: null
     function finishPreparation() {
         preparationTimer.stop();
@@ -30,24 +32,42 @@ Item {
     clip: true
 
     function captureWallpaper() {
-        if (captureRunning || !wallpaperItem || !useSnapshot) return;
+        if (captureRunning) {
+            capturePending = true;
+            return;
+        }
+        if (!wallpaperItem || !useSnapshot) return;
         const source = wallpaperItem;
+        const generation = captureGeneration;
+        capturePending = false;
         captureRunning = true;
         const started = source.grabToImage(result => {
             backdrop.captureRunning = false;
-            if (backdrop.wallpaperItem === source) {
+            const captureIsCurrent = backdrop.wallpaperItem === source
+                && backdrop.captureGeneration === generation;
+            if (captureIsCurrent) {
                 backdrop.wallpaperGrab = result;
                 backdrop.capturedSource = result.url;
+            }
+            const shouldCaptureAgain = backdrop.capturePending || !captureIsCurrent;
+            backdrop.capturePending = false;
+            if (shouldCaptureAgain && backdrop.active) {
+                Qt.callLater(backdrop.captureWallpaper);
+                return;
             }
             backdrop.finishPreparation();
         });
         if (!started) { captureRunning = false; finishPreparation(); }
     }
     onActiveChanged: if (active && !capturedSource.toString().length) Qt.callLater(captureWallpaper)
-    onImageSourceChanged: if (active) refreshTimer.restart()
+    onImageSourceChanged: {
+        captureGeneration++;
+        if (active) refreshTimer.restart();
+    }
     Timer { id: refreshTimer; interval: 120; onTriggered: backdrop.captureWallpaper() }
     Connections { target: backdrop.imageView; ignoreUnknownSignals: true; function onCurrentItemChanged() { if (backdrop.active) refreshTimer.restart(); } }
     onWallpaperItemChanged: {
+        captureGeneration++;
         wallpaperGrab = null;
         capturedSource = "";
         if (active) Qt.callLater(captureWallpaper);

@@ -60,6 +60,7 @@ ScrollView {
 
     // Use flat sorted data (JS Array) instead of raw model for consistency
     property var flatSortedData: []
+    onFlatSortedDataChanged: currentIndex = flatSortedData.length > 0 ? 0 : -1
 
     ListView {
         id: resultsList

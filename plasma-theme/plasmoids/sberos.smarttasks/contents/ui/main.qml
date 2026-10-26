@@ -180,6 +180,7 @@ PlasmoidItem {
         id: taskContextMenu
         TaskContextMenu {
             appName: root.selectedAppName
+            taskIndex: root.selectedTaskIndex
             actions: root.contextActions
             onTriggered: action => root.runContextAction(action)
             onDismissed: root.expanded = false

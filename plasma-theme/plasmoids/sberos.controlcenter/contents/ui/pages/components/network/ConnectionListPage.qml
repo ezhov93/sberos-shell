@@ -58,7 +58,9 @@ ColumnLayout {
 
             Keys.onDownPressed: event => {
                 connectionView.incrementCurrentIndex();
-                connectionView.currentItem.forceActiveFocus();
+                if (connectionView.currentItem) {
+                    connectionView.currentItem.forceActiveFocus();
+                }
             }
             Keys.onUpPressed: event => {
                 if (connectionView.currentIndex === 0) {

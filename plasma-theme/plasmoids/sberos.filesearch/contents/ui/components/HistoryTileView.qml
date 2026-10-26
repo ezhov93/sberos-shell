@@ -226,9 +226,18 @@ FocusScope {
     }
 
     function toggleCategory(categoryName) {
+        var selectedItem = flatItemList[selectedFlatIndex]
         var newCollapsed = Object.assign({}, collapsedCategories)
         newCollapsed[categoryName] = !newCollapsed[categoryName]
         collapsedCategories = newCollapsed
+
+        var preservedIndex = selectedItem
+            ? flatItemList.findIndex(item => item.catIndex === selectedItem.catIndex
+                                            && item.itemIndex === selectedItem.itemIndex)
+            : -1
+        selectedFlatIndex = preservedIndex >= 0
+            ? preservedIndex
+            : Math.max(0, Math.min(selectedFlatIndex, flatItemList.length - 1))
     }
 
     function isItemSelected(catIdx, itemIdx) {

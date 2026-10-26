@@ -215,7 +215,7 @@ PlasmaComponents3.ItemDelegate {
                 }
 
                 readonly property bool healthRowVisible: batteryItem.batteryIsPowerSupply
-                    && batteryItem.batteryCapacity !== ""
+                    && batteryItem.batteryCapacity > 0
                     && !batteryItem.isBroken
 
                 LeftLabel {

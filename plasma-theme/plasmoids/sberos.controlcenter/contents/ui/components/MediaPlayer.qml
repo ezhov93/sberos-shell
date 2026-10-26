@@ -32,14 +32,22 @@ Lib.Card {
 
         Image {
             id: audioThumb
+            property string albumArtSource: mediaPlayerPage.albumArt || ""
+            property bool albumArtFailed: false
             fillMode: Image.PreserveAspectCrop
-            source: mediaPlayerPage.albumArt || "../../assets/music.svg"
+            source: albumArtSource && !albumArtFailed ? albumArtSource : "../../assets/music.svg"
             Layout.fillHeight: true
             Layout.preferredWidth: height
             enabled: mediaPlayerPage.track || (mediaPlayerPage.playbackStatus > Mpris.PlaybackStatus.Stopped) ? true : false
+            onAlbumArtSourceChanged: albumArtFailed = false
+            onStatusChanged: {
+                if (status === Image.Error && albumArtSource) {
+                    albumArtFailed = true
+                }
+            }
 
             ColorOverlay {
-                visible: !mediaPlayerPage.albumArt && audioThumb.enabled
+                visible: (!audioThumb.albumArtSource || audioThumb.albumArtFailed) && audioThumb.enabled
                 anchors.fill: audioThumb
                 source: audioThumb
                 color: Kirigami.Theme.textColor

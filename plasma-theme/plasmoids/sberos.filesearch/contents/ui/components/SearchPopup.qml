@@ -59,7 +59,6 @@ Item {
 
     // Prefix Settings
     property bool prefixDateShowClock: true
-    property bool prefixDateShowEvents: true
     property bool prefixPowerShowHibernate: false
     property bool prefixPowerShowSleep: true
     property bool showPinnedBar: true
@@ -528,7 +527,8 @@ Item {
         id: hiddenSearchInput
         visible: !isButtonMode
         resultCount: tileData.resultCount
-        currentIndex: resultsListLoader.active ? resultsListLoader.item.currentIndex : 0 // approximate
+        currentIndex: resultsListLoader.active && resultsListLoader.item
+                      ? resultsListLoader.item.currentIndex : 0
 
         onTextUpdated: (newText) => {
             tileData.startSearch();
@@ -584,6 +584,8 @@ Item {
         anchors.margins: 12
         visible: isButtonMode
         resultCount: tileData.resultCount
+        selectedIndex: resultsListLoader.active && resultsListLoader.item
+                       ? resultsListLoader.item.currentIndex : 0
         resultsModel: resultsModel
         logic: popupRoot.logic
         rssPlaceholderCycling: popupRoot.plasmoidConfig ? (popupRoot.plasmoidConfig.rssPlaceholderCycling || false) : false
@@ -923,7 +925,6 @@ Item {
             textColor: popupRoot.textColor
             viewMode: popupRoot.effectiveQuery === "clock:" ? "clock" : "date"
             showClock: popupRoot.prefixDateShowClock
-            showEvents: popupRoot.prefixDateShowEvents
             anchors.fill: parent
         }
     }

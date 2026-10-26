@@ -73,7 +73,7 @@ Item {
 
     // Config validation
     function validateConfig() {
-        return ConfigManager.sanitizeConfig({
+        const sanitized = ConfigManager.sanitizeConfig({
             "displayMode": plasmoidConfig.displayMode,
             "viewMode": plasmoidConfig.viewMode,
             "iconSize": plasmoidConfig.iconSize,
@@ -82,7 +82,15 @@ Item {
             "debugOverlay": plasmoidConfig.debugOverlay,
             "userProfile": plasmoidConfig.userProfile
         });
+        for (const key in sanitized) {
+            if (plasmoidConfig[key] !== sanitized[key]) {
+                plasmoidConfig[key] = sanitized[key];
+            }
+        }
+        return sanitized;
     }
+
+    Component.onCompleted: validateConfig()
 
     function getRecommendedIconSize() {
         return ConfigManager.getRecommendedIconSize(plasmoidConfig.displayMode, plasmoidConfig.viewMode);

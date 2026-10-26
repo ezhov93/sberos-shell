@@ -26,7 +26,8 @@ Lib.Card {
         Components.DndButton{}
         RowLayout {
             id: secondaryRow
-            visible: root.showColorSwitcher || root.showNightLight
+            visible: root.showKDEConnect || root.showColorSwitcher || root.showNightLight
+                     || root.showScreenshot || root.showCmd1 || root.showCmd2
             anchors.margins: 1
             spacing: 1
             Components.NightLight{}

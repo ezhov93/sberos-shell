@@ -522,6 +522,7 @@ Item {
                             MouseArea {
                                 id: itemMouseArea
                                 anchors.fill: parent
+                                z: -1
                                 hoverEnabled: true
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 cursorShape: Qt.PointingHandCursor

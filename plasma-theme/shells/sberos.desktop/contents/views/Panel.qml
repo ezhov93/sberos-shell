@@ -51,8 +51,8 @@ Item {
 
         function onContainmentChanged() {
             // HACK: add PanelView into the containment so that it can be used
-            if (containment.panel !== undefined) {
-                containment.panel = panel;
+            if (root.containment && root.containment.panel !== undefined) {
+                root.containment.panel = panel;
             }
         }
     }

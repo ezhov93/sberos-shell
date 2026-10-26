@@ -93,7 +93,7 @@ Item {
         }
 
         function moveUp(index: int) {
-            if(index !== 0) {
+            if (index > 0 && index < count) {
                 var object = watermarks[index];
 
                 watermarks.splice(index, 1);
@@ -113,11 +113,14 @@ Item {
         }
 
         function modify(index: int) {
-            var watermark = watermarkManager.watermarks[repeater_watermarks.selected_delegate];
+            if (index < 0 || index >= count) {
+                return;
+            }
+            var watermark = watermarks[index];
             var component = Qt.createComponent("WatermarkConfigure.qml");
 
             watermarkConfigure = component.createObject(root, {
-                index: repeater_watermarks.selected_delegate,
+                index: index,
                 purpose: "modify",
                 text: watermark.text,
                 bold: watermark.bold,
@@ -129,7 +132,7 @@ Item {
         }
 
         function moveDown(index: int) {
-            if(index < count) {
+            if (index >= 0 && index < count - 1) {
                 var object = watermarks[index];
 
                 watermarks.splice(index, 1);
@@ -140,13 +143,17 @@ Item {
         }
 
         function remove(index: int) {
+            if (index < 0 || index >= count) {
+                return;
+            }
             watermarks.splice(index, 1);
-            repeater_watermarks.selected_delegate--;
+            repeater_watermarks.selected_delegate = Math.min(index, watermarks.length - 1);
             save();
         }
 
         function clear() {
             watermarks.splice(0, count);
+            repeater_watermarks.selected_delegate = -1;
             save();
         }
 
@@ -356,7 +363,9 @@ Item {
 
                         text: i18n("Remove")
                         onClicked: watermarkManager.remove(repeater_watermarks.selected_delegate)
-                        enabled: repeater_watermarks.selected_delegate !== -1 && watermarkVisible.checked
+                        enabled: repeater_watermarks.selected_delegate >= 0
+                                 && repeater_watermarks.selected_delegate < watermarkManager.count
+                                 && watermarkVisible.checked
                     }
 
                     Button {
@@ -364,7 +373,9 @@ Item {
 
                         text: i18n("Modify")
                         onClicked: watermarkManager.modify(repeater_watermarks.selected_delegate)
-                        enabled: repeater_watermarks.selected_delegate !== -1 && watermarkVisible.checked
+                        enabled: repeater_watermarks.selected_delegate >= 0
+                                 && repeater_watermarks.selected_delegate < watermarkManager.count
+                                 && watermarkVisible.checked
                     }
 
                     Button {
@@ -372,20 +383,30 @@ Item {
 
                         text: i18n("Up")
                         onClicked: {
-                            watermarkManager.moveUp(repeater_watermarks.selected_delegate);
-                            repeater_watermarks.selected_delegate--;
+                            const index = repeater_watermarks.selected_delegate;
+                            if (index > 0 && index < watermarkManager.count) {
+                                watermarkManager.moveUp(index);
+                                repeater_watermarks.selected_delegate = index - 1;
+                            }
                         }
-                        enabled: repeater_watermarks.selected_delegate !== -1 && watermarkVisible.checked
+                        enabled: repeater_watermarks.selected_delegate > 0
+                                 && repeater_watermarks.selected_delegate < watermarkManager.count
+                                 && watermarkVisible.checked
                     }
                     Button {
                         Layout.fillWidth: true
 
                         text: i18n("Down")
                         onClicked: {
-                            watermarkManager.moveDown(repeater_watermarks.selected_delegate);
-                            repeater_watermarks.selected_delegate++;
+                            const index = repeater_watermarks.selected_delegate;
+                            if (index >= 0 && index < watermarkManager.count - 1) {
+                                watermarkManager.moveDown(index);
+                                repeater_watermarks.selected_delegate = index + 1;
+                            }
                         }
-                        enabled: repeater_watermarks.selected_delegate !== -1 && watermarkVisible.checked
+                        enabled: repeater_watermarks.selected_delegate >= 0
+                                 && repeater_watermarks.selected_delegate < watermarkManager.count - 1
+                                 && watermarkVisible.checked
                     }
                 }
 

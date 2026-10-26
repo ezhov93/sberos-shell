@@ -51,12 +51,14 @@ Item {
         main.modelUpdated();
     }
 
-    function insert(index, targetIxdex) {
-
+    function insert(index, targetIndex) {
         const widget = widgetsModel[index];
-
-        remove(index);
-        widgetsModel.splice(targetIxdex,0, widget);
+        if (index < 0 || index >= widgetsModel.length || targetIndex < 0) {
+            return;
+        }
+        const insertionIndex = targetIndex > index ? targetIndex - 1 : targetIndex;
+        widgetsModel.splice(index, 1);
+        widgetsModel.splice(Math.min(insertionIndex, widgetsModel.length), 0, widget);
         main.modelUpdated();
     }
 

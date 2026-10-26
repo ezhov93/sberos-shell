@@ -46,7 +46,7 @@ PlasmaComponents3.ScrollView {
         required property var profileHolds
 
         property alias isManuallyInhibited: pmSwitch.isManuallyInhibited
-        property alias isManuallyInhibitedError: pmSwitch.isManuallyInhibited
+        property alias isManuallyInhibitedError: pmSwitch.isManuallyInhibitedError
 
         signal inhibitionChangeRequested(bool inhibit)
         signal activateProfileRequested(string profile)

@@ -29,11 +29,15 @@ ContextMenuTemplate {
                     menuItemLoader.item.model = menuItemLoader.model
                     menuItemLoader.item.index = menuItemLoader.index
                 }
+                contextMenu.insertItem(menuItemLoader.index, menuItemLoader.item)
             }
         }
 
-        onObjectAdded: (index, object) => contextMenu.insertItem(index, object.item)
-        onObjectRemoved: (index, object) => contextMenu.removeItem(object)
+        onObjectRemoved: (index, object) => {
+            if (object.item) {
+                contextMenu.removeItem(object.item)
+            }
+        }
     }
 
     Component {

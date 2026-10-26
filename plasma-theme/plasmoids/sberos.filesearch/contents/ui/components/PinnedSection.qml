@@ -335,7 +335,7 @@ Item {
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                                     drag.target: tileContent
-                                    drag.axis: Drag.XAxis
+                                    drag.axis: Drag.XandYAxis
 
                                     onPressed: (mouse) => {
                                         if (mouse.button === Qt.LeftButton) {
@@ -361,7 +361,12 @@ Item {
                                         if (drag.active) {
                                             // Calculate drop target based on mouse position
                                             var globalPos = mapToItem(tileFlow, mouse.x, mouse.y)
-                                            var targetIndex = Math.floor(globalPos.x / (pinnedSectionRoot.iconSize + 24))
+                                            var stepX = pinnedSectionRoot.tileWidth + tileFlow.spacing
+                                            var stepY = pinnedSectionRoot.tileHeight + tileFlow.spacing
+                                            var columns = Math.max(1, Math.floor((tileFlow.width + tileFlow.spacing) / stepX))
+                                            var column = Math.floor(globalPos.x / stepX)
+                                            var row = Math.floor(globalPos.y / stepY)
+                                            var targetIndex = row * columns + column
                                             targetIndex = Math.max(0, Math.min(targetIndex, pinnedSectionRoot.pinnedItems.length - 1))
                                             pinnedSectionRoot.dropTargetIndex = targetIndex
                                         }

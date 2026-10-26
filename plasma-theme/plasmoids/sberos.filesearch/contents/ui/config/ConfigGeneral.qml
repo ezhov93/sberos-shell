@@ -52,7 +52,6 @@ Item {
 
     // Prefix Group
     property alias cfg_prefixDateShowClock: prefixDateClock.checked
-    property alias cfg_prefixDateShowEvents: prefixDateEvents.checked
     property alias cfg_prefixPowerShowHibernate: showHibernateCheck.checked
     property alias cfg_prefixPowerShowSleep: prefixPowerSleep.checked
     property alias cfg_showBootOptions: showBootOptionsSearch.checked
@@ -112,7 +111,6 @@ Item {
     property string cfg_previewSettingsDefault
     property bool cfg_previewEnabledDefault
     property bool cfg_prefixDateShowClockDefault
-    property bool cfg_prefixDateShowEventsDefault
     property bool cfg_weatherEnabledDefault
     property bool cfg_weatherUseSystemUnitsDefault
     property int cfg_weatherRefreshIntervalDefault
@@ -845,11 +843,6 @@ Item {
                         id: prefixDateClock
                         text: i18nd("plasma_applet_com.mcc45tr.filesearch", "Show Large Clock")
                     }
-                    CheckBox {
-                        id: prefixDateEvents
-                        text: i18nd("plasma_applet_com.mcc45tr.filesearch", "Show Calendar Events")
-                    }
-
                     // Weather View Settings
                     Kirigami.Separator {
                         Kirigami.FormData.label: i18nd("plasma_applet_com.mcc45tr.filesearch", "Weather View (weather:)")

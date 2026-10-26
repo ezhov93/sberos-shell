@@ -50,7 +50,7 @@ Control {
             var result = "";
 
             if(genericButton.focus) result = "focus-";
-            if(buttonMA.containsPress || root.checked) result = "pressed";
+            if(buttonMA.containsPress || genericButton.checked) result = "pressed";
             else if(buttonMA.containsMouse) result += "hover";
             else result += "normal";
 

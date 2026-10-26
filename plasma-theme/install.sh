@@ -149,27 +149,29 @@ install_package() {
 
 install_package "Plasma/Shell" \
     "io.gitgud.wackyideas.desktop" \
-    "$script_dir/shells/io.gitgud.wackyideas.desktop" \
+    "$script_dir/shells/sberos.desktop" \
     "plasma/shells"
 
 install_package "Plasma/LayoutTemplate" \
     "io.gitgud.wackyideas.taskbar" \
-    "$script_dir/layout-templates/io.gitgud.wackyideas.taskbar" \
+    "$script_dir/layout-templates/sberos.taskbar" \
     "plasma/layout-templates"
 
-for id in \
-    io.gitgud.wackyideas.panel \
-    io.gitgud.wackyideas.desktopcontainment \
-    io.gitgud.wackyideas.sbermenu \
-    io.gitgud.wackyideas.smarttasks \
-    io.gitgud.wackyideas.clockcalendar \
-    p-connor.plasma-drawer \
-    KdeControlStation \
-    com.mcc45tr.filesearch
+for package in \
+    io.gitgud.wackyideas.panel=sberos.panel \
+    io.gitgud.wackyideas.desktopcontainment=sberos.desktopcontainment \
+    io.gitgud.wackyideas.sbermenu=sberos.sbermenu \
+    io.gitgud.wackyideas.smarttasks=sberos.smarttasks \
+    io.gitgud.wackyideas.clockcalendar=sberos.clockcalendar \
+    p-connor.plasma-drawer=sberos.applications \
+    KdeControlStation=sberos.controlcenter \
+    com.mcc45tr.filesearch=sberos.filesearch
 do
+    id="${package%%=*}"
+    package_dir="${package#*=}"
     install_package "Plasma/Applet" \
         "$id" \
-        "$script_dir/plasmoids/$id" \
+        "$script_dir/plasmoids/$package_dir" \
         "plasma/plasmoids"
 done
 

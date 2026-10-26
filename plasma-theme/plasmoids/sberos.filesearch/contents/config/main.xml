@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+
+  <kcfgfile name=""/>
+
+  <!-- Tab 1: Panel Appearance -->
+  <group name="Panel">
+    <entry name="displayMode" type="Int">
+      <default>1</default>
+      <label>Display Mode: 0=Button, 1=Medium, 2=Wide, 3=Extra Wide, 4=Ultra Wide</label>
+    </entry>
+    <entry name="showSearchButton" type="Bool">
+      <default>true</default>
+      <label>Show search icon button in panel</label>
+    </entry>
+    <entry name="showSearchButtonBackground" type="Bool">
+      <default>true</default>
+      <label>Show background tile behind search icon</label>
+    </entry>
+
+    <entry name="userProfile" type="Int">
+      <default>0</default>
+      <label>User Profile: 0=Minimal, 1=Developer, 2=Power User</label>
+    </entry>
+    <entry name="panelRadius" type="Int">
+      <default>0</default>
+      <label>Panel Radius: 0=Round, 1=12px, 2=6px, 3=Square</label>
+    </entry>
+  </group>
+
+  <!-- Tab 2: Popup & View Settings -->
+  <group name="Popup">
+    <entry name="viewMode" type="Int">
+      <default>0</default>
+      <label>View Mode: 0=List, 1=Tile</label>
+    </entry>
+    <entry name="scrollBarStyle" type="Int">
+      <default>0</default>
+      <label>Scroll Bar Style: 0=System, 1=Minimal, 2=Hidden</label>
+    </entry>
+    <entry name="iconSize" type="Int">
+      <default>48</default>
+      <label>Tile Icon Size in pixels</label>
+    </entry>
+    <entry name="listIconSize" type="Int">
+      <default>22</default>
+      <label>List Icon Size in pixels</label>
+    </entry>
+    <entry name="minResults" type="Int">
+      <default>3</default>
+      <label>Minimum number of results to display</label>
+    </entry>
+    <entry name="maxResults" type="Int">
+      <default>20</default>
+      <label>Maximum number of results to display</label>
+    </entry>
+    <entry name="smartResultLimit" type="Bool">
+      <default>true</default>
+      <label>Smartly limit results based on relevance score</label>
+    </entry>
+    <entry name="showPinnedBar" type="Bool">
+      <default>true</default>
+      <label>Show pinned items bar in search results</label>
+    </entry>
+    <entry name="autoMinimizePinned" type="Bool">
+      <default>false</default>
+      <label>Automatically minimize pinned items when searching</label>
+    </entry>
+    <entry name="compactPinnedView" type="Int">
+      <default>0</default>
+      <label>Tile view compact mode: 0=Normal, 1=All Compact, 2=Only Pinned Compact, 3=Only History Compact</label>
+    </entry>
+    <entry name="filterChipStyle" type="Int">
+      <default>0</default>
+      <label>Filter Chip Style: 0=Filled, 1=Breeze/Outline</label>
+    </entry>
+  </group>
+
+  <!-- Tab 3: Preview Settings -->
+  <group name="Preview">
+    <entry name="previewEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable file preview</label>
+    </entry>
+    <entry name="previewSettings" type="String">
+      <default>{"images": false, "videos": false, "text": false, "documents": false, "applications": false}</default>
+      <label>Preview settings for different file types (JSON)</label>
+    </entry>
+    <entry name="previewShowResults" type="Bool">
+      <default>true</default>
+      <label>Show preview in search results</label>
+    </entry>
+    <entry name="previewShowHistory" type="Bool">
+      <default>true</default>
+      <label>Show preview in search history</label>
+    </entry>
+    <entry name="previewInlineMode" type="Int">
+      <default>1</default>
+      <label>Preview Mode: 0=Hover Tooltip, 1=Inline Card</label>
+    </entry>
+    <entry name="previewSize" type="Int">
+      <default>1</default>
+      <label>Inline thumbnail size: 0=Small, 1=Medium, 2=Large</label>
+    </entry>
+  </group>
+
+  <!-- Tab 4: Prefix Settings -->
+  <group name="Prefix">
+    <entry name="prefixDateShowClock" type="Bool">
+      <default>true</default>
+      <label>Date View: Show large clock</label>
+    </entry>
+    <entry name="prefixDateShowEvents" type="Bool">
+      <default>true</default>
+      <label>Date View: Show calendar events</label>
+    </entry>
+    <entry name="prefixPowerShowHibernate" type="Bool">
+      <default>false</default>
+      <label>Power View: Show Hibernate button</label>
+    </entry>
+    <entry name="prefixPowerShowSleep" type="Bool">
+      <default>true</default>
+      <label>Power View: Show Sleep button</label>
+    </entry>
+    <entry name="showBootOptions" type="Bool">
+      <default>false</default>
+      <label>Show boot options in Reboot button</label>
+    </entry>
+    <entry name="cachedBootEntries" type="String">
+      <default></default>
+      <label>Cached boot entries (JSON)</label>
+    </entry>
+    <entry name="prefixShellEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Shell Command execution prefix</label>
+    </entry>
+    <entry name="prefixTimelineEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Timeline search prefix</label>
+    </entry>
+    <entry name="prefixWebSearchEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Web Search prefix</label>
+    </entry>
+    <entry name="prefixKillEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Kill Process prefix</label>
+    </entry>
+    <entry name="prefixSpellEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Spell Check prefix</label>
+    </entry>
+    <entry name="prefixUnitEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Unit Conversion prefix</label>
+    </entry>
+  </group>
+
+  <group name="Weather">
+    <entry name="weatherEnabled" type="Bool">
+      <default>true</default>
+      <label>Enable Weather Prefix</label>
+    </entry>
+    <entry name="weatherUnits" type="String">
+      <default>metric</default>
+      <label>Weather Units: metric, imperial, or system</label>
+    </entry>
+    <entry name="weatherUseSystemUnits" type="Bool">
+      <default>true</default>
+      <label>Use system locale units</label>
+    </entry>
+    <entry name="weatherRefreshInterval" type="Int">
+      <default>15</default>
+      <label>Refresh interval in minutes</label>
+    </entry>
+    <entry name="weatherLastUpdate" type="Double">
+      <default>0</default>
+      <label>Timestamp of last weather update</label>
+    </entry>
+    <entry name="weatherCache" type="String">
+      <default>{}</default>
+      <label>Cached weather data (JSON)</label>
+    </entry>
+  </group>
+
+  <!-- Tab 5: Placeholder (Search Settings) -->
+  <group name="Placeholder">
+    <entry name="searchAlgorithm" type="Int">
+      <default>0</default>
+      <label>Search Algorithm: 0=Fuzzy, 1=Exact, 2=StartsWith</label>
+    </entry>
+    <entry name="searchHistory" type="String">
+      <default></default>
+      <label>Recent search history (JSON)</label>
+    </entry>
+  </group>
+
+  <!-- Separate Config Categories -->
+  <group name="Categories">
+    <entry name="categorySettings" type="String">
+      <default>{}</default>
+      <label>Category settings (visibility, priority, custom icons)</label>
+    </entry>
+    <entry name="pinnedItems" type="String">
+      <default>[]</default>
+      <label>Pinned items (JSON array with activity support)</label>
+    </entry>
+  </group>
+
+  <group name="Debug">
+    <entry name="debugOverlay" type="Bool">
+      <default>false</default>
+      <label>Show debug overlay</label>
+    </entry>
+    <entry name="telemetryData" type="String">
+      <default>{}</default>
+      <label>Usage statistics (local only)</label>
+    </entry>
+  </group>
+
+  <group name="RSS">
+    <entry name="rssEnabled" type="Bool">
+      <default>false</default>
+      <label>Enable RSS feed integration</label>
+    </entry>
+    <entry name="rssSources" type="String">
+      <default>[]</default>
+      <label>RSS source URLs (JSON array of {url, name, lastSync})</label>
+    </entry>
+    <entry name="rssMaxEntries" type="Int">
+      <default>10</default>
+      <label>Maximum entries to keep per source</label>
+    </entry>
+    <entry name="rssSyncInterval" type="Int">
+      <default>60</default>
+      <label>RSS sync interval in minutes</label>
+    </entry>
+    <entry name="rssCache" type="String">
+      <default>[]</default>
+      <label>Cached RSS entries (JSON array of {title, link, date, sourceName})</label>
+    </entry>
+    <entry name="rssLastSyncAll" type="Double">
+      <default>0</default>
+      <label>Timestamp of last global RSS sync</label>
+    </entry>
+    <entry name="rssPlaceholderCycling" type="Bool">
+      <default>true</default>
+      <label>Cycle RSS titles in search placeholder</label>
+    </entry>
+    <entry name="rssFrequency" type="Int">
+      <default>3</default>
+      <label>Frequency of RSS placeholder cycles</label>
+    </entry>
+    <entry name="rssShowImages" type="Bool">
+      <default>true</default>
+      <label>Show images in RSS result cards</label>
+    </entry>
+    <entry name="rssExpandableCards" type="Bool">
+      <default>true</default>
+      <label>Allow RSS cards to expand for more details</label>
+    </entry>
+    <entry name="rssShowSource" type="Bool">
+      <default>true</default>
+      <label>Show RSS source name in panel ticker</label>
+    </entry>
+    <entry name="rssShowFullHeadline" type="Bool">
+      <default>true</default>
+      <label>Show full headline by segmenting long titles</label>
+    </entry>
+  </group>
+
+</kcfg>

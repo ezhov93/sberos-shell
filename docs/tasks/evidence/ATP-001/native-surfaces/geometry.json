@@ -1,0 +1,59 @@
+[
+  {
+    "label": "search",
+    "x": 1052,
+    "y": 886,
+    "width": 456,
+    "height": 653,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 107,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 107,
+      "bottom": 1547
+    },
+    "dpi": 1
+  },
+  {
+    "label": "notifications",
+    "x": 1052,
+    "y": 1185,
+    "width": 456,
+    "height": 354,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 107,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 107,
+      "bottom": 1547
+    },
+    "dpi": 1
+  },
+  {
+    "label": "quick",
+    "x": 2056,
+    "y": 919,
+    "width": 488,
+    "height": 540,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 107,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 107,
+      "bottom": 1547
+    },
+    "dpi": 1
+  }
+]

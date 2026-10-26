@@ -1,0 +1,91 @@
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.portal.Desktop' requested by ':1.0' (uid=1000 pid=205065 comm="plasmashell --no-respawn --shell-plugin io.gitgud." label="plasmashell (complain)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.impl.portal.PermissionStore' requested by ':1.1' (uid=1000 pid=205068 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.PermissionStore'
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.portal.Documents' requested by ':1.1' (uid=1000 pid=205068 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.freedesktop.portal.Documents'
+
+(/usr/libexec/xdg-desktop-portal:205068): xdg-desktop-portal-WARNING **: 22:46:30.292: Choosing gtk.portal for org.freedesktop.impl.portal.Lockdown as a last-resort fallback
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.gtk' requested by ':1.1' (uid=1000 pid=205068 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.kde.ActivityManager' requested by ':1.0' (uid=1000 pid=205065 comm="plasmashell --no-respawn --shell-plugin io.gitgud." label="plasmashell (complain)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.gtk.vfs.Daemon' requested by ':1.4' (uid=1000 pid=205092 comm="/usr/libexec/xdg-desktop-portal-gtk" label="chatgpt (unconfined)")
+Couldn't start kglobalaccel from org.kde.kglobalaccel.service: QDBusError("org.freedesktop.DBus.Error.ServiceUnknown", "The name org.kde.kglobalaccel was not provided by any .service files")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.gtk.vfs.Daemon'
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.a11y.Bus' requested by ':1.7' (uid=1000 pid=205092 comm="/usr/libexec/xdg-desktop-portal-gtk" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.a11y.Bus'
+Couldn't start kglobalaccel from org.kde.kglobalaccel.service: QDBusError("org.freedesktop.DBus.Error.ServiceUnknown", "The name org.kde.kglobalaccel was not provided by any .service files")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.kde.ActivityManager'
+dbus-daemon[205130]: Activating service name='org.a11y.atspi.Registry' requested by ':1.1' (uid=1000 pid=205092 comm="/usr/libexec/xdg-desktop-portal-gtk" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.gtk'
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.kde' requested by ':1.1' (uid=1000 pid=205068 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[205130]: Successfully activated service 'org.a11y.atspi.Registry'
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.kde'
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.kwallet' requested by ':1.1' (uid=1000 pid=205068 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.freedesktop.portal.Desktop'
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'org.kde.ActivityManager'")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'org.kde.ActivityManager'")
+kf.wallet.ksecretd: Lacking a socket, pipe: 0 env: 0
+qt.qml.propertyCache.append: Member enabled of the object DeclarativeDropArea overrides a member of the base object. Consider renaming it or adding final or override specifier
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.kwallet'
+qt.qml.propertyCache.append: Member visible of the object PlasmaQuick::Dialog overrides a member of the base object. Consider renaming it or adding final or override specifier
+kde.plasmashell: Did not find a valid screen to place a new panel. QDBusError("org.freedesktop.DBus.Error.ServiceUnknown", "The name org.kde.KWin was not provided by any .service files")
+kde.plasmashell: Activity added twice "2fbc8ee0-f609-483a-bb0f-e319d2aa99b5"
+org.kde.plasma.libtaskmanager: Failed to determine whether virtual desktop navigation wrapping is enabled:  "The name org.kde.KWin was not provided by any .service files"
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.kde.kded6' requested by ':1.14' (uid=1000 pid=205182 comm="/usr/lib/x86_64-linux-gnu/libexec/kf6/kioworker /u" label="unconfined")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.kde.KSplash' requested by ':1.0' (uid=1000 pid=205065 comm="plasmashell --no-respawn --shell-plugin io.gitgud." label="plasmashell (complain)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.kde.kded6'
+org.kde.libkbolt: Failed to connect to Bolt manager DBus interface: 
+org.kde.bolt.kded: Couldn't connect to Bolt DBus daemon
+System timezone has been changed, new timezone is "Europe/Moscow"
+Couldn't start kglobalaccel from org.kde.kglobalaccel.service: QDBusError("org.freedesktop.DBus.Error.ServiceUnknown", "The name org.kde.kglobalaccel was not provided by any .service files")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='ca.desrt.dconf' requested by ':1.17' (uid=1000 pid=205198 comm="/usr/bin/kded6" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'ca.desrt.dconf'
+QDBusObjectPath: invalid path "/modules/wpad-detector"
+kf.dbusaddons: The kded module name "wpad-detector" is invalid!
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.freedesktop.Notifications' requested by ':1.0' (uid=1000 pid=205065 comm="plasmashell --no-respawn --shell-plugin io.gitgud." label="plasmashell (complain)")
+qml: Script de color llamado
+qml: Script de color llamado
+qml: Script de color llamado
+qt.core.qobject.connect: QObject::connect: No such signal Panel_QMLTYPE_199::leftShadowMarginChanged()
+qt.core.qobject.connect: QObject::connect: No such signal Panel_QMLTYPE_199::topShadowMarginChanged()
+qt.core.qobject.connect: QObject::connect: No such signal Panel_QMLTYPE_199::rightShadowMarginChanged()
+qt.core.qobject.connect: QObject::connect: No such signal Panel_QMLTYPE_199::bottomShadowMarginChanged()
+qt.qml.context: file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/main.qml:131:9 Parameter "data" is not declared. Injection of parameters into signal handlers is deprecated. Use JavaScript functions with formal parameters instead.
+kf.modemmanagerqt: Failed enumerating MM objects: "org.freedesktop.DBus.Error.ServiceUnknown" 
+ "The name org.freedesktop.ModemManager1 was not provided by any .service files"
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.bluez.obex' requested by ':1.15' (uid=1000 pid=205198 comm="/usr/bin/kded6" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Successfully activated service 'org.bluez.obex'
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.gnome.evolution.dataserver.Sources5' requested by ':1.33' (uid=1000 pid=205372 comm="/usr/libexec/bluetooth/obexd" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activated service 'org.gnome.evolution.dataserver.Sources5' failed: Failed to execute program org.gnome.evolution.dataserver.Sources5: No such file or directory
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activating service name='org.gnome.evolution.dataserver.Sources5' requested by ':1.33' (uid=1000 pid=205372 comm="/usr/libexec/bluetooth/obexd" label="chatgpt (unconfined)")
+dbus-daemon[205064]: [session uid=1000 pid=205064 pidfd=5] Activated service 'org.gnome.evolution.dataserver.Sources5' failed: Failed to execute program org.gnome.evolution.dataserver.Sources5: No such file or directory
+qt.qml.context: file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/com.mcc45tr.filesearch/contents/ui/main.qml:16:5 Parameter "expanded" is not declared. Injection of parameters into signal handlers is deprecated. Use JavaScript functions with formal parameters instead.
+org.kde.kcm_keys: Interface is not valid
+Connecting to deprecated signal QDBusConnectionInterface::serviceOwnerChanged(QString,QString,QString)
+qml: CAPTURE {"label":"search","x":1052,"y":886,"width":456,"height":653,"thickness":88,"screen":{"x":0,"y":107,"width":2560,"height":1440,"left":0,"right":2560,"top":107,"bottom":1547},"dpi":1}
+org.kde.applets.brightness: D-Bus service not available: "org.kde.ScreenBrightness"
+org.kde.applets.brightness: D-Bus service not available: "org.kde.Solid.PowerManagement"
+kf.kded: could not find kded module with id "kameleon"
+kf.kded: attempted to load an invalid module.
+org.kde.applets.brightness: error connecting to kameleon via dbus: "No such object path '/modules/kameleon'"
+Both point size and pixel size set. Using pixel size.
+Both point size and pixel size set. Using pixel size.
+file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/pages/components/network/Toolbar.qml:179:9: QML Connections: Detected function "onHotspotCreated" in Connections element. This is probably intended to be a signal handler but no signal of the target matches the name.
+file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/pages/components/network/Toolbar.qml:179:9: QML Connections: Detected function "onHotspotDisabled" in Connections element. This is probably intended to be a signal handler but no signal of the target matches the name.
+file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/pages/components/battery/PowerManagementItem.qml:170:17: QML InhibitionHint: Detected anchors on an item that is managed by a layout. This is undefined behavior; use Layout.alignment instead.
+qml: undefined
+file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/pages/VolumePage.qml:29:5: Unable to assign [undefined] to bool
+Both point size and pixel size set. Using pixel size.
+Both point size and pixel size set. Using pixel size.
+org.kde.applets.brightness: D-Bus service not available: "org.kde.ScreenBrightness"
+org.kde.plasma.workspace.dbus: "org.freedesktop.DBus.Error.ServiceUnknown": "The name org.kde.KWin.NightLight was not provided by any .service files"
+qml: CAPTURE {"label":"notifications","x":1052,"y":1185,"width":456,"height":354,"thickness":88,"screen":{"x":0,"y":107,"width":2560,"height":1440,"left":0,"right":2560,"top":107,"bottom":1547},"dpi":1}
+org.kde.kcm_keys: Interface is not valid
+file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/pages/components/bluetooth/DeviceItem.qml:33:5: Unable to assign [undefined] to bool
+qt.svg: Invalid path data; path truncated.
+qt.svg: Invalid path data; path truncated.
+qml: CAPTURE {"label":"quick","x":2056,"y":919,"width":488,"height":540,"thickness":88,"screen":{"x":0,"y":107,"width":2560,"height":1440,"left":0,"right":2560,"top":107,"bottom":1547},"dpi":1}
+file:///tmp/sber-popup-final-light-20261026/light/data/plasma/plasmoids/KdeControlStation/contents/ui/pages/components/battery/PowerManagementItem.qml:170:17: QML InhibitionHint: Detected anchors on an item that is managed by a layout. This is undefined behavior; use Layout.alignment instead.
+qml: CAPTURE_DONE

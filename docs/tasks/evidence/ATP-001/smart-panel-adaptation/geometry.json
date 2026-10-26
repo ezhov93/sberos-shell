@@ -1,0 +1,155 @@
+[
+  {
+    "label": "panel",
+    "width": 2560,
+    "height": 88,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "notifications",
+    "width": 456,
+    "height": 573,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "quick",
+    "width": 488,
+    "height": 540,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "search",
+    "width": 456,
+    "height": 573,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "launcher",
+    "width": 2560,
+    "height": 1352,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "panel",
+    "width": 2560,
+    "height": 88,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "quick",
+    "width": 488,
+    "height": 540,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "calendar",
+    "width": 344,
+    "height": 382,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  },
+  {
+    "label": "notifications",
+    "width": 456,
+    "height": 573,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  }
+]

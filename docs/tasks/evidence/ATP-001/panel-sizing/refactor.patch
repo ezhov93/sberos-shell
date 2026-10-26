@@ -1,0 +1,1392 @@
+diff --git a/plasma-theme/PANEL-SIZING.md b/plasma-theme/PANEL-SIZING.md
+new file mode 100644
+index 0000000..7b2724a
+--- /dev/null
++++ b/plasma-theme/PANEL-SIZING.md
+@@ -0,0 +1,44 @@
++# Адаптивные размеры панели Plasma
++
++Рабочая реализация — `plasmoids/sberos.panel`, view —
++`shells/sberos.desktop/contents/views/Panel.qml`. История и ограничения —
++[ATP-001](../docs/tasks/ATP-001.md).
++
++- Толщину задаёт Plasma PanelView; стандартная высота новой панели — 72 логических px.
++  Настройка высоты через Plasma больше не заменяется значением containment при загрузке.
++- View использует FitContent и центрирование. Начальные раскладки задают
++  `lengthMode = "fit"`; ограничение длины соотношением 21:9 и расширяемый spacer убраны.
++  Источник API: [Plasma scripting](https://develop.kde.org/docs/plasma/scripting/api/).
++- `AppletSizeHints.qml` читает minimum/preferred/maximum и implicit-размер апплета
++  вдоль панели. Поперёк панели контейнер заполняет её толщину. Фиксированной ширины
++  по ID лаунчера или Task Manager в контейнере нет.
++- Компактные представления Сбера, Drawer, задач, поиска, быстрых настроек и часов
++  рассчитывают размеры по фактически выделенной толщине. Ширина часов учитывает
++  метрики текущей локализованной даты и шрифта.
++- `PanelLayoutMetrics.qml` рассчитывает естественную длину отдельно от выделенной.
++  Оська занимает середину панели; компенсационный промежуток учитывается в layout,
++  без визуального переноса поверх соседей. При ограничении экраном сначала
++  уменьшаются ширины боковых зон, затем поиска до его minimum. Область задач
++  прокручивается внутри Flickable. Закреплённые приложения и popup сохраняются.
++- Высота поиска берётся из контейнера: `panelHeight` и её редактор удалены
++  из конфигурации filesearch. Старое поле в существующих профилях не читается.
++- Сторонний `panelspacer` существующего профиля не участвует в раскладке fit-панели;
++  новые раскладки его не создают. `refs/`, Sirca и Quickshell не меняются.
++
++## Проверка
++
++Из корня репозитория:
++
++```sh
++QT_QPA_PLATFORM=offscreen timeout 30s /usr/lib/qt6/bin/qmltestrunner -input plasma-theme/tests
++python3 plasma-theme/tests/run-panel-sizing.py --source plasma-theme --output /tmp/plasma-sizing-new-check
++```
++
++Вторая команда требует доступ к Wayland и возможность запустить частный D-Bus.
++Она копирует пакеты и обе палитры Breeze в новый временный профиль, меняет
++высоты 32/48/64/72/96/120, число закреплений, сохраняет PNG и geometry.json,
++проверяет границы/центр/перекрытия/изменение длины и завершает свою группу процессов.
++Каталог результата должен отсутствовать перед запуском. Сервисы реального
++сеанса через частный D-Bus недоступны: эта проверка подтверждает геометрию и
++отрисовку, но не работу быстрых настроек, popup, blur или резервирования края.
++Пределы на экстремально узких экранах и горячее подключение проверяются отдельно.
+diff --git a/plasma-theme/layout-templates/sberos.taskbar/contents/layout.js b/plasma-theme/layout-templates/sberos.taskbar/contents/layout.js
+index 731f303..dbc8ff8 100644
+--- a/plasma-theme/layout-templates/sberos.taskbar/contents/layout.js
++++ b/plasma-theme/layout-templates/sberos.taskbar/contents/layout.js
+@@ -15,18 +15,9 @@ panel.height = 72
+ // Keep one shared panel and strut; the panel containment paints the mock's islands.
+ panel.floating = false
+ 
+-// Restrict horizontal panel to a maximum size of a 21:9 monitor
+-const maximumAspectRatio = 21/9;
+-if (panel.formFactor === "horizontal") {
+-    const geo = screenGeometry(panelScreen);
+-    const maximumWidth = Math.ceil(geo.height * maximumAspectRatio);
+-
+-    if (geo.width > maximumWidth) {
+-        panel.alignment = "center";
+-        panel.minimumLength = maximumWidth;
+-        panel.maximumLength = maximumWidth;
+-    }
+-}
++// Let PanelView size the panel from the applets' preferred lengths.
++panel.alignment = "center"
++panel.lengthMode = "fit"
+ 
+ panel.addWidget("io.gitgud.wackyideas.sbermenu")
+ var appLauncher = panel.addWidget("p-connor.plasma-drawer")
+@@ -47,11 +38,7 @@ applications.writeConfig("launchers", "preferred://filemanager,preferred://brows
+ var fileSearch = panel.addWidget("com.mcc45tr.filesearch")
+ fileSearch.currentConfigGroup = ["Panel"]
+ fileSearch.writeConfig("displayMode", 3)
+-fileSearch.writeConfig("panelHeight", 72)
+ fileSearch.writeConfig("showSearchButton", false)
+ 
+-var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
+-systemSpacer.writeConfig("expanding", true)
+-
+ panel.addWidget("KdeControlStation")
+ panel.addWidget("io.gitgud.wackyideas.clockcalendar")
+diff --git a/plasma-theme/plasmoids/sberos.applications/contents/ui/CompactRepresentation.qml b/plasma-theme/plasmoids/sberos.applications/contents/ui/CompactRepresentation.qml
+index 23ba76c..aa74e9f 100644
+--- a/plasma-theme/plasmoids/sberos.applications/contents/ui/CompactRepresentation.qml
++++ b/plasma-theme/plasmoids/sberos.applications/contents/ui/CompactRepresentation.qml
+@@ -44,34 +44,12 @@ Item {
+ 
+     Plasmoid.status: dashWindow && dashWindow.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
+ 
+-    onWidthChanged: updateSizeHints()
+-    onHeightChanged: updateSizeHints()
+-
+-    function updateSizeHints() {
+-        if (useCustomButtonImage) {
+-            if (vertical) {
+-                const scaledHeight = Math.floor(parent.width * (buttonIcon.implicitHeight / buttonIcon.implicitWidth));
+-                root.Layout.minimumHeight = scaledHeight;
+-                root.Layout.maximumHeight = scaledHeight;
+-                root.Layout.minimumWidth = -1;
+-            } else {
+-                const scaledWidth = Math.floor(parent.height * (buttonIcon.implicitWidth / buttonIcon.implicitHeight));
+-                root.Layout.minimumWidth = scaledWidth;
+-                root.Layout.maximumWidth = scaledWidth;
+-                root.Layout.minimumHeight = -1;
+-            }
+-        } else {
+-            root.Layout.minimumWidth = -1;
+-            root.Layout.minimumHeight = -1;
+-        }
+-    }
+-
+     Kirigami.Icon {
+         id: buttonIcon
+ 
+         anchors.centerIn: parent
+-        width: 32
+-        height: 32
++        width: Math.min(root.width, root.height) * 2 / 3
++        height: width
+ 
+         readonly property double aspectRatio: (vertical ? implicitHeight / implicitWidth
+             : implicitWidth / implicitHeight)
+@@ -86,7 +64,6 @@ Item {
+         // to be an icon and round it to the nearest icon size again to avoid scaling artefacts.
+         roundToIconSize: !useCustomButtonImage || aspectRatio === 1
+ 
+-        onSourceChanged: updateSizeHints()
+     }
+ 
+     MouseArea
+diff --git a/plasma-theme/plasmoids/sberos.applications/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.applications/contents/ui/main.qml
+index a71110f..b01be1d 100644
+--- a/plasma-theme/plasmoids/sberos.applications/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.applications/contents/ui/main.qml
+@@ -35,9 +35,14 @@ PlasmoidItem {
+     // }
+ 
+     anchors.fill: parent
+-    Layout.minimumWidth: 48
+-    Layout.preferredWidth: 48
+-    Layout.maximumWidth: 48
++    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
++    readonly property real buttonLength: Math.max(1, (vertical ? width : height) * 2 / 3)
++    Layout.minimumWidth: vertical ? 0 : buttonLength
++    Layout.preferredWidth: vertical ? 72 : buttonLength
++    Layout.maximumWidth: vertical ? Infinity : buttonLength
++    Layout.minimumHeight: vertical ? buttonLength : 0
++    Layout.preferredHeight: vertical ? buttonLength : 72
++    Layout.maximumHeight: vertical ? buttonLength : Infinity
+ 
+     signal reset
+ 
+diff --git a/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/main.qml
+index 15ecc7c..67b3f3b 100644
+--- a/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/main.qml
+@@ -26,12 +26,23 @@ PlasmoidItem {
+     Plasmoid.icon: "view-calendar"
+     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+ 
+-    Layout.minimumWidth: 160
+-    Layout.preferredWidth: 160
+-    Layout.maximumWidth: 160
+-    Layout.minimumHeight: 72
+-    Layout.preferredHeight: 72
+-    Layout.maximumHeight: 72
++    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
++    readonly property real panelExtent: Math.max(1, vertical ? width : height)
++    readonly property real labelSize: panelExtent * 2 / 9
++    readonly property real labelWidth: Math.ceil(clockMetrics.width + panelExtent / 3)
++    Layout.minimumWidth: vertical ? 0 : Math.min(labelWidth, panelExtent * 2)
++    Layout.preferredWidth: vertical ? 72 : labelWidth
++    Layout.maximumWidth: vertical ? Infinity : labelWidth
++    Layout.minimumHeight: vertical ? panelExtent : 0
++    Layout.preferredHeight: vertical ? panelExtent : 72
++    Layout.maximumHeight: vertical ? panelExtent : Infinity
++
++    TextMetrics {
++        id: clockMetrics
++        font.family: Kirigami.Theme.defaultFont.family
++        font.pixelSize: root.labelSize
++        text: root.clockLabel
++    }
+ 
+     function toggleCalendar() {
+         if (!root.expanded) {
+@@ -60,7 +71,7 @@ PlasmoidItem {
+     compactRepresentation: Button {
+         id: clockButton
+ 
+-        implicitWidth: 160
++        implicitWidth: root.labelWidth
+         implicitHeight: 72
+         Accessible.name: Qt.locale().toString(root.currentDate, "dddd, d MMMM, HH:mm")
+         Accessible.description: qsTr("Открыть календарь")
+@@ -78,7 +89,7 @@ PlasmoidItem {
+                 Layout.fillWidth: true
+                 text: root.clockLabel
+                 color: root.darkMode ? "#e7ebee" : "#424a51"
+-                font.pixelSize: 16
++                font.pixelSize: root.labelSize
+                 horizontalAlignment: Text.AlignHCenter
+                 verticalAlignment: Text.AlignVCenter
+                 elide: Text.ElideRight
+diff --git a/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/CompactRepresentation.qml b/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/CompactRepresentation.qml
+index ef15a57..7426b2a 100644
+--- a/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/CompactRepresentation.qml
++++ b/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/CompactRepresentation.qml
+@@ -15,8 +15,9 @@ Item {
+         anchors.fill: parent
+ 
+         Kirigami.Icon {
+-            Layout.fillWidth: true
+-            Layout.fillHeight: true
++            Layout.alignment: Qt.AlignCenter
++            Layout.preferredWidth: Math.min(compactRep.width, compactRep.height) * 2 / 3
++            Layout.preferredHeight: Layout.preferredWidth
+             source: useCustomButtonImage ? Plasmoid.configuration.customButtonImage : Plasmoid.configuration.icon
+             smooth: true
+ 
+diff --git a/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/main.qml
+index 5887cbf..8f4892d 100644
+--- a/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/main.qml
+@@ -1,5 +1,6 @@
+ import QtQuick 2.15
+ import QtQuick.Controls 2.15
++import QtQuick.Layouts
+ import org.kde.plasma.plasmoid
+ import org.kde.plasma.core as PlasmaCore
+ import "js/colorType.js" as ColorType
+@@ -10,6 +11,15 @@ import org.kde.plasma.plasma5support as Plasma5Support
+ PlasmoidItem {
+     id: root
+ 
++    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
++    readonly property real buttonLength: Math.max(1, (vertical ? width : height) * 2 / 3)
++    Layout.minimumWidth: vertical ? 0 : buttonLength
++    Layout.preferredWidth: vertical ? 72 : buttonLength
++    Layout.maximumWidth: vertical ? Infinity : buttonLength
++    Layout.minimumHeight: vertical ? buttonLength : 0
++    Layout.preferredHeight: vertical ? buttonLength : 72
++    Layout.maximumHeight: vertical ? buttonLength : Infinity
++
+     clip: true
+ 
+     // PROPERTIES
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/config/main.xml b/plasma-theme/plasmoids/sberos.filesearch/contents/config/main.xml
+index 6c9ce5a..e518a90 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/config/main.xml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/config/main.xml
+@@ -29,10 +29,6 @@
+       <default>0</default>
+       <label>Panel Radius: 0=Round, 1=12px, 2=6px, 3=Square</label>
+     </entry>
+-    <entry name="panelHeight" type="Int">
+-      <default>0</default>
+-      <label>Custom Panel Height in pixels (0=Automatic)</label>
+-    </entry>
+   </group>
+ 
+   <!-- Tab 2: Popup & View Settings -->
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/CompactView.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/CompactView.qml
+index e0d3bee..b78279a 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/CompactView.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/CompactView.qml
+@@ -19,7 +19,6 @@ Item {
+     required property color accentColor
+     required property int searchTextLength
+     required property int panelRadius
+-    required property int panelHeight
+     required property bool showSearchButton
+     required property bool showSearchButtonBackground
+     // New properties for animated ticker
+@@ -67,8 +66,8 @@ Item {
+         anchors.left: parent.left
+         anchors.right: parent.right
+         anchors.verticalCenter: parent.verticalCenter
+-        height: compactRoot.panelHeight > 0 ? compactRoot.panelHeight : parent.height
+-        radius: compactRoot.oskaMode ? 24 : (compactRoot.panelRadius === 0 ? height / 2 : (compactRoot.panelRadius === 1 ? 12 : (compactRoot.panelRadius === 2 ? 6 : 0)))
++        height: parent.height
++        radius: compactRoot.oskaMode ? height / 3 : (compactRoot.panelRadius === 0 ? height / 2 : (compactRoot.panelRadius === 1 ? 12 : (compactRoot.panelRadius === 2 ? 6 : 0)))
+         color: compactRoot.oskaMode ? "#b8f7f9fb" : Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 0.95)
+         visible: !compactRoot.isButtonMode
+ 
+@@ -77,23 +76,23 @@ Item {
+ 
+         Rectangle {
+             anchors.fill: parent
+-            anchors.margins: 7
+-            radius: 17
++            anchors.margins: Math.min(7, mainButton.height * 7 / 72)
++            radius: Math.max(0, mainButton.radius - mainButton.height * 7 / 72)
+             color: compactRoot.oskaMode ? "#ebffffff" : "transparent"
+             visible: compactRoot.oskaMode
+         }
+ 
+         RowLayout {
+             anchors.fill: parent
+-            anchors.leftMargin: compactRoot.oskaMode ? 16 : ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? 10 : 0)
+-            anchors.rightMargin: compactRoot.oskaMode ? 16 : ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? (compactRoot.showSearchButton ? 4 : 10) : 0)
+-            spacing: compactRoot.oskaMode ? 12 : 6
++            anchors.leftMargin: compactRoot.oskaMode ? mainButton.height * 16 / 72 : ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? 10 : 0)
++            anchors.rightMargin: compactRoot.oskaMode ? mainButton.height * 16 / 72 : ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? (compactRoot.showSearchButton ? 4 : 10) : 0)
++            spacing: compactRoot.oskaMode ? mainButton.height / 6 : 6
+ 
+             Image {
+-                Layout.preferredWidth: 40
+-                Layout.preferredHeight: 40
++                Layout.preferredWidth: Math.max(0, mainButton.height * 40 / 72)
++                Layout.preferredHeight: Layout.preferredWidth
+                 source: Qt.resolvedUrl("../../assets/oska-avatar.svg")
+-                sourceSize: Qt.size(40, 40)
++                sourceSize: Qt.size(width, height)
+                 fillMode: Image.PreserveAspectFit
+                 visible: compactRoot.oskaMode && compactRoot.searchTextLength === 0
+                 Accessible.ignored: true
+@@ -107,7 +106,7 @@ Item {
+                     ? i18nd("plasma_applet_com.mcc45tr.filesearch", "Найду документ или приложение")
+                     : compactRoot.truncatedText
+                 color: compactRoot.oskaMode ? "#6d7e92" : compactRoot.textColor
+-                font.pixelSize: compactRoot.oskaMode ? 16 : compactRoot.responsiveFontSize
++                font.pixelSize: compactRoot.responsiveFontSize
+                 font.family: compactRoot.oskaMode ? Kirigami.Theme.defaultFont.family : "Roboto Condensed"
+                 horizontalAlignment: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? Text.AlignLeft : Text.AlignHCenter
+                 verticalAlignment: Text.AlignVCenter
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigCategories.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigCategories.qml
+index 7adbc6e..f91baef 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigCategories.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigCategories.qml
+@@ -61,7 +61,6 @@ Kirigami.FormLayout {
+     // Missing non-default properties
+     property bool cfg_autoMinimizePinned
+     property string cfg_cachedBootEntries
+-    property int cfg_panelHeight
+     property int cfg_panelRadius
+     property int cfg_scrollBarStyle
+     property string cfg_weatherCache
+@@ -74,7 +73,6 @@ Kirigami.FormLayout {
+     // Missing Defaults to silence warnings
+     property bool cfg_autoMinimizePinnedDefault
+     property string cfg_cachedBootEntriesDefault
+-    property int cfg_panelHeightDefault
+     property int cfg_panelRadiusDefault
+     property string cfg_weatherCacheDefault
+     property bool cfg_weatherEnabledDefault
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigDebug.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigDebug.qml
+index f208a32..134cc71 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigDebug.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigDebug.qml
+@@ -60,8 +60,6 @@ Kirigami.FormLayout {
+     // Missing Properties
+     property int cfg_panelRadius: 0
+     property int cfg_panelRadiusDefault: 0
+-    property int cfg_panelHeight: 0
+-    property int cfg_panelHeightDefault: 0
+     property int cfg_scrollBarStyle: 0
+     property int cfg_scrollBarStyleDefault: 0
+     property bool cfg_autoMinimizePinned: false
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigGeneral.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigGeneral.qml
+index 008ef1c..de3495d 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigGeneral.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigGeneral.qml
+@@ -29,7 +29,6 @@ Item {
+     // Panel Group
+     property alias cfg_displayMode: displayModeCombo.currentIndex
+     property alias cfg_panelRadius: panelRadiusCombo.currentIndex
+-    property int cfg_panelHeight
+     property alias cfg_showSearchButton: showSearchButtonCheck.checked
+     property alias cfg_showSearchButtonBackground: showSearchButtonBackgroundCheck.checked
+     property int cfg_userProfile
+@@ -96,7 +95,6 @@ Item {
+     // Default Properties (Matching main.xml for completeness)
+     property int cfg_displayModeDefault
+     property int cfg_panelRadiusDefault
+-    property int cfg_panelHeightDefault
+     property bool cfg_showSearchButtonDefault
+     property int cfg_userProfileDefault
+     property int cfg_viewModeDefault
+@@ -282,55 +280,6 @@ Item {
+                         ]
+                     }
+ 
+-                    RowLayout {
+-                        Kirigami.FormData.label: i18nd("plasma_applet_com.mcc45tr.filesearch", "Panel Height")
+-                        Layout.fillWidth: true
+-
+-                        CheckBox {
+-                            id: autoHeightCheck
+-                            text: i18nd("plasma_applet_com.mcc45tr.filesearch", "Automatic")
+-                            checked: cfg_panelHeight === 0
+-                            onToggled: {
+-                                if (checked) {
+-                                    cfg_panelHeight = 0
+-                                } else {
+-                                    cfg_panelHeight = panelHeightSpin.value
+-                                }
+-                            }
+-                        }
+-
+-                        SpinBox {
+-                            id: panelHeightSpin
+-                            from: 18
+-                            to: 96
+-                            stepSize: 1
+-                            editable: true
+-                            enabled: !autoHeightCheck.checked
+-                            Layout.fillWidth: true
+-
+-                            Component.onCompleted: {
+-                                if (cfg_panelHeight > 0) {
+-                                    value = cfg_panelHeight
+-                                } else {
+-                                    value = 32 // Default fallback
+-                                }
+-                            }
+-
+-                            onValueModified: {
+-                                if (!autoHeightCheck.checked) {
+-                                    cfg_panelHeight = value
+-                                }
+-                            }
+-
+-                            textFromValue: function(value, locale) {
+-                                return value + " px"
+-                            }
+-                            valueFromText: function(text, locale) {
+-                                return Number.fromLocaleString(locale, text.replace(" px", ""))
+-                            }
+-                        }
+-                    }
+-
+                     // Panel Preview
+                     Item {
+                         Kirigami.FormData.label: i18nd("plasma_applet_com.mcc45tr.filesearch", "Panel Preview")
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigHelp.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigHelp.qml
+index 7c97adf..4f10161 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigHelp.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigHelp.qml
+@@ -59,8 +59,6 @@ Kirigami.FormLayout {
+     // Missing Properties
+     property int cfg_panelRadius: 0
+     property int cfg_panelRadiusDefault: 0
+-    property int cfg_panelHeight: 0
+-    property int cfg_panelHeightDefault: 0
+     property int cfg_scrollBarStyle: 0
+     property int cfg_scrollBarStyleDefault: 0
+     property bool cfg_autoMinimizePinned: false
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigRSS.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigRSS.qml
+index e1a3c05..f3cf3d2 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigRSS.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/config/ConfigRSS.qml
+@@ -44,7 +44,6 @@ Item {
+     // All keys must be present in every config tab to avoid "cfg_... not found" warnings
+     property int cfg_displayMode
+     property int cfg_panelRadius
+-    property int cfg_panelHeight
+     property bool cfg_showSearchButton
+     property bool cfg_showSearchButtonBackground
+     property int cfg_userProfile
+@@ -94,7 +93,6 @@ Item {
+     // Default Properties (Matching main.xml for completeness)
+     property int cfg_displayModeDefault
+     property int cfg_panelRadiusDefault
+-    property int cfg_panelHeightDefault
+     property bool cfg_showSearchButtonDefault
+     property bool cfg_showSearchButtonBackgroundDefault
+     property int cfg_userProfileDefault
+diff --git a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/main.qml
+index 64bc497..bddf366 100644
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/main.qml
+@@ -13,7 +13,9 @@ PlasmoidItem {
+     property alias logic: controller
+ 
+     // Responsive font size based on height (40% of panel height)
+-    readonly property int responsiveFontSize: Math.max(10, Math.round(height * 0.4))
++    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
++    readonly property real panelExtent: Math.max(1, vertical ? width : height)
++    readonly property int responsiveFontSize: Math.max(1, Math.round(panelExtent * 2 / 9))
+ 
+     // ===== PANEL DETECTION =====
+     // Check if widget is in a panel (horizontal or vertical)
+@@ -33,13 +35,16 @@ PlasmoidItem {
+     readonly property bool isUltraWideMode: isInPanel && displayMode === 4
+ 
+     // ===== LAYOUT CALCULATIONS =====
+-    readonly property real textContentWidth: isButtonMode ? 0 : (textMetrics.width + ((isWideMode || isExtraWideMode || isUltraWideMode) ? (height + 30) : 20))
+-    readonly property real baseWidth: isButtonMode ? height : (isUltraWideMode ? (height * 9) : (isExtraWideMode ? 456 : ((isWideMode) ? (height * 4) : 70)))
++    readonly property real textContentWidth: isButtonMode ? 0 : (textMetrics.width + ((isWideMode || isExtraWideMode || isUltraWideMode) ? (panelExtent + 30) : 20))
++    readonly property real baseWidth: isButtonMode ? panelExtent : (isUltraWideMode ? panelExtent * 9 : (isExtraWideMode ? panelExtent * 456 / 72 : (isWideMode ? panelExtent * 4 : panelExtent * 70 / 72)))
+ 
+-    Layout.preferredWidth: Math.max(baseWidth, textContentWidth, placeholderContentWidth)
+-    Layout.preferredHeight: Plasmoid.configuration.panelHeight > 0 ? Plasmoid.configuration.panelHeight : 38
+-    Layout.minimumWidth: 50
+-    Layout.minimumHeight: Plasmoid.configuration.panelHeight > 0 ? Plasmoid.configuration.panelHeight : 34
++    readonly property real preferredLength: Math.max(baseWidth, textContentWidth, placeholderContentWidth)
++    Layout.preferredWidth: vertical ? 72 : preferredLength
++    Layout.minimumWidth: vertical ? 0 : (isButtonMode ? panelExtent : panelExtent * 3)
++    Layout.maximumWidth: vertical ? Infinity : preferredLength
++    Layout.preferredHeight: vertical ? panelExtent : 72
++    Layout.minimumHeight: vertical ? panelExtent : 0
++    Layout.maximumHeight: vertical ? panelExtent : Infinity
+ 
+     // Character limits
+     readonly property int maxCharsWide: 65
+@@ -66,7 +71,7 @@ PlasmoidItem {
+         text: root.placeholderText
+     }
+ 
+-    readonly property real placeholderContentWidth: isButtonMode ? 0 : (placeholderMetrics.width + ((isWideMode || isExtraWideMode || isUltraWideMode) ? (height + 30) : 20))
++    readonly property real placeholderContentWidth: isButtonMode ? 0 : (placeholderMetrics.width + ((isWideMode || isExtraWideMode || isUltraWideMode) ? (panelExtent + 30) : 20))
+ 
+     // No background - transparent
+     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+@@ -149,7 +154,6 @@ PlasmoidItem {
+         accentColor: root.accentColor
+         searchTextLength: root.searchText.length
+         panelRadius: Plasmoid.configuration.panelRadius
+-        panelHeight: Plasmoid.configuration.panelHeight
+         showSearchButton: Plasmoid.configuration.showSearchButton
+         showSearchButtonBackground: Plasmoid.configuration.showSearchButtonBackground
+ 
+diff --git a/plasma-theme/plasmoids/sberos.panel/contents/config/main.xml b/plasma-theme/plasmoids/sberos.panel/contents/config/main.xml
+index 61154c9..a936ab4 100644
+--- a/plasma-theme/plasmoids/sberos.panel/contents/config/main.xml
++++ b/plasma-theme/plasmoids/sberos.panel/contents/config/main.xml
+@@ -10,7 +10,7 @@
+       <label>encoded order of items</label>
+     </entry>
+     <entry name="panelThickness" type="Int">
+-      <default>64</default>
++      <default>72</default>
+     </entry>
+   </group>
+ 
+diff --git a/plasma-theme/plasmoids/sberos.panel/contents/ui/AppletSizeHints.qml b/plasma-theme/plasmoids/sberos.panel/contents/ui/AppletSizeHints.qml
+new file mode 100644
+index 0000000..ba539d0
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.panel/contents/ui/AppletSizeHints.qml
+@@ -0,0 +1,23 @@
++/*
++    SPDX-FileCopyrightText: 2026 SberOS Shell contributors
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++
++import QtQuick
++import QtQuick.Layouts
++
++QtObject {
++    required property Item applet
++    required property bool horizontal
++    required property real thickness
++
++    readonly property real implicitLength: horizontal ? applet.implicitWidth : applet.implicitHeight
++    readonly property real requestedMinimum: horizontal ? applet.Layout.minimumWidth : applet.Layout.minimumHeight
++    readonly property real requestedPreferred: horizontal ? applet.Layout.preferredWidth : applet.Layout.preferredHeight
++    readonly property real requestedMaximum: horizontal ? applet.Layout.maximumWidth : applet.Layout.maximumHeight
++    readonly property bool fill: horizontal ? applet.Layout.fillWidth : applet.Layout.fillHeight
++    readonly property real minimum: Math.max(0, requestedMinimum)
++    readonly property real preferred: Math.max(minimum, Math.min(maximum,
++        requestedPreferred >= 0 ? requestedPreferred : (implicitLength > 0 ? implicitLength : thickness)))
++    readonly property real maximum: requestedMaximum >= 0 ? Math.max(minimum, requestedMaximum) : Infinity
++}
+diff --git a/plasma-theme/plasmoids/sberos.panel/contents/ui/PanelLayoutMetrics.qml b/plasma-theme/plasmoids/sberos.panel/contents/ui/PanelLayoutMetrics.qml
+new file mode 100644
+index 0000000..791508c
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.panel/contents/ui/PanelLayoutMetrics.qml
+@@ -0,0 +1,57 @@
++/*
++    SPDX-FileCopyrightText: 2026 SberOS Shell contributors
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++
++import QtQml
++
++QtObject {
++    required property var items
++    required property bool horizontal
++    required property real availableLength
++    required property real edgeMargin
++    required property real gap
++    required property real spacing
++    property real toolBoxSize: 0
++
++    readonly property var centerApplet: items.find(item => item.isOskaIsland) ?? null
++    readonly property real leadingLength: sideLength(true)
++    readonly property real trailingLength: sideLength(false)
++    readonly property real leadingMinimum: sideLength(true, true)
++    readonly property real trailingMinimum: sideLength(false, true)
++    readonly property real centerLength: centerApplet ? Math.min(centerApplet.sizeHints.preferred,
++        Math.max(centerApplet.sizeHints.minimum, availableLength - 2 * edgeMargin - 2 * gap
++            - 2 * Math.max(leadingMinimum, trailingMinimum))) : 0
++    readonly property real sideBudget: Math.max(0, (availableLength - 2 * edgeMargin - 2 * gap - centerLength) / 2)
++    readonly property real allocatedLeading: Math.min(leadingLength, sideBudget)
++    readonly property real allocatedTrailing: Math.min(trailingLength, sideBudget)
++    readonly property real contentLength: {
++        if (centerApplet && horizontal) {
++            return 2 * edgeMargin + 2 * Math.max(leadingLength, trailingLength)
++                + centerApplet.sizeHints.preferred + 2 * gap + toolBoxSize;
++        }
++        return 2 * edgeMargin + items.reduce((total, item) => total + item.sizeHints.preferred, 0)
++            + Math.max(0, items.length - 1) * spacing + toolBoxSize;
++    }
++
++    function sideLength(beforeCenter, minimum = false) {
++        if (!centerApplet) {
++            return 0;
++        }
++        return items.filter(item => beforeCenter
++            ? item.appletIndex < centerApplet.appletIndex : item.appletIndex > centerApplet.appletIndex)
++            .reduce((total, item) => total + (minimum ? item.sizeHints.minimum : item.sizeHints.preferred)
++                + spacing, 0);
++    }
++    function allocatedLength(item) {
++        if (!centerApplet || !horizontal) return item.sizeHints.preferred;
++        if (item === centerApplet) return centerLength;
++        const before = item.appletIndex < centerApplet.appletIndex;
++        const preferred = before ? leadingLength : trailingLength;
++        const minimum = before ? leadingMinimum : trailingMinimum;
++        const available = before ? allocatedLeading : allocatedTrailing;
++        const fraction = preferred > minimum ? Math.max(0, Math.min(1, (available - minimum) / (preferred - minimum))) : 0;
++        return item.sizeHints.minimum + (item.sizeHints.preferred - item.sizeHints.minimum) * fraction;
++    }
++
++}
+diff --git a/plasma-theme/plasmoids/sberos.panel/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.panel/contents/ui/main.qml
+index 9ff7f52..70a03b7 100644
+--- a/plasma-theme/plasmoids/sberos.panel/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.panel/contents/ui/main.qml
+@@ -39,13 +39,15 @@ ContainmentItem {
+     }
+     onPanelChanged: {
+         if(root.panel) {
+-            root.panel.thickness = Plasmoid.configuration.panelThickness;
++            if (root.panel.thickness <= 0) {
++                root.panel.thickness = Plasmoid.configuration.panelThickness;
++            }
+         }
+     }
+ 
+ //BEGIN properties
+-    Layout.preferredWidth: fixedWidth || currentLayout.implicitWidth + currentLayout.horizontalDisplacement
+-    Layout.preferredHeight: fixedHeight || currentLayout.implicitHeight + currentLayout.verticalDisplacement
++    Layout.preferredWidth: fixedWidth || (root.isHorizontal ? root.panelLayout.contentLength : root.panelThickness)
++    Layout.preferredHeight: fixedHeight || (root.isHorizontal ? root.panelThickness : root.panelLayout.contentLength)
+ 
+     property Item toolBox
+     property var layoutManager: LayoutManager
+@@ -58,10 +60,21 @@ ContainmentItem {
+                                                   : Qt.rgba(247 / 255, 249 / 255, 251 / 255, 0.72)
+     readonly property color islandBorder: Qt.rgba(1, 1, 1, darkTheme ? 0.22 : 0.52)
+     readonly property color islandInnerFill: darkTheme ? "#2b323b" : Qt.rgba(1, 1, 1, 0.92)
+-    readonly property int islandEdgeMargin: 16
++    readonly property int islandEdgeMargin: Math.round(panelThickness * 16 / 72)
++    readonly property int islandGap: Math.round(panelThickness / 6)
++    readonly property var visibleApplets: currentLayout.visibleChildren.filter(item => item.isAppletContainer)
++    readonly property PanelLayoutMetrics panelLayout: PanelLayoutMetrics {
++        items: root.visibleApplets
++        horizontal: root.isHorizontal
++        availableLength: root.width
++        edgeMargin: root.islandEdgeMargin
++        gap: root.islandGap
++        spacing: currentLayout.columnSpacing
++        toolBoxSize: currentLayout.toolBoxSize
++    }
++
+     property int fixedWidth: 0
+     property int fixedHeight: 0
+-    property bool hasSpacer
+     // True when a widget is being drag and dropped within the panel.
+     property bool dragAndDropping: false
+     // True when e.g. the task manager is drag and dropping tasks.
+@@ -70,21 +83,6 @@ ContainmentItem {
+ //END properties
+ 
+ //BEGIN functions
+-    function checkLastSpacer() {
+-        for (var i = 0; i < appletsModel.count; ++i) {
+-            const applet = appletsModel.get(i).applet;
+-            if (!applet || !applet.visible || !applet.Layout) {
+-                continue;
+-            }
+-            if ((isHorizontal && applet.Layout.fillWidth) ||
+-                (!isHorizontal && applet.Layout.fillHeight)) {
+-                    hasSpacer = true;
+-                return;
+-            }
+-        }
+-        hasSpacer = false;
+-    }
+-
+     function plasmoidLocationString(): string {
+         switch (Plasmoid.location) {
+         case PlasmaCore.Types.LeftEdge:
+@@ -103,7 +101,6 @@ ContainmentItem {
+ //BEGIN connections
+     Containment.onAppletAdded: (applet, geometry) => {
+         LayoutManager.addApplet(applet, geometry.x, geometry.y);
+-        root.checkLastSpacer();
+         // When a new preset panel is added, avoid calling save() multiple times
+         Qt.callLater(LayoutManager.save);
+     }
+@@ -113,7 +110,6 @@ ContainmentItem {
+         if (plasmoidItem) {
+             appletsModel.remove(plasmoidItem.parent.index);
+         }
+-        checkLastSpacer();
+         LayoutManager.save();
+     }
+ 
+@@ -227,14 +223,14 @@ ContainmentItem {
+             y: currentLayout.y + dropArea.applicationIslandTop + Kirigami.Units.smallSpacing
+             width: Math.max(0, dropArea.applicationIslandRight - dropArea.applicationIslandLeft - 2 * Kirigami.Units.smallSpacing)
+             height: Math.max(0, dropArea.applicationIslandBottom - dropArea.applicationIslandTop - 2 * Kirigami.Units.smallSpacing)
+-            radius: 24
++            radius: Math.min(24, height / 3)
+             color: root.islandFill
+             border.width: 1
+             border.color: root.islandBorder
+ 
+             Rectangle {
+                 anchors.fill: parent
+-                anchors.margins: 7
++                anchors.margins: Math.min(7, root.panelThickness * 7 / 72)
+                 radius: 16
+                 color: root.islandInnerFill
+             }
+@@ -306,14 +302,14 @@ ContainmentItem {
+             y: currentLayout.y + dropArea.systemIslandTop + Kirigami.Units.smallSpacing
+             width: Math.max(0, dropArea.systemIslandRight - dropArea.systemIslandLeft - 2 * Kirigami.Units.smallSpacing)
+             height: Math.max(0, dropArea.systemIslandBottom - dropArea.systemIslandTop - 2 * Kirigami.Units.smallSpacing)
+-            radius: 24
++            radius: Math.min(24, height / 3)
+             color: root.islandFill
+             border.width: 1
+             border.color: root.islandBorder
+ 
+             Rectangle {
+                 anchors.fill: parent
+-                anchors.margins: 7
++                anchors.margins: Math.min(7, root.panelThickness * 7 / 72)
+                 radius: 16
+                 color: root.islandInnerFill
+             }
+@@ -392,12 +388,18 @@ ContainmentItem {
+                 property Item dragging
+                 property bool isAppletContainer: true
+                 property bool isApplicationIsland: applet?.plasmoid?.pluginName === "io.gitgud.wackyideas.smarttasks"
+-                property bool isApplicationLauncher: applet?.plasmoid?.pluginName === "p-connor.plasma-drawer"
++                readonly property AppletSizeHints sizeHints: AppletSizeHints {
++                    applet: container.applet
++                    horizontal: root.isHorizontal
++                    thickness: root.panelThickness
++                }
+                 property bool isOskaIsland: applet?.plasmoid?.pluginName === "com.mcc45tr.filesearch"
+                 property bool isMarginSeparator: ((applet.plasmoid?.constraintHints & Plasmoid.MarginAreasSeparator) == Plasmoid.MarginAreasSeparator)
+                 property int appletIndex: index // To make sure it's always readable even inside other models
+                 property bool inThickArea: false
+-                visible: applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus || (!Plasmoid.immutable && Plasmoid.userConfiguring) || Containment.corona.editMode;
++                visible: applet?.plasmoid?.pluginName !== "org.kde.plasma.panelspacer"
++                    && (applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus
++                        || (!Plasmoid.immutable && Plasmoid.userConfiguring) || Containment.corona.editMode)
+                 z: isOskaIsland ? 1 : 0
+ 
+                 Rectangle {
+@@ -405,7 +407,7 @@ ContainmentItem {
+                     anchors.fill: parent
+                     anchors.margins: applet?.plasmoid?.pluginName === "io.gitgud.wackyideas.sbermenu"
+                         ? 0 : (parent.isApplicationIsland ? 0 : Kirigami.Units.smallSpacing)
+-                    radius: 24
++                    radius: Math.min(24, height / 3)
+                     color: root.islandFill
+                     border.width: 1
+                     border.color: root.islandBorder
+@@ -435,44 +437,26 @@ ContainmentItem {
+                     return ((layout[side] || returnAllMargins) && !fillArea) ? Math.round(Math.min(dropArea.spacingAtMinSize, (inThickArea ? thickPanelSvg.fixedMargins[side] : panelSvg.fixedMargins[side]))) : 0;
+                 }
+ 
+-                Layout.topMargin: isApplicationIsland ? 4 : getMargins('top')
+-                Layout.bottomMargin: isApplicationIsland ? 4 : getMargins('bottom')
+-                Layout.leftMargin: appletIndex === 0 ? root.islandEdgeMargin
+-                    : (isOskaIsland ? Kirigami.Units.largeSpacing : 0)
+-                Layout.rightMargin: appletIndex === appletsModel.count - 1
+-                    ? Math.max(0, root.islandEdgeMargin - Kirigami.Units.smallSpacing)
+-                    : (isOskaIsland ? Kirigami.Units.largeSpacing : 0)
+-
+-                // Always fill width/height, in order to still shrink the applet when there is not enough space.
+-                // When the applet doesn't want to expand set a Layout.maximumWidth accordingly
+-                // https://bugs.kde.org/show_bug.cgi?id=473420
++                Layout.topMargin: !root.isHorizontal && appletIndex === root.visibleApplets[0]?.appletIndex ? root.islandEdgeMargin : 0
++                Layout.bottomMargin: !root.isHorizontal && appletIndex === root.visibleApplets[root.visibleApplets.length - 1]?.appletIndex ? root.islandEdgeMargin : 0
++                Layout.leftMargin: !root.isHorizontal ? 0
++                    : appletIndex === root.visibleApplets[0]?.appletIndex ? root.islandEdgeMargin
++                    : isOskaIsland ? root.islandGap + Math.max(0, root.panelLayout.allocatedTrailing - root.panelLayout.allocatedLeading) : 0
++                Layout.rightMargin: !root.isHorizontal ? 0
++                    : appletIndex === root.visibleApplets[root.visibleApplets.length - 1]?.appletIndex ? root.islandEdgeMargin
++                    : isOskaIsland ? root.islandGap + Math.max(0, root.panelLayout.allocatedLeading - root.panelLayout.allocatedTrailing) : 0
++
+                 Layout.fillWidth: true
+                 Layout.fillHeight: true
+-                property bool wantsToFillWidth: applet?.plasmoid?.pluginName === "io.gitgud.wackyideas.smarttasks"
+-                    ? false
+-                    : applet?.Layout.fillWidth
+-                property bool wantsToFillHeight: applet?.Layout.fillHeight
+-                onWantsToFillWidthChanged: checkLastSpacer()
+-                onWantsToFillHeightChanged: checkLastSpacer()
+-
+-                property int availWidth: root.width - Layout.leftMargin - Layout.rightMargin
+-                property int availHeight: root.height - Layout.topMargin - Layout.bottomMargin
+-                function findPositive(first, second) {return first > 0 ? first : second}
+-
+-    // BEGIN BUG 454095: do not combine these expressions to a function or the bindings won't work
+-                Layout.minimumWidth: root.isHorizontal
+-                    ? (isApplicationLauncher ? 48 : Math.max(isApplicationIsland ? 168 : 0, findPositive(applet?.Layout.minimumWidth, availHeight)))
+-                    : availWidth
+-                Layout.minimumHeight: !root.isHorizontal ? findPositive(applet?.Layout.minimumHeight, availWidth) : availHeight
+-
+-                Layout.preferredWidth: root.isHorizontal
+-                    ? (isApplicationLauncher ? 48 : Math.max(Layout.minimumWidth, findPositive(applet?.Layout.preferredWidth, Layout.minimumWidth)))
+-                    : availWidth
+-                Layout.preferredHeight: !root.isHorizontal ? findPositive(applet?.Layout.preferredHeight, Layout.minimumHeight) : availHeight
+-
+-                Layout.maximumWidth: root.isHorizontal ? (isApplicationLauncher ? 48 : (wantsToFillWidth ? findPositive(applet?.Layout.maximumWidth, root.width) : Math.min(findPositive(applet?.Layout.maximumWidth, Layout.preferredWidth), Layout.preferredWidth))) : availWidth
+-                Layout.maximumHeight: !root.isHorizontal ? (wantsToFillHeight ? findPositive(applet?.Layout.maximumHeight, root.height) : Math.min(applet?.Layout.maximumHeight, Layout.preferredHeight)) : availHeight
+-    // END BUG 454095
++
++                readonly property real allocatedSize: root.panelLayout.allocatedLength(container)
++                readonly property real crossSize: Math.max(0, root.panelThickness)
++                Layout.minimumWidth: root.isHorizontal ? sizeHints.minimum : crossSize
++                Layout.minimumHeight: root.isHorizontal ? crossSize : sizeHints.minimum
++                Layout.preferredWidth: root.isHorizontal ? allocatedSize : crossSize
++                Layout.preferredHeight: root.isHorizontal ? crossSize : allocatedSize
++                Layout.maximumWidth: root.isHorizontal ? (sizeHints.fill ? sizeHints.maximum : allocatedSize) : crossSize
++                Layout.maximumHeight: root.isHorizontal ? crossSize : (sizeHints.fill ? sizeHints.maximum : allocatedSize)
+ 
+                 Item {
+                     id: marginHighlightElements
+@@ -553,14 +537,7 @@ ContainmentItem {
+                 property int oldY: 0
+                 onXChanged: if (oldX) animateFrom(oldX, y)
+                 onYChanged: if (oldY) animateFrom(x, oldY)
+-                transform: [
+-                    Translate {
+-                        x: container.isOskaIsland && root.isHorizontal
+-                            ? root.width / 2 - currentLayout.x - container.x - container.width / 2
+-                            : 0
+-                    },
+-                    Translate { id: translation }
+-                ]
++                transform: Translate { id: translation }
+                 function animateFrom(xa, ya) {
+                     if (isHorizontal) translation.x = xa - x
+                     else translation.y = ya - y
+@@ -626,7 +603,11 @@ ContainmentItem {
+ 
+             Item {
+                 id: lastSpacer
+-                visible: !root.hasSpacer
++                visible: false
++                Layout.minimumWidth: 0
++                Layout.preferredWidth: 0
++                Layout.minimumHeight: 0
++                Layout.preferredHeight: 0
+                 Layout.fillWidth: true
+                 Layout.fillHeight: true
+ 
+diff --git a/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml
+index 1b108e7..382b33b 100644
+--- a/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml
+@@ -20,12 +20,14 @@ PlasmoidItem {
+     Plasmoid.icon: "start-here-kde"
+     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+ 
+-    Layout.minimumWidth: 72
+-    Layout.maximumWidth: 72
+-    Layout.preferredWidth: 72
+-    Layout.minimumHeight: 72
+-    Layout.maximumHeight: 72
+-    Layout.preferredHeight: 72
++    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
++    readonly property real panelExtent: Math.max(1, vertical ? width : height)
++    Layout.minimumWidth: vertical ? 0 : panelExtent
++    Layout.maximumWidth: vertical ? Infinity : panelExtent
++    Layout.preferredWidth: vertical ? 72 : panelExtent
++    Layout.minimumHeight: vertical ? panelExtent : 0
++    Layout.maximumHeight: vertical ? panelExtent : Infinity
++    Layout.preferredHeight: vertical ? panelExtent : 72
+ 
+     readonly property int menuWidth: 72
+     readonly property int menuHeight: 216
+@@ -76,22 +78,22 @@ PlasmoidItem {
+     }
+ 
+     compactRepresentation: Item {
++        id: compactButton
++        readonly property real inset: Math.min(width, height) / 9
+         implicitWidth: 72
+         implicitHeight: 72
+ 
+         Rectangle {
+-            x: 8
+-            y: 8
+-            width: 56
+-            height: 56
+-            radius: 16
++            anchors.fill: parent
++            anchors.margins: compactButton.inset
++            radius: height * 16 / 56
+             color: Kirigami.Theme.backgroundColor
+             opacity: 0.92
+ 
+             Kirigami.Icon {
+                 anchors.centerIn: parent
+-                width: 24
+-                height: 24
++                width: parent.height * 24 / 56
++                height: width
+                 // Copied from the Smart Panel mock asset; source hashes are in its manifest.
+                 source: Qt.resolvedUrl("sber.svg")
+                 color: Kirigami.Theme.textColor
+@@ -99,10 +101,8 @@ PlasmoidItem {
+         }
+ 
+         MouseArea {
+-            x: 8
+-            y: 8
+-            width: 56
+-            height: 56
++            anchors.fill: parent
++            anchors.margins: compactButton.inset
+             acceptedButtons: Qt.LeftButton
+             Accessible.name: i18n("Меню Сбера")
+             Accessible.role: Accessible.Button
+diff --git a/plasma-theme/plasmoids/sberos.smarttasks/contents/ui/main.qml b/plasma-theme/plasmoids/sberos.smarttasks/contents/ui/main.qml
+index b56bc17..e416e57 100644
+--- a/plasma-theme/plasmoids/sberos.smarttasks/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.smarttasks/contents/ui/main.qml
+@@ -14,10 +14,11 @@ import org.kde.taskmanager as TaskManager
+ PlasmoidItem {
+     id: root
+ 
+-    readonly property int cellSize: 48
+-    readonly property int iconSize: 32
++    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
++    readonly property int cellSize: Math.max(1, Math.round((vertical ? width : height) * 2 / 3))
++    readonly property int iconSize: Math.max(1, Math.round(cellSize * 2 / 3))
+     readonly property int preferredCellCount: tasksModel.count
+-    readonly property int contentWidth: Math.max(168, preferredCellCount * cellSize + 16
++    readonly property int contentWidth: Math.max(cellSize + 16, preferredCellCount * cellSize + 16
+                                                 + (tasksModel.count > tasksModel.launcherCount ? 8 : 0))
+     readonly property int contextMenuHeight: 56 + contextActions.reduce((height, item) => height + (item.separator ? 9 : 40), 0)
+     property int selectedTaskIndex: -1
+@@ -31,12 +32,18 @@ PlasmoidItem {
+     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+     preferredRepresentation: compactRepresentation
+ 
+-    Layout.minimumWidth: root.contentWidth
+-    Layout.preferredWidth: root.contentWidth
+-    Layout.maximumWidth: root.contentWidth
+-    Layout.minimumHeight: 48
+-    Layout.preferredHeight: 48
+-    Layout.maximumHeight: 48
++    Layout.minimumWidth: vertical ? 0 : cellSize + 16
++    Layout.preferredWidth: vertical ? 72 : contentWidth
++    Layout.maximumWidth: vertical ? Infinity : contentWidth
++    Layout.minimumHeight: vertical ? cellSize + 16 : 0
++    Layout.preferredHeight: vertical ? contentWidth : 72
++    Layout.maximumHeight: vertical ? contentWidth : Infinity
++
++    function saveLaunchers() {
++        if (tasksModel.launcherList.join("\n") !== Plasmoid.configuration.launchers.join("\n")) {
++            Plasmoid.configuration.launchers = tasksModel.launcherList;
++        }
++    }
+ 
+     function openTaskMenu(index, task) {
+         selectedTaskIndex = index
+@@ -106,15 +113,25 @@ PlasmoidItem {
+         filterByVirtualDesktop: false
+         filterByActivity: false
+ 
+-        onLauncherListChanged: Plasmoid.configuration.launchers = launcherList
++        onLauncherListChanged: Qt.callLater(root.saveLaunchers)
+     }
+ 
+-    compactRepresentation: Item {
+-        implicitWidth: root.contentWidth
+-        implicitHeight: root.cellSize
+-
+-        Row {
+-            anchors.centerIn: parent
++    compactRepresentation: Flickable {
++        id: taskViewport
++        implicitWidth: root.vertical ? 72 : root.contentWidth
++        implicitHeight: root.vertical ? root.contentWidth : 72
++        contentWidth: root.vertical ? width : taskRow.implicitWidth + 16
++        contentHeight: root.vertical ? taskRow.implicitHeight + 16 : height
++        flickableDirection: root.vertical ? Flickable.VerticalFlick : Flickable.HorizontalFlick
++        boundsBehavior: Flickable.StopAtBounds
++        clip: true
++
++        Grid {
++            id: taskRow
++            x: root.vertical ? (taskViewport.width - width) / 2 : 8
++            y: root.vertical ? 8 : (taskViewport.height - height) / 2
++            rows: root.vertical ? -1 : 1
++            columns: root.vertical ? 1 : -1
+             spacing: 0
+ 
+             Repeater {
+diff --git a/plasma-theme/shells/sberos.desktop/contents/layout.js b/plasma-theme/shells/sberos.desktop/contents/layout.js
+index e360ed3..2ca9c00 100644
+--- a/plasma-theme/shells/sberos.desktop/contents/layout.js
++++ b/plasma-theme/shells/sberos.desktop/contents/layout.js
+@@ -16,18 +16,9 @@ panel.height = 72
+ panel.floating = false
+ panel.floatingApplets = false
+ 
+-// Restrict horizontal panel to a maximum size of a 21:9 monitor
+-const maximumAspectRatio = 21/9;
+-if (panel.formFactor === "horizontal") {
+-    const geo = screenGeometry(panelScreen);
+-    const maximumWidth = Math.ceil(geo.height * maximumAspectRatio);
+-
+-    if (geo.width > maximumWidth) {
+-        panel.alignment = "center";
+-        panel.minimumLength = maximumWidth;
+-        panel.maximumLength = maximumWidth;
+-    }
+-}
++// Let PanelView size the panel from the applets' preferred lengths.
++panel.alignment = "center"
++panel.lengthMode = "fit"
+ 
+ panel.addWidget("io.gitgud.wackyideas.sbermenu")
+ var appLauncher = panel.addWidget("p-connor.plasma-drawer")
+@@ -48,12 +39,8 @@ applications.writeConfig("launchers", "preferred://filemanager,preferred://brows
+ var fileSearch = panel.addWidget("com.mcc45tr.filesearch")
+ fileSearch.currentConfigGroup = ["Panel"]
+ fileSearch.writeConfig("displayMode", 3)
+-fileSearch.writeConfig("panelHeight", 72)
+ fileSearch.writeConfig("showSearchButton", false)
+ 
+-var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
+-systemSpacer.writeConfig("expanding", true)
+-
+ panel.addWidget("KdeControlStation")
+ panel.addWidget("io.gitgud.wackyideas.clockcalendar")
+ 
+diff --git a/plasma-theme/shells/sberos.desktop/contents/views/Panel.qml b/plasma-theme/shells/sberos.desktop/contents/views/Panel.qml
+index 0626f17..c518b5c 100644
+--- a/plasma-theme/shells/sberos.desktop/contents/views/Panel.qml
++++ b/plasma-theme/shells/sberos.desktop/contents/views/Panel.qml
+@@ -22,6 +22,8 @@ Item {
+     id: root
+ 
+     Component.onCompleted: Qt.callLater(() => {
++        panel.lengthMode = Panel.Global.FitContent
++        panel.alignment = Qt.AlignHCenter
+         panel.floating = false
+         panel.floatingApplets = false
+         panel.opacityMode = Panel.Global.Translucent
+diff --git a/plasma-theme/tests/run-panel-sizing.py b/plasma-theme/tests/run-panel-sizing.py
+new file mode 100644
+index 0000000..a84d2ce
+--- /dev/null
++++ b/plasma-theme/tests/run-panel-sizing.py
+@@ -0,0 +1,141 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: GPL-2.0-or-later
++"""Capture the real panel in a temporary Plasma profile and private D-Bus session."""
++import argparse
++import json
++import os
++import pathlib
++import shutil
++import subprocess
++import signal
++import time
++p = argparse.ArgumentParser()
++p.add_argument('--source', required=True)
++p.add_argument('--output', required=True)
++p.add_argument('--platform', choices=['wayland'], default='wayland')
++p.add_argument('--capture-only', action='store_true')
++a = p.parse_args()
++source = pathlib.Path(a.source).resolve()
++output = pathlib.Path(a.output).resolve()
++output.mkdir(parents=True, exist_ok=False)
++for theme in ['light', 'dark']:
++    profile = output / theme
++    profile.mkdir(exist_ok=True)
++    for d in ['data', 'config', 'cache', 'state']:
++        (profile / d).mkdir(exist_ok=True)
++    for folder, kind in [('plasmoids', 'plasmoids'), ('shells', 'shells'), ('layout-templates', 'layout-templates')]:
++        for package in (source / folder).iterdir():
++            if not (package / 'metadata.json').exists():
++                continue
++            plugin = json.loads((package / 'metadata.json').read_text())['KPlugin']['Id']
++            target = profile / 'data/plasma' / kind / plugin
++            shutil.copytree(package, target, dirs_exist_ok=True)
++    config = profile / 'config'
++    shutil.copy('/usr/share/color-schemes/Breeze' + ('Dark' if theme == 'dark' else 'Light') + '.colors', config / 'kdeglobals')
++    with (config / 'kdeglobals').open('a') as f:
++        f.write('\n[Icons]\nTheme=breeze\n')
++    shell = profile / 'data/plasma/shells/io.gitgud.wackyideas.desktop'
++    panel = shell / 'contents/views/Panel.qml'
++    s = panel.read_text()
++    idx = s.rfind('}')
++    states = [{'height': h, 'label': str(h)} for h in [32, 48, 64, 72, 96, 120]]
++    states += [{'height': 120, 'label': 'overflow', 'launchers': ['applications:' + x + '.desktop' for x in ['org.kde.dolphin', 'org.kde.konsole', 'systemsettings', 'org.kde.kate', 'org.kde.gwenview', 'org.kde.okular', 'org.kde.ark', 'org.kde.kcalc', 'org.kde.spectacle', 'org.kde.kwrite', 'org.kde.khelpcenter', 'org.kde.plasma-systemmonitor', 'firefox', 'chromium', 'org.kde.kolourpaint', 'org.kde.filelight']]}, {'height': 72, 'label': 'few', 'launchers': ['applications:org.kde.dolphin.desktop', 'applications:org.kde.konsole.desktop']}, {'height': 72, 'label': 'many', 'launchers': ['applications:' + x + '.desktop' for x in ['org.kde.dolphin', 'org.kde.konsole', 'systemsettings', 'org.kde.kate', 'org.kde.gwenview', 'org.kde.okular', 'org.kde.ark', 'org.kde.kcalc', 'org.kde.spectacle']]}, {'height': 72, 'label': 'shrunk', 'launchers': ['applications:org.kde.dolphin.desktop', 'applications:org.kde.konsole.desktop']}]
++    instrument = r"""
++    property var sizingStates: STATES
++    property int sizingStep: -1
++    Timer {
++        id: sizingTimer
++        interval: 1300
++        running: true
++        repeat: false
++        onTriggered: {
++            if (!root.containment) { restart(); return; }
++            if (root.sizingStep >= 0) {
++                const state = root.sizingStates[root.sizingStep];
++                const records = [];
++                function visit(item) {
++                    if (item.isAppletContainer && item.visible) {
++                        const pos = item.mapToItem(root, 0, 0);
++                        records.push({plugin: item.applet.plasmoid.pluginName, x: pos.x, y: pos.y,
++                            width: item.width, height: item.height, parentWidth: item.parent.width, margins: [item.Layout.leftMargin,item.Layout.rightMargin],
++                            preferred: item.applet.Layout.preferredWidth,
++                            minimum: item.applet.Layout.minimumWidth});
++                    }
++                    for (const child of item.children) visit(child);
++                }
++                visit(root.containment);
++                console.log("SIZING " + JSON.stringify({label: state.label, thickness: panel.thickness,
++                    width: root.width, height: root.height, dpi: root.dpi, screenDpi: Screen.devicePixelRatio, containmentWidth: root.containment.width, preferredWidth: root.containment.Layout.preferredWidth, applets: records}));
++                root.grabToImage(result => {
++                    result.saveToFile(OUTPUT + "/" + state.label + ".png");
++                    root.advanceSizing();
++                }, Qt.size(root.width * root.dpi, root.height * root.dpi));
++            } else {
++                root.advanceSizing();
++            }
++        }
++    }
++    function advanceSizing() {
++        root.sizingStep++;
++        if (root.sizingStep >= root.sizingStates.length) {
++            exitTimer.start();
++            return;
++        }
++        const next = root.sizingStates[root.sizingStep];
++        panel.thickness = next.height;
++        if (next.launchers) {
++            for (const applet of root.containment.plasmoid.applets) {
++                if (applet.pluginName === "io.gitgud.wackyideas.smarttasks")
++                    applet.configuration.launchers = next.launchers;
++            }
++        }
++        sizingTimer.restart();
++    }
++    Timer { id: exitTimer; interval: 300; onTriggered: console.log("SIZING_DONE") }
++""".replace('STATES', json.dumps(states)).replace('OUTPUT', json.dumps(str(profile)))
++    panel.write_text(s[:idx] + instrument + s[idx:])
++    env = dict(os.environ, XDG_DATA_HOME=str(profile / 'data'), XDG_CONFIG_HOME=str(config), XDG_CACHE_HOME=str(profile / 'cache'), XDG_STATE_HOME=str(profile / 'state'), QT_QPA_PLATFORM=a.platform, QSG_RHI_BACKEND='opengl', QT_QUICK_CONTROLS_STYLE='org.kde.desktop', QT_STYLE_OVERRIDE='Breeze', KDE_DEBUG='1', QT_LOGGING_RULES='qt.qml.connections=false')
++    env.pop('QT_QUICK_BACKEND', None)
++    with (profile / 'run.log').open('w') as log:
++        process = subprocess.Popen(['dbus-run-session', '--', 'plasmashell', '--no-respawn', '--shell-plugin', 'io.gitgud.wackyideas.desktop'], env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
++        deadline = time.monotonic() + 30
++        try:
++            while process.poll() is None and time.monotonic() < deadline:
++                if 'SIZING_DONE' in (profile / 'run.log').read_text():
++                    break
++                time.sleep(0.2)
++        finally:
++            if process.poll() is None:
++                os.killpg(process.pid, signal.SIGTERM)
++                try:
++                    process.wait(timeout=3)
++                except subprocess.TimeoutExpired:
++                    os.killpg(process.pid, signal.SIGKILL)
++                    process.wait(timeout=3)
++    print(theme, 'exit', process.returncode)
++    lines = (profile / 'run.log').read_text().splitlines()
++    records = [json.loads(line.split('SIZING ', 1)[1]) for line in lines if 'SIZING ' in line]
++    (profile / 'geometry.json').write_text(json.dumps(records, indent=2))
++    print(theme, len(records), 'captures')
++    for line in lines:
++        if 'Binding loop' in line or 'Error' in line or 'is not defined' in line:
++            print(line[:500])
++    if len(records) != len(states):
++        raise SystemExit(f"{theme}: incomplete capture; see {profile / 'run.log'}")
++    if not a.capture_only:
++        for record in records:
++            applets = sorted(record['applets'], key=lambda item: item['x'])
++            for index, item in enumerate(applets):
++                assert abs(item['height'] - record['thickness']) < 1, (record['label'], item)
++                assert item['x'] >= -1 and item['x'] + item['width'] <= record['width'] + 1, (record['label'], item)
++                if index:
++                    assert applets[index - 1]['x'] + applets[index - 1]['width'] <= item['x'] + 1, (record['label'], item)
++            center = next((item for item in applets if item['plugin'] == 'com.mcc45tr.filesearch'))
++            assert abs(center['x'] + center['width'] / 2 - record['width'] / 2) <= 1, record
++        by_label = {record['label']: record for record in records}
++        assert by_label['many']['width'] > by_label['few']['width']
++        assert by_label['shrunk']['width'] < by_label['many']['width']
++        overflow = by_label['overflow']
++        tasks = next((item for item in overflow['applets'] if item['plugin'] == 'io.gitgud.wackyideas.smarttasks'))
++        assert tasks['width'] < tasks['preferred'], tasks
++        print(theme, 'geometry checks passed')
+diff --git a/plasma-theme/tests/tst_panellayout.qml b/plasma-theme/tests/tst_panellayout.qml
+new file mode 100644
+index 0000000..6eda8ce
+--- /dev/null
++++ b/plasma-theme/tests/tst_panellayout.qml
+@@ -0,0 +1,74 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtTest
++import "../plasmoids/sberos.panel/contents/ui" as Panel
++
++TestCase {
++    name: "PanelContentSizing"
++
++    Panel.PanelLayoutMetrics {
++        id: metrics
++        items: []
++        horizontal: true
++        availableLength: 1920
++        edgeMargin: 16
++        gap: 12
++        spacing: 4
++    }
++
++    function applet(index, minimum, preferred, center = false) {
++        return {appletIndex: index, isOskaIsland: center,
++            sizeHints: {minimum: minimum, preferred: preferred}}
++    }
++
++    function init() {
++        metrics.horizontal = true
++        metrics.availableLength = 1920
++        metrics.items = [applet(0, 72, 72), applet(1, 48, 48), applet(2, 64, 360),
++                         applet(3, 216, 456, true), applet(4, 48, 48), applet(5, 144, 168)]
++    }
++
++    function test_centerAndBounds_data() {
++        return [720, 1080, 1496, 1920, 2560].map(size => ({tag: String(size), size: size}))
++    }
++
++    function test_centerAndBounds(data) {
++        metrics.availableLength = data.size
++        const items = metrics.items
++        const lengths = items.map(item => metrics.allocatedLength(item))
++        lengths.forEach((length, index) => {
++            verify(length >= items[index].sizeHints.minimum)
++            verify(length <= items[index].sizeHints.preferred)
++        })
++        const leading = lengths.slice(0, 3).reduce((a, b) => a + b, 0) + 3 * metrics.spacing
++        const trailing = lengths.slice(4).reduce((a, b) => a + b, 0) + 2 * metrics.spacing
++        const leftGap = metrics.gap + Math.max(0, trailing - leading)
++        const rightGap = metrics.gap + Math.max(0, leading - trailing)
++        const contentLength = 2 * metrics.edgeMargin + leading + leftGap + lengths[3] + rightGap + trailing
++        verify(contentLength <= data.size + 0.001)
++        fuzzyCompare(metrics.edgeMargin + leading + leftGap + lengths[3] / 2, contentLength / 2, 0.001)
++        // Allocation must not feed back into the requested natural length.
++        compare(metrics.contentLength, 1496)
++    }
++
++    function test_growAndShrink() {
++        const original = metrics.items
++        const originalLength = metrics.contentLength
++        metrics.items = [original[0], original[1], applet(2, 64, 1800), ...original.slice(3)]
++        verify(metrics.contentLength > originalLength)
++        metrics.availableLength = 1920
++        verify(metrics.allocatedLength(metrics.items[2]) < 1800)
++        metrics.items = original
++        compare(metrics.contentLength, originalLength)
++    }
++
++    function test_withoutSearchUsesSum() {
++        metrics.items = [applet(0, 72, 72), applet(1, 48, 120)]
++        compare(metrics.contentLength, 228)
++    }
++
++    function test_verticalUsesSum() {
++        metrics.horizontal = false
++        compare(metrics.contentLength, 1204)
++    }
++}
+diff --git a/plasma-theme/tests/tst_sizehints.qml b/plasma-theme/tests/tst_sizehints.qml
+new file mode 100644
+index 0000000..2c91096
+--- /dev/null
++++ b/plasma-theme/tests/tst_sizehints.qml
+@@ -0,0 +1,86 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Layouts
++import QtTest
++import "../plasmoids/sberos.panel/contents/ui" as Panel
++
++TestCase {
++    id: testCase
++    name: "AppletSizeNegotiation"
++    when: windowShown
++    width: 800
++    height: 120
++
++    Item {
++        id: applet
++        implicitWidth: 240
++        implicitHeight: 60
++    }
++
++    Panel.AppletSizeHints {
++        id: hints
++        applet: applet
++        horizontal: true
++        thickness: 72
++    }
++
++    function init() {
++        hints.horizontal = true
++        hints.thickness = 72
++        applet.Layout.minimumWidth = 0
++        applet.Layout.preferredWidth = -1
++        applet.Layout.maximumWidth = Infinity
++        applet.Layout.minimumHeight = 0
++        applet.Layout.preferredHeight = -1
++        applet.Layout.maximumHeight = Infinity
++        applet.implicitWidth = 240
++        applet.implicitHeight = 60
++    }
++
++    function test_naturalWidthDoesNotDependOnAllocation() {
++        compare(hints.preferred, 240)
++        applet.width = 20
++        compare(hints.preferred, 240)
++        applet.Layout.preferredWidth = 456
++        compare(hints.preferred, 456)
++        applet.Layout.preferredWidth = 720
++        compare(hints.preferred, 720)
++    }
++
++    function test_explicitBounds() {
++        applet.Layout.minimumWidth = 80
++        applet.Layout.preferredWidth = 10
++        compare(hints.preferred, 80)
++        applet.Layout.maximumWidth = 200
++        applet.Layout.preferredWidth = 400
++        compare(hints.preferred, 200)
++        applet.Layout.maximumWidth = 30
++        compare(hints.maximum, 80)
++        compare(hints.preferred, 80)
++    }
++
++    function test_heightDrivesWidth_data() {
++        return [32, 48, 64, 72, 96, 120].map(size => ({ tag: String(size), size: size }))
++    }
++
++    function test_heightDrivesWidth(data) {
++        hints.thickness = data.size
++        applet.Layout.preferredWidth = Qt.binding(() => hints.thickness * 2 / 3)
++        compare(hints.preferred, data.size * 2 / 3)
++        applet.implicitWidth = 0
++        applet.Layout.preferredWidth = -1
++        compare(hints.preferred, data.size)
++    }
++
++    function test_verticalUsesHeightHints() {
++        hints.horizontal = false
++        applet.Layout.minimumHeight = 32
++        applet.Layout.preferredHeight = 180
++        applet.Layout.maximumHeight = 300
++        compare(hints.minimum, 32)
++        compare(hints.preferred, 180)
++        compare(hints.maximum, 300)
++        applet.Layout.preferredWidth = 900
++        compare(hints.preferred, 180)
++    }
++}

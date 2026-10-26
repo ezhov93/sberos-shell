@@ -1,0 +1,962 @@
+[
+  {
+    "label": "32",
+    "thickness": 32,
+    "width": 741,
+    "height": 32,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 741,
+    "preferredWidth": 741.3333333333333,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 7,
+        "y": 0,
+        "width": 32,
+        "height": 32,
+        "parentWidth": 741,
+        "margins": [
+          7,
+          0
+        ],
+        "preferred": 32,
+        "minimum": 32
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 43,
+        "y": 0,
+        "width": 21.333333333333332,
+        "height": 32,
+        "parentWidth": 741,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 21.333333333333332,
+        "minimum": 21.333333333333332
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 69,
+        "y": 0,
+        "width": 191,
+        "height": 32,
+        "parentWidth": 741,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 192,
+        "minimum": 37
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 269,
+        "y": 0,
+        "width": 202.16666666666663,
+        "height": 32,
+        "parentWidth": 741,
+        "margins": [
+          5,
+          157.83333333333337
+        ],
+        "preferred": 202.66666666666666,
+        "minimum": 96
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 633,
+        "y": 0,
+        "width": 21.333333333333332,
+        "height": 32,
+        "parentWidth": 741,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 21.333333333333332,
+        "minimum": 21.333333333333332
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 659,
+        "y": 0,
+        "width": 75,
+        "height": 32,
+        "parentWidth": 741,
+        "margins": [
+          0,
+          7
+        ],
+        "preferred": 75,
+        "minimum": 64
+      }
+    ]
+  },
+  {
+    "label": "48",
+    "thickness": 48,
+    "width": 1086,
+    "height": 48,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 1086,
+    "preferredWidth": 1086,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 11,
+        "y": 0,
+        "width": 48,
+        "height": 48,
+        "parentWidth": 1086,
+        "margins": [
+          11,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 63,
+        "y": 0,
+        "width": 32,
+        "height": 48,
+        "parentWidth": 1086,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 32,
+        "minimum": 32
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 99,
+        "y": 0,
+        "width": 280,
+        "height": 48,
+        "parentWidth": 1086,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 280,
+        "minimum": 48
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 391,
+        "y": 0,
+        "width": 304,
+        "height": 48,
+        "parentWidth": 1086,
+        "margins": [
+          8,
+          226
+        ],
+        "preferred": 304,
+        "minimum": 144
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 925,
+        "y": 0,
+        "width": 32,
+        "height": 48,
+        "parentWidth": 1086,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 32,
+        "minimum": 32
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 961,
+        "y": 0,
+        "width": 114,
+        "height": 48,
+        "parentWidth": 1086,
+        "margins": [
+          0,
+          11
+        ],
+        "preferred": 114,
+        "minimum": 96
+      }
+    ]
+  },
+  {
+    "label": "64",
+    "thickness": 64,
+    "width": 1429,
+    "height": 64,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 1429,
+    "preferredWidth": 1428.6666666666665,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 14,
+        "y": 0,
+        "width": 64,
+        "height": 64,
+        "parentWidth": 1429,
+        "margins": [
+          14,
+          0
+        ],
+        "preferred": 64,
+        "minimum": 64
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 82,
+        "y": 0,
+        "width": 42.666666666666664,
+        "height": 64,
+        "parentWidth": 1429,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 42.666666666666664,
+        "minimum": 42.666666666666664
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 129,
+        "y": 0,
+        "width": 368,
+        "height": 64,
+        "parentWidth": 1429,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 368,
+        "minimum": 59
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 512,
+        "y": 0,
+        "width": 405,
+        "height": 64,
+        "parentWidth": 1429,
+        "margins": [
+          11,
+          299
+        ],
+        "preferred": 405.3333333333333,
+        "minimum": 192
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 1220,
+        "y": 0,
+        "width": 42.666666666666664,
+        "height": 64,
+        "parentWidth": 1429,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 42.666666666666664,
+        "minimum": 42.666666666666664
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 1267,
+        "y": 0,
+        "width": 148,
+        "height": 64,
+        "parentWidth": 1429,
+        "margins": [
+          0,
+          14
+        ],
+        "preferred": 148,
+        "minimum": 128
+      }
+    ]
+  },
+  {
+    "label": "72",
+    "thickness": 72,
+    "width": 1592,
+    "height": 72,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 1592,
+    "preferredWidth": 1592,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 16,
+        "y": 0,
+        "width": 72,
+        "height": 72,
+        "parentWidth": 1592,
+        "margins": [
+          16,
+          0
+        ],
+        "preferred": 72,
+        "minimum": 72
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 92,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 1592,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 144,
+        "y": 0,
+        "width": 408,
+        "height": 72,
+        "parentWidth": 1592,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 408,
+        "minimum": 64
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 568,
+        "y": 0,
+        "width": 456,
+        "height": 72,
+        "parentWidth": 1592,
+        "margins": [
+          12,
+          328
+        ],
+        "preferred": 456,
+        "minimum": 216
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 1356,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 1592,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 1408,
+        "y": 0,
+        "width": 168,
+        "height": 72,
+        "parentWidth": 1592,
+        "margins": [
+          0,
+          16
+        ],
+        "preferred": 168,
+        "minimum": 144
+      }
+    ]
+  },
+  {
+    "label": "96",
+    "thickness": 96,
+    "width": 2098,
+    "height": 96,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 2098,
+    "preferredWidth": 2098,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 21,
+        "y": 0,
+        "width": 96,
+        "height": 96,
+        "parentWidth": 2098,
+        "margins": [
+          21,
+          0
+        ],
+        "preferred": 96,
+        "minimum": 96
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 121,
+        "y": 0,
+        "width": 64,
+        "height": 96,
+        "parentWidth": 2098,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 64,
+        "minimum": 64
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 189,
+        "y": 0,
+        "width": 536,
+        "height": 96,
+        "parentWidth": 2098,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 536,
+        "minimum": 80
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 745,
+        "y": 0,
+        "width": 608,
+        "height": 96,
+        "parentWidth": 2098,
+        "margins": [
+          16,
+          433
+        ],
+        "preferred": 608,
+        "minimum": 288
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 1790,
+        "y": 0,
+        "width": 64,
+        "height": 96,
+        "parentWidth": 2098,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 64,
+        "minimum": 64
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 1858,
+        "y": 0,
+        "width": 219,
+        "height": 96,
+        "parentWidth": 2098,
+        "margins": [
+          0,
+          21
+        ],
+        "preferred": 219,
+        "minimum": 192
+      }
+    ]
+  },
+  {
+    "label": "120",
+    "thickness": 120,
+    "width": 2560,
+    "height": 120,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 2560,
+    "preferredWidth": 2606,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 27,
+        "y": 0,
+        "width": 120,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          27,
+          0
+        ],
+        "preferred": 120,
+        "minimum": 120
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 151,
+        "y": 0,
+        "width": 80,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 80,
+        "minimum": 80
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 235,
+        "y": 0,
+        "width": 641,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 664,
+        "minimum": 96
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 900,
+        "y": 0,
+        "width": 760,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          20,
+          504
+        ],
+        "preferred": 760,
+        "minimum": 360
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 2168,
+        "y": 0,
+        "width": 80,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 80,
+        "minimum": 80
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 2252,
+        "y": 0,
+        "width": 281,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          27
+        ],
+        "preferred": 281,
+        "minimum": 240
+      }
+    ]
+  },
+  {
+    "label": "overflow",
+    "thickness": 120,
+    "width": 2560,
+    "height": 120,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 2560,
+    "preferredWidth": 4526,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 27,
+        "y": 0,
+        "width": 120,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          27,
+          0
+        ],
+        "preferred": 120,
+        "minimum": 120
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 151,
+        "y": 0,
+        "width": 80,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 80,
+        "minimum": 80
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 235,
+        "y": 0,
+        "width": 641,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 1624,
+        "minimum": 96
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 900,
+        "y": 0,
+        "width": 760,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          20,
+          504
+        ],
+        "preferred": 760,
+        "minimum": 360
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 2168,
+        "y": 0,
+        "width": 80,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 80,
+        "minimum": 80
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 2252,
+        "y": 0,
+        "width": 281,
+        "height": 120,
+        "parentWidth": 2560,
+        "margins": [
+          0,
+          27
+        ],
+        "preferred": 281,
+        "minimum": 240
+      }
+    ]
+  },
+  {
+    "label": "few",
+    "thickness": 72,
+    "width": 1400,
+    "height": 72,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 1400,
+    "preferredWidth": 1400,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 16,
+        "y": 0,
+        "width": 72,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          16,
+          0
+        ],
+        "preferred": 72,
+        "minimum": 72
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 92,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 144,
+        "y": 0,
+        "width": 312,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 312,
+        "minimum": 64
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 472,
+        "y": 0,
+        "width": 456,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          12,
+          232
+        ],
+        "preferred": 456,
+        "minimum": 216
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 1164,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 1216,
+        "y": 0,
+        "width": 168,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          16
+        ],
+        "preferred": 168,
+        "minimum": 144
+      }
+    ]
+  },
+  {
+    "label": "many",
+    "thickness": 72,
+    "width": 2072,
+    "height": 72,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 2072,
+    "preferredWidth": 2072,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 16,
+        "y": 0,
+        "width": 72,
+        "height": 72,
+        "parentWidth": 2072,
+        "margins": [
+          16,
+          0
+        ],
+        "preferred": 72,
+        "minimum": 72
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 92,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 2072,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 144,
+        "y": 0,
+        "width": 648,
+        "height": 72,
+        "parentWidth": 2072,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 648,
+        "minimum": 64
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 808,
+        "y": 0,
+        "width": 456,
+        "height": 72,
+        "parentWidth": 2072,
+        "margins": [
+          12,
+          568
+        ],
+        "preferred": 456,
+        "minimum": 216
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 1836,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 2072,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 1888,
+        "y": 0,
+        "width": 168,
+        "height": 72,
+        "parentWidth": 2072,
+        "margins": [
+          0,
+          16
+        ],
+        "preferred": 168,
+        "minimum": 144
+      }
+    ]
+  },
+  {
+    "label": "shrunk",
+    "thickness": 72,
+    "width": 1400,
+    "height": 72,
+    "dpi": 1,
+    "screenDpi": 1,
+    "containmentWidth": 1400,
+    "preferredWidth": 1400,
+    "applets": [
+      {
+        "plugin": "io.gitgud.wackyideas.sbermenu",
+        "x": 16,
+        "y": 0,
+        "width": 72,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          16,
+          0
+        ],
+        "preferred": 72,
+        "minimum": 72
+      },
+      {
+        "plugin": "p-connor.plasma-drawer",
+        "x": 92,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.smarttasks",
+        "x": 144,
+        "y": 0,
+        "width": 312,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 312,
+        "minimum": 64
+      },
+      {
+        "plugin": "com.mcc45tr.filesearch",
+        "x": 472,
+        "y": 0,
+        "width": 456,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          12,
+          232
+        ],
+        "preferred": 456,
+        "minimum": 216
+      },
+      {
+        "plugin": "KdeControlStation",
+        "x": 1164,
+        "y": 0,
+        "width": 48,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          0
+        ],
+        "preferred": 48,
+        "minimum": 48
+      },
+      {
+        "plugin": "io.gitgud.wackyideas.clockcalendar",
+        "x": 1216,
+        "y": 0,
+        "width": 168,
+        "height": 72,
+        "parentWidth": 1400,
+        "margins": [
+          0,
+          16
+        ],
+        "preferred": 168,
+        "minimum": 144
+      }
+    ]
+  }
+]

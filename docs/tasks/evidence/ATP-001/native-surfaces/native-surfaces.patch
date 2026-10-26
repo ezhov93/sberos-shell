@@ -1,0 +1,1040 @@
+--- a/plasma-theme/SMART-PANEL.md
++++ b/plasma-theme/SMART-PANEL.md
+@@ -13,7 +13,9 @@
+ Сбер и приложения закреплены слева, системный остров — справа, поиск шириной
+ 456 px центрирован по экрану. Свободное место остаётся между этими зонами.
+ Drawer и задачи имеют общую поверхность, быстрые настройки и часы — другую.
+-Общая полоса фона Plasma не рисуется; native mask остаётся источником для KWin.
++Общая полоса фона Plasma не рисуется. `IslandMask.qml` собирает QRegion только
++из скруглённых островов; `PanelView` использует её для blur и ввода, оставляя
++промежутки свободными. SVG создаёт Python 3 в XDG cache, без бинарного плагина.
+ 
+ Компоновку задают одновременно shell `contents/layout.js`, шаблон панели,
+ `Panel.qml`, containment `sberos.panel` и компактные представления апплетов.
+@@ -28,6 +30,10 @@
+   фильтрация той же сетки только по имени, нижняя строка поиска, пустая выдача.
+   Значки приложений берутся из desktop entries, демонстрационные программы не
+   подставляются. Точки страниц отображают реальное число приложений.
++  Открытие через `DashboardWindow.toggle()` действительно полноэкранное. Фон —
++  текущий WallpaperItem этого экрана, переданный Desktop через WorkspaceSurfaces.
++  Файловые изображения используются напрямую; обои из image-provider захватываются
++  перед открытием. Размывается и затемняется только фон, значки остаются резкими.
+ - Локальный поиск в режиме панели: отдельный `SmartSearchPopup.qml`, группы
+   приложений и локальных документов, реальные результаты Milou и недавние
+   элементы из существующей истории. Enter запускает первый результат, Esc
+@@ -100,12 +106,17 @@
+ копии, чтобы смена активности внешних окон не мешала захвату. Это проверка
+ отрисовки, а не работы сервисов, фокуса или закрытия по внешнему клику.
+ 
+-Ограничения приёмки: blur за островами и прозрачная маска между ними,
+-нативное размещение popup (меню/поиск ещё открываются над панелью, а не заменяют
+-её нижний ряд как HTML), живой ввод с клавиатуры, реальные устройства/окна, поступление/действия уведомлений и strut
+-требуют отдельной проверки с сервисами пользовательского сеанса. DashboardWindow
+-занимает доступную рабочую область, поэтому высота Launchpad отличается от
+-полноэкранного слоя мока. Проверка снимков не закрывает эти расхождения.
++`SmartPopupPlacement.qml` размещает меню Сбера, поиск и уведомления поверх
++нижнего ряда с отступом 8 px от края экрана; настройки и календарь — над панелью.
++Стабильный host поиска переключает поиск/уведомления внутри одного popup.
++Координаты поиска, уведомлений, настроек и полноэкранность Launchpad подтверждены
++целевыми снимками Wayland; QRegion отдельно проверена на островах, углах и промежутках.
++Доказательства: [native-surfaces](../docs/tasks/evidence/ATP-001/native-surfaces/).
++
++Ограничения приёмки: видимое размытие обоев за островами, живой ввод с клавиатуры,
++реальные устройства/окна, поступление/действия уведомлений и strut требуют
++проверки с сервисами пользовательского сеанса. Захват отдельного QML-элемента
++не показывает результат композиции KWin за ним.
+ 
+ Для дальнейшего интерактивного редактирования QML можно подключить QML Preview
+ MCP; он требует Qt 6.12 или новее. В этом окружении использован фактический
+--- a/plasma-theme/plasmoids/sberos.applications/contents/ui/CompactRepresentation.qml
++++ b/plasma-theme/plasmoids/sberos.applications/contents/ui/CompactRepresentation.qml
+@@ -112,7 +112,7 @@
+         Accessible.role: Accessible.Button
+ 
+         onClicked: {
+-            dashWindow.toggle()
++            dashWindow.toggleLauncher()
+         }
+     }
+ 
+@@ -120,7 +120,7 @@
+         // dashWindow = Qt.createQmlObject("MenuRepresentation {}", root);
+         plasmoid.activated.connect(function() {
+             //<>dashWindow.visible = !dashWindow.visible;
+-            dashWindow.toggle()
++            dashWindow.toggleLauncher()
+         });
+     }
+ }
+--- a/plasma-theme/plasmoids/sberos.applications/contents/ui/MenuRepresentation.qml
++++ b/plasma-theme/plasmoids/sberos.applications/contents/ui/MenuRepresentation.qml
+@@ -34,7 +34,7 @@
+ 
+     id: root
+ 
+-    // keyEventProxy: searchField
++    keyEventProxy: searchField
+     backgroundColor: "transparent"
+ 
+     readonly property bool searching: searchField.text != ""
+@@ -73,6 +73,11 @@
+         }
+     }
+ 
++    function toggleLauncher() {
++        if (visible) root.toggle();
++        else wallpaperBackdrop.prepare(() => root.toggle());
++    }
++
+     function leave() {
+         root.toggle();
+     }
+@@ -121,25 +126,11 @@
+             }
+         }
+ 
+-        Component {
+-            id: backgroundRectComponent
+-            Rectangle {
+-                color: colorWithAlpha(drawerTheme.backgroundColor, plasmoid.configuration.backgroundOpacity / 100)
+-            }
+-        }
+-
+-        Component {
+-            id: backgroundImageComponent
+-            Image {
+-                source: plasmoid.configuration.customBackgroundImagePath ?? ""
+-                opacity: plasmoid.configuration.backgroundOpacity / 100
+-            }
+-        }
+-
+-        Loader {
+-            id: backgroundLoader
++        WallpaperBackdrop {
++            id: wallpaperBackdrop
+             anchors.fill: parent
+-            sourceComponent: plasmoid.configuration.backgroundType == 2 ? backgroundImageComponent : backgroundRectComponent
++            wallpaperItem: kicker.workspaceWallpaper
++            active: root.visible
+         }
+ 
+         PlasmaExtras.Heading {
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.applications/contents/ui/WallpaperBackdrop.qml
+@@ -0,0 +1,86 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Effects
++
++Item {
++    id: backdrop
++    property Item wallpaperItem: null
++    property bool active: false
++    property var wallpaperGrab: null
++    property url capturedSource: ""
++    readonly property Item imageView: wallpaperItem
++        ? wallpaperItem.children.find(child => child.modelImage !== undefined) ?? null : null
++    readonly property url imageSource: imageView?.modelImage ?? ""
++    readonly property bool useSnapshot: !imageSource.toString().length || imageSource.toString().indexOf("image://") === 0
++    property bool captureRunning: false
++    property var prepared: null
++    function finishPreparation() {
++        preparationTimer.stop();
++        const callback = prepared;
++        prepared = null;
++        if (callback) callback();
++    }
++    function prepare(callback) {
++        if (!useSnapshot || !wallpaperItem) { callback(); return; }
++        prepared = callback;
++        preparationTimer.start();
++        captureWallpaper();
++    }
++    Timer { id: preparationTimer; interval: 250; onTriggered: backdrop.finishPreparation() }
++    clip: true
++
++    function captureWallpaper() {
++        if (captureRunning || !wallpaperItem || !useSnapshot) return;
++        const source = wallpaperItem;
++        captureRunning = true;
++        const started = source.grabToImage(result => {
++            backdrop.captureRunning = false;
++            if (backdrop.wallpaperItem === source) {
++                backdrop.wallpaperGrab = result;
++                backdrop.capturedSource = result.url;
++            }
++            backdrop.finishPreparation();
++        });
++        if (!started) { captureRunning = false; finishPreparation(); }
++    }
++    onActiveChanged: if (active && !capturedSource.toString().length) Qt.callLater(captureWallpaper)
++    onImageSourceChanged: if (active) refreshTimer.restart()
++    Timer { id: refreshTimer; interval: 120; onTriggered: backdrop.captureWallpaper() }
++    Connections { target: backdrop.imageView; ignoreUnknownSignals: true; function onCurrentItemChanged() { if (backdrop.active) refreshTimer.restart(); } }
++    onWallpaperItemChanged: {
++        wallpaperGrab = null;
++        capturedSource = "";
++        if (active) Qt.callLater(captureWallpaper);
++    }
++    Timer {
++        interval: 1000
++        repeat: true
++        running: backdrop.active && backdrop.useSnapshot && !backdrop.imageView
++        triggeredOnStart: true
++        onTriggered: backdrop.captureWallpaper()
++    }
++    Rectangle {
++        anchors.fill: parent
++        color: backdrop.wallpaperItem?.configuration?.Color ?? "#20292b"
++    }
++    Image {
++        id: artwork
++        anchors.fill: parent
++        source: backdrop.active ? (backdrop.useSnapshot ? backdrop.capturedSource : backdrop.imageSource) : ""
++        sourceSize: Qt.size(width, height)
++        fillMode: backdrop.imageView?.fillMode ?? Image.PreserveAspectCrop
++        asynchronous: true
++        retainWhileLoading: true
++        visible: false
++    }
++    MultiEffect {
++        anchors.fill: parent
++        source: artwork
++        blurEnabled: true
++        blurMax: 32
++        blur: .8
++        saturation: -.4
++        autoPaddingEnabled: false
++    }
++    Rectangle { anchors.fill: parent; color: "#73000000" }
++}
+--- a/plasma-theme/plasmoids/sberos.applications/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.applications/contents/ui/main.qml
+@@ -53,6 +53,7 @@
+ 
+     property Item dragSource: null
+     property bool applicationMenuOpen: false
++    property Item workspaceWallpaper: null
+ 
+     property alias systemFavoritesModel: systemModel.favoritesModel
+ 
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/SmartPopupPlacement.qml
+@@ -0,0 +1,53 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Window
++
++Item {
++    id: placement
++    required property Item content
++    required property Item anchorItem
++    required property rect screenGeometry
++    property string alignment: "center"
++    property bool overlapPanel: false
++    readonly property var popupWindow: content.Window.window
++
++    Item {
++        id: anchor
++        parent: placement.anchorItem
++        width: 0
++        height: 0
++        readonly property point origin: placement.anchorItem.mapToGlobal(0, 0)
++        x: {
++            const w = placement.popupWindow;
++            if (!w) return 0;
++            if (placement.alignment === "left") return w.width / 2 - (w.leftPadding || 0);
++            if (placement.alignment === "right") return placement.screenGeometry.x + placement.screenGeometry.width - 16
++                + (w.rightPadding || 0) - w.width / 2 - origin.x;
++            return placement.screenGeometry.x + placement.screenGeometry.width / 2 - origin.x;
++        }
++        y: (placement.overlapPanel ? placement.anchorItem.height : -8)
++            + (placement.popupWindow?.bottomPadding || 0)
++    }
++
++    function apply() {
++        const w = popupWindow;
++        if (!w || !anchorItem) return;
++        // Plasma 6.7 PopupPlasmaWindow supports overlap through its floating API.
++        w.floating = overlapPanel;
++        w.animated = false;
++        w.margin = overlapPanel ? 0 : 4;
++        w.popupDirection = Qt.TopEdge;
++        w.visualParent = anchor;
++        // Keep the native blur/mask but draw the Smart Panel material only once.
++        for (const child of w.contentItem.children) {
++            if (String(child).indexOf("PlasmaQuick::DialogBackground") === 0) child.opacity = 0;
++        }
++    }
++    onPopupWindowChanged: Qt.callLater(apply)
++    Component.onCompleted: Qt.callLater(apply)
++    Connections {
++        target: placement.popupWindow
++        ignoreUnknownSignals: true
++        function onVisibleChanged() { if (placement.popupWindow.visible) Qt.callLater(placement.apply); }
++    }
++}
+--- a/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.clockcalendar/contents/ui/main.qml
+@@ -108,6 +108,13 @@
+     }
+ 
+     fullRepresentation: CalendarPopup {
++        id: calendarPopup
++        SmartPopupPlacement {
++            content: calendarPopup
++            anchorItem: root.compactRepresentationItem ?? root
++            screenGeometry: Plasmoid.containment.screenGeometry
++            alignment: "right"
++        }
+         currentDate: root.currentDate
+         viewedMonth: root.viewedMonth
+         darkMode: root.darkMode
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/SmartPopupPlacement.qml
+@@ -0,0 +1,53 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Window
++
++Item {
++    id: placement
++    required property Item content
++    required property Item anchorItem
++    required property rect screenGeometry
++    property string alignment: "center"
++    property bool overlapPanel: false
++    readonly property var popupWindow: content.Window.window
++
++    Item {
++        id: anchor
++        parent: placement.anchorItem
++        width: 0
++        height: 0
++        readonly property point origin: placement.anchorItem.mapToGlobal(0, 0)
++        x: {
++            const w = placement.popupWindow;
++            if (!w) return 0;
++            if (placement.alignment === "left") return w.width / 2 - (w.leftPadding || 0);
++            if (placement.alignment === "right") return placement.screenGeometry.x + placement.screenGeometry.width - 16
++                + (w.rightPadding || 0) - w.width / 2 - origin.x;
++            return placement.screenGeometry.x + placement.screenGeometry.width / 2 - origin.x;
++        }
++        y: (placement.overlapPanel ? placement.anchorItem.height : -8)
++            + (placement.popupWindow?.bottomPadding || 0)
++    }
++
++    function apply() {
++        const w = popupWindow;
++        if (!w || !anchorItem) return;
++        // Plasma 6.7 PopupPlasmaWindow supports overlap through its floating API.
++        w.floating = overlapPanel;
++        w.animated = false;
++        w.margin = overlapPanel ? 0 : 4;
++        w.popupDirection = Qt.TopEdge;
++        w.visualParent = anchor;
++        // Keep the native blur/mask but draw the Smart Panel material only once.
++        for (const child of w.contentItem.children) {
++            if (String(child).indexOf("PlasmaQuick::DialogBackground") === 0) child.opacity = 0;
++        }
++    }
++    onPopupWindowChanged: Qt.callLater(apply)
++    Component.onCompleted: Qt.callLater(apply)
++    Connections {
++        target: placement.popupWindow
++        ignoreUnknownSignals: true
++        function onVisibleChanged() { if (placement.popupWindow.visible) Qt.callLater(placement.apply); }
++    }
++}
+--- a/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.controlcenter/contents/ui/main.qml
+@@ -139,6 +139,14 @@
+     switchHeight: fullRepWidth
+     switchWidth: fullRepWidth
+     preferredRepresentation: inPanel ? root.compactRepresentation : root.fullRepresentation
+-    fullRepresentation: FullRepresentation { }
++    fullRepresentation: FullRepresentation {
++        id: quickPopup
++        SmartPopupPlacement {
++            content: quickPopup
++            anchorItem: root.compactRepresentationItem ?? root
++            screenGeometry: Plasmoid.containment.screenGeometry
++            alignment: "right"
++        }
++    }
+     compactRepresentation: CompactRepresentation {}
+ }
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/SmartPopupPlacement.qml
+@@ -0,0 +1,53 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Window
++
++Item {
++    id: placement
++    required property Item content
++    required property Item anchorItem
++    required property rect screenGeometry
++    property string alignment: "center"
++    property bool overlapPanel: false
++    readonly property var popupWindow: content.Window.window
++
++    Item {
++        id: anchor
++        parent: placement.anchorItem
++        width: 0
++        height: 0
++        readonly property point origin: placement.anchorItem.mapToGlobal(0, 0)
++        x: {
++            const w = placement.popupWindow;
++            if (!w) return 0;
++            if (placement.alignment === "left") return w.width / 2 - (w.leftPadding || 0);
++            if (placement.alignment === "right") return placement.screenGeometry.x + placement.screenGeometry.width - 16
++                + (w.rightPadding || 0) - w.width / 2 - origin.x;
++            return placement.screenGeometry.x + placement.screenGeometry.width / 2 - origin.x;
++        }
++        y: (placement.overlapPanel ? placement.anchorItem.height : -8)
++            + (placement.popupWindow?.bottomPadding || 0)
++    }
++
++    function apply() {
++        const w = popupWindow;
++        if (!w || !anchorItem) return;
++        // Plasma 6.7 PopupPlasmaWindow supports overlap through its floating API.
++        w.floating = overlapPanel;
++        w.animated = false;
++        w.margin = overlapPanel ? 0 : 4;
++        w.popupDirection = Qt.TopEdge;
++        w.visualParent = anchor;
++        // Keep the native blur/mask but draw the Smart Panel material only once.
++        for (const child of w.contentItem.children) {
++            if (String(child).indexOf("PlasmaQuick::DialogBackground") === 0) child.opacity = 0;
++        }
++    }
++    onPopupWindowChanged: Qt.callLater(apply)
++    Component.onCompleted: Qt.callLater(apply)
++    Connections {
++        target: placement.popupWindow
++        ignoreUnknownSignals: true
++        function onVisibleChanged() { if (placement.popupWindow.visible) Qt.callLater(placement.apply); }
++    }
++}
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/SmartNotificationsPopup.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/SmartNotificationsPopup.qml
+@@ -17,13 +17,13 @@
+     signal clearRequested()
+     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
+     implicitWidth: 456
+-    implicitHeight: 573
++    implicitHeight: 354
+     Layout.minimumWidth: 456
+     Layout.maximumWidth: 456
+     Layout.preferredWidth: 456
+-    Layout.minimumHeight: 573
+-    Layout.maximumHeight: 573
+-    Layout.preferredHeight: 573
++    Layout.minimumHeight: 354
++    Layout.maximumHeight: 354
++    Layout.preferredHeight: 354
+     focus: true
+     Keys.onEscapePressed: event => { popup.dismissed(); event.accepted = true; }
+     Rectangle {
+@@ -35,10 +35,14 @@
+     }
+     ColumnLayout {
+         anchors.fill: parent
+-        anchors.margins: 16
+-        spacing: 12
++        anchors.margins: 8
++        anchors.topMargin: 12
++        spacing: 0
+         RowLayout {
+             Layout.fillWidth: true
++            Layout.preferredHeight: 32
++            Layout.leftMargin: 8
++            Layout.rightMargin: 8
+             Text {
+                 Layout.fillWidth: true
+                 text: qsTr("Уведомления · %1").arg(list.count)
+@@ -178,6 +182,7 @@
+         }
+         TextField {
+             id: searchFooter
++            Layout.topMargin: 16
+             Layout.fillWidth: true
+             Layout.preferredHeight: 56
+             leftPadding: 12
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/SmartSearchPopup.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/components/SmartSearchPopup.qml
+@@ -13,6 +13,7 @@
+     required property bool expanded
+     property string initialQuery: ""
+     signal dismissed()
++    signal notificationsRequested()
+     signal queryChanged(string query)
+     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
+     property var matches: []
+@@ -23,13 +24,13 @@
+     readonly property var applications: entries.filter(item => item.application).slice(0, 4)
+     readonly property var documents: entries.filter(item => !item.application)
+     implicitWidth: 456
+-    implicitHeight: 573
++    implicitHeight: 653
+     Layout.minimumWidth: 456
+     Layout.maximumWidth: 456
+     Layout.preferredWidth: 456
+-    Layout.minimumHeight: 573
+-    Layout.maximumHeight: 573
+-    Layout.preferredHeight: 573
++    Layout.minimumHeight: 653
++    Layout.maximumHeight: 653
++    Layout.preferredHeight: 653
+     focus: true
+ 
+     onExpandedChanged: {
+@@ -108,20 +109,27 @@
+         border.color: smartTheme.edge
+     }
+     Rectangle {
+-        anchors.fill: parent
+-        anchors.margins: 7
++        anchors.top: parent.top
++        anchors.left: parent.left
++        anchors.right: parent.right
++        anchors.margins: 8
++        height: 573
+         radius: 20
+         color: smartTheme.inner
+     }
+     ColumnLayout {
+         anchors.fill: parent
+-        anchors.margins: 24
+-        spacing: 16
++        anchors.margins: 8
++        spacing: 8
+         ScrollView {
+             id: scroll
+             Layout.fillWidth: true
+             Layout.fillHeight: true
+             contentWidth: availableWidth
++            leftPadding: 16
++            rightPadding: 16
++            topPadding: 12
++            bottomPadding: 12
+             clip: true
+             ColumnLayout {
+                 width: scroll.availableWidth
+@@ -234,8 +242,8 @@
+             id: input
+             Layout.fillWidth: true
+             Layout.preferredHeight: 56
+-            leftPadding: 12
+-            rightPadding: 12
++            leftPadding: text.length ? 16 : 68
++            rightPadding: 16
+             placeholderText: qsTr("Найду документ или приложение")
+             Accessible.name: qsTr("Поиск документов и приложений")
+             color: popup.smartTheme.foreground
+@@ -252,6 +260,18 @@
+                 if (first) popup.activate(first);
+             }
+             Keys.onDownPressed: input.nextItemInFocusChain().forceActiveFocus()
++            Button {
++                x: 8
++                y: 8
++                width: 40
++                height: 40
++                padding: 0
++                visible: input.text.length === 0
++                Accessible.name: qsTr("Уведомления")
++                onClicked: popup.notificationsRequested()
++                contentItem: OskaAvatar {}
++                background: Rectangle { radius: 20; color: "transparent"; border.width: parent.visualFocus ? 2 : 0; border.color: popup.smartTheme.focus }
++            }
+             background: Rectangle {
+                 radius: 17
+                 color: popup.smartTheme.inner
+--- a/plasma-theme/plasmoids/sberos.filesearch/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.filesearch/contents/ui/main.qml
+@@ -189,13 +189,40 @@
+     }
+ 
+     // ===== FULL REPRESENTATION (Popup) =====
+-    fullRepresentation: root.isExtraWideMode
+-        ? (root.notificationsOpen ? notificationsRepresentation : smartSearchRepresentation)
+-        : standardSearchRepresentation
++    fullRepresentation: root.isExtraWideMode ? smartPanelRepresentation : standardSearchRepresentation
++
++    Component {
++        id: smartPanelRepresentation
++        FocusScope {
++            id: panelPopup
++            implicitWidth: 456
++            implicitHeight: root.notificationsOpen ? 354 : 653
++            Layout.minimumWidth: implicitWidth
++            Layout.maximumWidth: implicitWidth
++            Layout.preferredWidth: implicitWidth
++            Layout.minimumHeight: implicitHeight
++            Layout.maximumHeight: implicitHeight
++            Layout.preferredHeight: implicitHeight
++            SmartPopupPlacement {
++                content: panelPopup
++                anchorItem: root.compactRepresentationItem ?? root
++                screenGeometry: Plasmoid.containment.screenGeometry
++                overlapPanel: true
++            }
++            Loader {
++                anchors.fill: parent
++                active: root.expanded
++                sourceComponent: root.notificationsOpen ? notificationsRepresentation : smartSearchRepresentation
++                onLoaded: item.forceActiveFocus()
++            }
++            Keys.onEscapePressed: root.expanded = false
++        }
++    }
+ 
+     Component {
+         id: notificationsRepresentation
+         Components.SmartNotificationsPopup {
++            id: notificationPopup
+             notifications: notificationModel
+             serviceAvailable: notificationModel.valid
+             onSearchRequested: query => {
+@@ -219,6 +246,8 @@
+     Component {
+         id: smartSearchRepresentation
+         Components.SmartSearchPopup {
++            id: searchPopup
++            onNotificationsRequested: root.notificationsOpen = true
+             initialQuery: root.searchText
+             logic: controller
+             expanded: root.expanded
+--- a/plasma-theme/plasmoids/sberos.panel/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.panel/contents/ui/main.qml
+@@ -73,6 +73,21 @@
+         gap: root.islandGap
+         spacing: currentLayout.columnSpacing
+         toolBoxSize: currentLayout.toolBoxSize
++    }
++
++    property Item desktopWallpaper: null
++    readonly property var islandRects: {
++        const shapes = [];
++        for (const group of [sharedApplicationIsland, sharedSystemIsland]) {
++            if (group.visible && group.width > 0) shapes.push({x:group.x, y:group.y, width:group.width, height:group.height, radius:group.radius});
++        }
++        for (const item of visibleApplets) {
++            const name = item.applet?.plasmoid?.pluginName;
++            if (dropArea.hasSharedApplicationIsland && dropArea.applicationIslandAppletNames.includes(name)) continue;
++            if (dropArea.hasSharedSystemIsland && dropArea.systemIslandAppletNames.includes(name)) continue;
++            shapes.push({x:currentLayout.x + item.x, y:currentLayout.y + item.y, width:item.width, height:item.height, radius:Math.min(24,item.height/3)});
++        }
++        return shapes;
+     }
+ 
+     property int fixedWidth: 0
+@@ -536,6 +551,13 @@
+                     }
+                 }
+ 
++                Binding {
++                    target: container.applet
++                    property: "workspaceWallpaper"
++                    when: container.applet?.plasmoid?.pluginName === "p-connor.plasma-drawer"
++                    value: root.desktopWallpaper
++                }
++
+                 onAppletChanged: {
+                     if (applet) {
+                         applet.parent = container
+--- /dev/null
++++ b/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/SmartPopupPlacement.qml
+@@ -0,0 +1,53 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Window
++
++Item {
++    id: placement
++    required property Item content
++    required property Item anchorItem
++    required property rect screenGeometry
++    property string alignment: "center"
++    property bool overlapPanel: false
++    readonly property var popupWindow: content.Window.window
++
++    Item {
++        id: anchor
++        parent: placement.anchorItem
++        width: 0
++        height: 0
++        readonly property point origin: placement.anchorItem.mapToGlobal(0, 0)
++        x: {
++            const w = placement.popupWindow;
++            if (!w) return 0;
++            if (placement.alignment === "left") return w.width / 2 - (w.leftPadding || 0);
++            if (placement.alignment === "right") return placement.screenGeometry.x + placement.screenGeometry.width - 16
++                + (w.rightPadding || 0) - w.width / 2 - origin.x;
++            return placement.screenGeometry.x + placement.screenGeometry.width / 2 - origin.x;
++        }
++        y: (placement.overlapPanel ? placement.anchorItem.height : -8)
++            + (placement.popupWindow?.bottomPadding || 0)
++    }
++
++    function apply() {
++        const w = popupWindow;
++        if (!w || !anchorItem) return;
++        // Plasma 6.7 PopupPlasmaWindow supports overlap through its floating API.
++        w.floating = overlapPanel;
++        w.animated = false;
++        w.margin = overlapPanel ? 0 : 4;
++        w.popupDirection = Qt.TopEdge;
++        w.visualParent = anchor;
++        // Keep the native blur/mask but draw the Smart Panel material only once.
++        for (const child of w.contentItem.children) {
++            if (String(child).indexOf("PlasmaQuick::DialogBackground") === 0) child.opacity = 0;
++        }
++    }
++    onPopupWindowChanged: Qt.callLater(apply)
++    Component.onCompleted: Qt.callLater(apply)
++    Connections {
++        target: placement.popupWindow
++        ignoreUnknownSignals: true
++        function onVisibleChanged() { if (placement.popupWindow.visible) Qt.callLater(placement.apply); }
++    }
++}
+--- a/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml
++++ b/plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml
+@@ -109,6 +109,13 @@
+ 
+     fullRepresentation: FocusScope {
+         id: popup
++        SmartPopupPlacement {
++            content: popup
++            anchorItem: root.compactRepresentationItem ?? root
++            screenGeometry: Plasmoid.containment.screenGeometry
++            alignment: "left"
++            overlapPanel: true
++        }
+         implicitWidth: root.powerMenuOpen ? 352 : 72
+         implicitHeight: root.powerMenuOpen ? 264 : 216
+         Layout.minimumWidth: implicitWidth
+--- /dev/null
++++ b/plasma-theme/shared/SmartPopupPlacement.qml
+@@ -0,0 +1,53 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import QtQuick.Window
++
++Item {
++    id: placement
++    required property Item content
++    required property Item anchorItem
++    required property rect screenGeometry
++    property string alignment: "center"
++    property bool overlapPanel: false
++    readonly property var popupWindow: content.Window.window
++
++    Item {
++        id: anchor
++        parent: placement.anchorItem
++        width: 0
++        height: 0
++        readonly property point origin: placement.anchorItem.mapToGlobal(0, 0)
++        x: {
++            const w = placement.popupWindow;
++            if (!w) return 0;
++            if (placement.alignment === "left") return w.width / 2 - (w.leftPadding || 0);
++            if (placement.alignment === "right") return placement.screenGeometry.x + placement.screenGeometry.width - 16
++                + (w.rightPadding || 0) - w.width / 2 - origin.x;
++            return placement.screenGeometry.x + placement.screenGeometry.width / 2 - origin.x;
++        }
++        y: (placement.overlapPanel ? placement.anchorItem.height : -8)
++            + (placement.popupWindow?.bottomPadding || 0)
++    }
++
++    function apply() {
++        const w = popupWindow;
++        if (!w || !anchorItem) return;
++        // Plasma 6.7 PopupPlasmaWindow supports overlap through its floating API.
++        w.floating = overlapPanel;
++        w.animated = false;
++        w.margin = overlapPanel ? 0 : 4;
++        w.popupDirection = Qt.TopEdge;
++        w.visualParent = anchor;
++        // Keep the native blur/mask but draw the Smart Panel material only once.
++        for (const child of w.contentItem.children) {
++            if (String(child).indexOf("PlasmaQuick::DialogBackground") === 0) child.opacity = 0;
++        }
++    }
++    onPopupWindowChanged: Qt.callLater(apply)
++    Component.onCompleted: Qt.callLater(apply)
++    Connections {
++        target: placement.popupWindow
++        ignoreUnknownSignals: true
++        function onVisibleChanged() { if (placement.popupWindow.visible) Qt.callLater(placement.apply); }
++    }
++}
+--- a/plasma-theme/shared/artwork-manifest.json
++++ b/plasma-theme/shared/artwork-manifest.json
+@@ -3,6 +3,7 @@
+   "plasmoids/sberos.panel/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
+   "plasmoids/sberos.sbermenu/contents/ui/SmartPanelTheme.qml": "53a4b83d62b522676aeec15b3d57f8f10991053c7f73c12f125100c2b4c79c21",
+   "plasmoids/sberos.sbermenu/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
++  "plasmoids/sberos.sbermenu/contents/ui/SmartPopupPlacement.qml": "5e0730239c0d073292cc633c053c209055320834e19945377a5da3971d582acd",
+   "plasmoids/sberos.smarttasks/contents/ui/SmartPanelTheme.qml": "53a4b83d62b522676aeec15b3d57f8f10991053c7f73c12f125100c2b4c79c21",
+   "plasmoids/sberos.smarttasks/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
+   "plasmoids/sberos.applications/contents/ui/SmartPanelTheme.qml": "53a4b83d62b522676aeec15b3d57f8f10991053c7f73c12f125100c2b4c79c21",
+@@ -10,11 +11,14 @@
+   "plasmoids/sberos.applications/contents/ui/OskaAvatar.qml": "3a4d0718c621d701ef0ecb6fdbd0a733a02d345632314e2c2d703e6f8a2ac966",
+   "plasmoids/sberos.filesearch/contents/ui/SmartPanelTheme.qml": "53a4b83d62b522676aeec15b3d57f8f10991053c7f73c12f125100c2b4c79c21",
+   "plasmoids/sberos.filesearch/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
++  "plasmoids/sberos.filesearch/contents/ui/SmartPopupPlacement.qml": "5e0730239c0d073292cc633c053c209055320834e19945377a5da3971d582acd",
+   "plasmoids/sberos.filesearch/contents/ui/OskaAvatar.qml": "3a4d0718c621d701ef0ecb6fdbd0a733a02d345632314e2c2d703e6f8a2ac966",
+   "plasmoids/sberos.controlcenter/contents/ui/SmartPanelTheme.qml": "53a4b83d62b522676aeec15b3d57f8f10991053c7f73c12f125100c2b4c79c21",
+   "plasmoids/sberos.controlcenter/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
++  "plasmoids/sberos.controlcenter/contents/ui/SmartPopupPlacement.qml": "5e0730239c0d073292cc633c053c209055320834e19945377a5da3971d582acd",
+   "plasmoids/sberos.clockcalendar/contents/ui/SmartPanelTheme.qml": "53a4b83d62b522676aeec15b3d57f8f10991053c7f73c12f125100c2b4c79c21",
+   "plasmoids/sberos.clockcalendar/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
++  "plasmoids/sberos.clockcalendar/contents/ui/SmartPopupPlacement.qml": "5e0730239c0d073292cc633c053c209055320834e19945377a5da3971d582acd",
+   "plasmoids/sberos.sbermenu/contents/assets/smart-panel/sber.svg": "209a21992d679d4e5d0b332c03a8e3b3b1a63641b5af72e6733d508e042f4c10",
+   "plasmoids/sberos.sbermenu/contents/assets/smart-panel/sber-484c5b.svg": "adc4bdca94917b36adb33866b5934ed15ed32dae9e495a609e233ff663c18c37",
+   "plasmoids/sberos.sbermenu/contents/assets/smart-panel/sber-e5e8ed.svg": "266aeae0cdf3ec32d4faa56dbab01088b919455d360297b90ac25684682acbb5",
+--- /dev/null
++++ b/plasma-theme/shells/sberos.desktop/contents/components/IslandMask.qml
+@@ -0,0 +1,39 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++import QtQuick
++import org.kde.ksvg as KSvg
++import org.kde.plasma.plasma5support as Plasma5Support
++
++KSvg.FrameSvgItem {
++    id: maskItem
++    property var rects: []
++    readonly property string geometryKey: JSON.stringify({width: width, height: height, rects: rects})
++    property string inFlight: ""
++    property string completedGeometry: ""
++    visible: false
++    enabledBorders: KSvg.FrameSvg.NoBorder
++    onGeometryKeyChanged: updateTimer.restart()
++    function quote(value) { return "'" + String(value).replace(/'/g, "'\\''") + "'"; }
++    function updateMask() {
++        if (inFlight.length || width <= 0 || height <= 0 || !rects.length || geometryKey === completedGeometry) return;
++        completedGeometry = geometryKey;
++        const script = decodeURIComponent(Qt.resolvedUrl("../tools/panel-mask.py").toString().replace(/^file:\/\//, ""));
++        inFlight = "python3 " + quote(script) + " " + quote(geometryKey);
++        writer.connectSource(inFlight);
++    }
++    Timer { id: updateTimer; interval: 60; onTriggered: maskItem.updateMask() }
++    Plasma5Support.DataSource {
++        id: writer
++        engine: "executable"
++        connectedSources: []
++        onNewData: (sourceName, data) => {
++            disconnectSource(sourceName);
++            maskItem.inFlight = "";
++            if (data["exit code"] === 0) {
++                const result = JSON.parse(data.stdout);
++                maskItem.imagePath = result.path;
++            } else console.warn("SberOS panel mask:", data.stderr);
++            if (maskItem.completedGeometry !== maskItem.geometryKey) updateTimer.restart();
++        }
++    }
++    Component.onCompleted: updateTimer.start()
++}
+--- /dev/null
++++ b/plasma-theme/shells/sberos.desktop/contents/components/WorkspaceSurfaces.qml
+@@ -0,0 +1,18 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++pragma Singleton
++import QtQuick
++QtObject {
++    id: registry
++    property var desktops: ({})
++    function registerDesktop(owner, screen, wallpaper) {
++        if (screen < 0) return;
++        const next = Object.assign({}, desktops);
++        next[String(screen)] = {owner: owner, wallpaper: wallpaper};
++        desktops = next;
++    }
++    function unregisterDesktop(owner) {
++        const next = Object.assign({}, desktops);
++        for (const key in next) if (next[key].owner === owner) delete next[key];
++        desktops = next;
++    }
++}
+--- /dev/null
++++ b/plasma-theme/shells/sberos.desktop/contents/components/qmldir
+@@ -0,0 +1 @@
++singleton WorkspaceSurfaces 1.0 WorkspaceSurfaces.qml
+--- /dev/null
++++ b/plasma-theme/shells/sberos.desktop/contents/tools/panel-mask.py
+@@ -0,0 +1,34 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: GPL-2.0-or-later
++"""Write a content-addressed KSvg mask for the actual panel surfaces."""
++import hashlib
++import json
++import math
++import os
++from pathlib import Path
++import sys
++
++payload = json.loads(sys.argv[1])
++width, height = [float(payload[key]) for key in ('width', 'height')]
++if not all(math.isfinite(value) and 0 < value <= 32768 for value in (width, height)):
++    raise SystemExit('Invalid panel extent')
++rects = []
++for item in payload['rects']:
++    x, y, w, h, radius = [float(item[key]) for key in ('x', 'y', 'width', 'height', 'radius')]
++    if not all(math.isfinite(value) for value in (x, y, w, h, radius)) or w <= 0 or h <= 0:
++        continue
++    rects.append(f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="{min(radius,w/2,h/2):g}" fill="white"/>')
++if not rects:
++    raise SystemExit('No panel surfaces')
++extent = f'<rect width="{width:g}" height="{height:g}" fill="none"/>'
++shape = extent + ''.join(rects)
++svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:g}" height="{height:g}" viewBox="0 0 {width:g} {height:g}">'
++       f'<g id="center">{shape}</g><g id="mask-center">{shape}</g></svg>\n')
++folder = Path(os.environ.get('XDG_CACHE_HOME', str(Path.home()/'.cache'))) / 'sberos-plasma' / 'panel-masks'
++folder.mkdir(parents=True, exist_ok=True, mode=0o700)
++path = folder / (hashlib.sha256(svg.encode()).hexdigest() + '.svg')
++if not path.exists():
++    temp = folder / (path.name + f'.{os.getpid()}.tmp')
++    temp.write_text(svg)
++    temp.replace(path)
++print(json.dumps({'path': str(path)}))
+--- a/plasma-theme/shells/sberos.desktop/contents/views/Desktop.qml
++++ b/plasma-theme/shells/sberos.desktop/contents/views/Desktop.qml
+@@ -6,6 +6,7 @@
+ */
+ 
+ import QtQuick 2.15
++import "../components" as SmartPanel
+ import QtQuick.Effects
+ import QtQuick.Layouts
+ 
+@@ -19,6 +20,16 @@
+ 
+ Item {
+     id: root
++
++    readonly property int wallpaperScreen: containment?.plasmoid?.screen ?? -1
++    readonly property Item workspaceWallpaper: containment?.wallpaper ?? null
++    function publishWallpaper() {
++        SmartPanel.WorkspaceSurfaces.unregisterDesktop(root);
++        if (workspaceWallpaper) SmartPanel.WorkspaceSurfaces.registerDesktop(root, wallpaperScreen, workspaceWallpaper);
++    }
++    onWallpaperScreenChanged: publishWallpaper()
++    onWorkspaceWallpaperChanged: publishWallpaper()
++    Component.onDestruction: SmartPanel.WorkspaceSurfaces.unregisterDesktop(root)
+ 
+     property Item containment
+ 
+--- a/plasma-theme/shells/sberos.desktop/contents/views/Panel.qml
++++ b/plasma-theme/shells/sberos.desktop/contents/views/Panel.qml
+@@ -8,6 +8,7 @@
+ import QtQuick.Window 2.15
+ import QtQuick.Layouts 1.1
+ import QtQml 2.15
++import "../components" as SmartPanel
+ 
+ import org.kde.plasma.core as PlasmaCore
+ import org.kde.ksvg 1.0 as KSvg
+@@ -166,8 +167,20 @@
+     }
+ 
+     // PanelView reads these properties while the panel remains attached to its edge.
+-    readonly property bool hasShadows: true
+-    property var panelMask: panelOpacity === 1 ? opaqueItem.mask : translucentItem.mask
++    readonly property bool hasShadows: false
++    property var panelMask: islandMask.imagePath.length ? islandMask.mask : translucentItem.mask
++    SmartPanel.IslandMask {
++        id: islandMask
++        width: root.width
++        height: root.height
++        rects: root.containment?.islandRects ?? []
++    }
++    Binding {
++        target: root.containment
++        property: "desktopWallpaper"
++        when: root.containment !== null
++        value: SmartPanel.WorkspaceSurfaces.desktops[String(root.containment?.plasmoid?.screen)]?.wallpaper ?? null
++    }
+ 
+     // PanelView reads the mask offset; an attached panel has no floating offset.
+     readonly property point floatingTranslucentItemOffset: Qt.point(0, 0)
+--- a/plasma-theme/tests/capture-smart-panel.py
++++ b/plasma-theme/tests/capture-smart-panel.py
+@@ -71,7 +71,8 @@
+                     root.advanceCapture();
+                     return;
+                 }
+-                console.log("CAPTURE " + JSON.stringify({label: state.label, width: target.width, height: target.height,
++                const origin = target.mapToGlobal(0, 0);
++                console.log("CAPTURE " + JSON.stringify({label: state.label, x: origin.x, y: origin.y, width: target.width, height: target.height,
+                     thickness: panel.thickness, screen: panel.screenGeometry, dpi: root.dpi}));
+                 const grabbing = target.grabToImage(result => {
+                     result.saveToFile(OUTPUT + "/" + state.label + ".png");
+@@ -98,7 +99,7 @@
+             if (root.captureApplet.notificationsOpen !== undefined) root.captureApplet.notificationsOpen = state.label === "notifications";
+             if (state.label !== "launcher") root.captureApplet.expanded = true;
+             if (state.power) root.captureApplet.powerMenuOpen = true;
+-            if (state.label === "launcher") root.captureApplet.fullRepresentationItem.dashWindow.visible = true;
++            if (state.label === "launcher") root.captureApplet.fullRepresentationItem.dashWindow.toggleLauncher();
+         }
+         captureTimer.restart();
+     }
+--- a/plasma-theme/tools/sync-smart-panel.py
++++ b/plasma-theme/tools/sync-smart-panel.py
+@@ -22,6 +22,8 @@
+     ui = root / f'plasmoids/sberos.{name}/contents/ui'
+     outputs[ui / 'SmartPanelTheme.qml'] = (root / 'shared/SmartPanelTheme.qml').read_bytes()
+     outputs[ui / 'SmartPanelIcon.qml'] = (root / 'shared/SmartPanelIcon.qml').read_bytes()
++    if name in ['sbermenu', 'filesearch', 'controlcenter', 'clockcalendar']:
++        outputs[ui / 'SmartPopupPlacement.qml'] = (root / 'shared/SmartPopupPlacement.qml').read_bytes()
+     if name in ['applications', 'filesearch']:
+         outputs[ui / 'OskaAvatar.qml'] = (root / 'shared/OskaAvatar.qml').read_bytes()
+ icons = {
+--- a/docs/tasks/ATP-001.md
++++ b/docs/tasks/ATP-001.md
+@@ -453,3 +453,38 @@
+ Следующий шаг — blur/маски и размещение popup в KWin. Статус — «В работе».
+ Обновлены только границы задачи и контракт; код и запущенный предпросмотр
+ не изменены. Проверка: просмотр diff и `git diff --check`.
++
++## 26.10.2026 — blur, размещение и текущие обои Launchpad
++
++Продолжение после исключения дочерних страниц/VPN/событий. Пользователь отдельно
++уточнил: фон Launchpad — **текущие обои рабочего стола**. В работе: передача
++WallpaperItem выбранного экрана из Desktop в панель/Launcher, затемнение/blur,
++реальный полноэкранный вызов DashboardWindow, раздельная SVG/QRegion-маска
++островов через KSvg и штатные якоря PopupPlasmaWindow. Бинарный плагин/CMake
++не добавляются. Сценарии: `03-01`, `02-02`, `05-01`–`05-06`, `05-10`, `07-01`,
++`09-19`, `09-24`. Проверки ограничены светлой целевой конфигурацией.
++
++Реализовано и проверено: полноэкранное открытие Launchpad 2560×1440, текущий
++фон Desktop с blur/затемнением, раздельная KSvg-маска островов, размещение popup
++через общий SmartPopupPlacement. Поиск/уведомления переключаются внутри одного
++native host. Их нижний край — экран минус 8 px; настройки — экран минус 88 px.
++QRegion проверена отдельным Qt-пробником: остров включён, промежуток и внешний
++скруглённый угол исключены. Общая native тень полосы отключена.
++
++Проверки: `qmllint --bare` 20 изменённых QML — exit 0 (предупреждения сохранены);
++`sync-smart-panel.py --check` — 168 ресурсов. Просмотрены целевые светлые снимки
++Launchpad и уведомлений; Qt 6.11.2 / Plasma 6.7.4 / Wayland, 2560×1440, DPR 1.
++[Снимки до/после, координаты, журналы и patch этапа](evidence/ATP-001/native-surfaces/).
++Тёмная тема, масштабируемость и массовые прогоны не выполнялись.
++
++Обновлённый предпросмотр запущен в отдельном временном профиле, exec-сессия 75838,
++plasmashell PID 205852; журнал подтвердил `SBEROS_PREVIEW_READY 2560 88`,
++containment/visible true. Маркер процесса: `/tmp/sber-plasma-live-preview-current.json`.
++Предпросмотр оставлен пользователю. Пользовательская установка не изменена.
++
++Следующий шаг: проверить видимое размытие за островами в композиции KWin и
++согласованные живые действия окон/уведомлений, Esc/Tab и внешний клик. Снимки
++grabToImage подтверждают содержимое и геометрию, но не фон за native окном.
++Общая приёмка ATP-001 остаётся открытой. Из-за предшествующего незакоммиченного
++переноса пакетов сохранён отдельный patch этапа, без включения чужих изменений
++в коммит и без изменения index.

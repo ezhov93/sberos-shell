@@ -116,6 +116,7 @@ powerdevil milou kpipewire bluez-qt qt6-5compat` (untested).
 
 ```
 ./install.sh                 # builds and installs to ~/.local, no root
+../install-restart.sh        # installs and restarts Sirca if its service is running
 sirca-shell-switch on        # saves your Plasma layout, removes Plasma's panels, starts the shell
 ```
 

@@ -79,6 +79,7 @@ controls UI Kit сверяются по UIKIT-002; компоненты, спе�
 | [SHELL-006](archive/SHELL-006.md) | Переписать установщик Sirca на Python | Готово | — |
 | [SHELL-007](archive/SHELL-007.md) | Исправить результаты аудита QML Sirca Shell | Готово | PANEL-002, PANEL-006, TEST-001 |
 | [SHELL-008](archive/SHELL-008.md) | Исправить результаты аудита Qt C++ Sirca Shell | Готово | PANEL-003, PANEL-008, DESKTOP-ICONS, TEST-001 |
+| [SHELL-009](archive/SHELL-009.md) | Добавить установку Sirca с безопасным перезапуском активного сервиса | Готово | — |
 | [SHELL-GLASS-EFFECT](archive/SHELL-GLASS-EFFECT.md) | Удалить пользовательские KWin-эффекты Sirca | Готово | — |
 | [DESKTOP-001](DESKTOP-001.md) | Рефакторинг desktop и темы Kvantum под стилистику UI Kit | В работе | Координация с SHELL-001, UIKIT-001 |
 | [SDDM-001](SDDM-001.md) | Подогнать экран входа SDDM по lockscreen и мокам | В работе | DESKTOP-001 |

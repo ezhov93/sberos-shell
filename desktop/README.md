@@ -29,8 +29,10 @@ desktop/install.sh uninstall
 `color_scheme/SberOSLight.colors` and `SberOSDark.colors`, and backs up files it
 replaces under `$XDG_STATE_HOME/sberos-desktop/installer/`. `uninstall` restores
 those files and refuses to remove files changed after installation. The selected
-GTK stylesheet is imported from `gtk.css`; KDE color scheme and Qt widget style
-are not activated or changed, and running applications are not restarted.
+GTK stylesheet is imported from `gtk.css`; both KDE color schemes are installed
+but not applied. Kvantum's user selector is set to `SberOS`, while KDE's
+`widgetStyle` remains unchanged. The `--mode` option selects only the GTK CSS;
+running applications are not restarted.
 
 The Plasma lock screen and SDDM greeter have separate installers because they
 use different system components and permissions:

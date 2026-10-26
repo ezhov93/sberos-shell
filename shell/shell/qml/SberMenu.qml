@@ -26,6 +26,7 @@ Window {
     property int childOrigin: -1
     property bool childFromKeyboard: false
     property string terminalId: ""
+    property real revealProgress: 1
     readonly property real menuWidth: 72
     readonly property real cellSize: 40
     readonly property real menuSpacing: 8
@@ -95,6 +96,16 @@ Window {
         }
     }
     readonly property var powerActions: power
+    ParallelAnimation {
+        id: revealAnimation
+        NumberAnimation {
+            target: menu
+            property: "revealProgress"
+            to: 1
+            duration: 180
+            easing.type: Easing.OutCubic
+        }
+    }
 
     function openAt(targetScreen, rect) {
         if (visible)
@@ -111,12 +122,16 @@ Window {
             Shell.setupSearch(menu);
             setupDone = true;
         }
+        revealProgress = 0;
         visible = true;
+        revealAnimation.start();
         Shell.setKeyboardMode(menu, "exclusive");
         keys.forceActiveFocus();
     }
     function closeAll() {
         const wasVisible = visible;
+        revealAnimation.stop();
+        revealProgress = 1;
         child = "";
         currentIndex = -1;
         power.cancelPending();
@@ -237,6 +252,12 @@ Window {
             height: menu.menuRect.height
             radius: 20
             color: Theme.Palette.Background.Default.Primary
+            opacity: menu.revealProgress
+            transform: Scale {
+                origin.x: 0
+                origin.y: menu.menuRect.height
+                yScale: (1 + 2 * menu.revealProgress) / 3
+            }
             Column {
                 x: 16
                 y: menu.menuPadding

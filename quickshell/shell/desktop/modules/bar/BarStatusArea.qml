@@ -326,6 +326,7 @@ Item {
                 dockEdge: root.dockEdge
                 verticalDock: root.verticalDock
                 availableHeight: root.height
+                nativeTrayEnabled: root.controlCenterPlacement !== "control-center-only"
                 collectionKeepOpen: root.anyPanelOpen
                 onCollectionCollapseRequested: {
                     root.closeDetailPanels();

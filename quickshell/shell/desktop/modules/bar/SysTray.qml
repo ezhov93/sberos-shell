@@ -22,6 +22,9 @@ Item {
     property bool dockHosted: false
     property string dockEdge: "bottom"
     property bool verticalDock: false
+    // A secondary host may render only shell-owned status controls. It must
+    // not claim or duplicate native StatusNotifierItem delegates.
+    property bool nativeTrayEnabled: true
     required property Item collectionToggleHost
     readonly property int popupEdge: !dockHosted ? Edges.Bottom : dockEdge === "left" ? Edges.Right : dockEdge === "right" ? Edges.Left : Edges.Top
     // BarStatusArea appends Wi-Fi, battery, settings and control-centre cells
@@ -384,6 +387,7 @@ Item {
         Rectangle {
             id: collectionToggle
             objectName: "status-collection-toggle"
+            visible: root.nativeTrayEnabled
             enabled: SysTrayOrderService.ready
             activeFocusOnTab: true
             Accessible.role: Accessible.Button
@@ -440,7 +444,7 @@ Item {
 
         Repeater {
             id: trayRepeater
-            model: SystemTray.items
+            model: root.nativeTrayEnabled ? SystemTray.items : []
 
             delegate: Item {
                 id: trayItem

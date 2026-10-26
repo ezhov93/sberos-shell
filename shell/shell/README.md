@@ -62,7 +62,7 @@ and GNOME pin migration are outside the current panel implementation.
   calendar, notification history grouped per app, now-playing panel, tray menus.
 - **Tools** - search (Meta+Space, KRunner's engine: apps, files, settings, and sums or conversions such as `12*7` or
   `5 km in mi`), clipboard history (Meta+V; Ctrl+P pins an entry: it stays on top and survives "Clear"), screenshot and screen recording
-  (Meta+Shift+S / Meta+Shift+R), tile picker for wide screens (Meta+A), window switcher (Alt+Tab), power menu
+  (Meta+Shift+S / Meta+Shift+R), tile picker for wide screens (Meta+A), window switcher (Alt+Tab / Meta+Tab), power menu
   (Ctrl+Alt+Del).
 - **Do Not Disturb, timed** - the quick-settings tile steps through: an hour, until the morning, until switched off.
 - **A welcome card** on the first start names the things nobody finds alone (again: `qdbus6 onur.SircaShell /SircaShell onur.SircaShell.showWelcome`).

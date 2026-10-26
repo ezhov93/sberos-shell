@@ -151,11 +151,13 @@ void Shell::releaseLauncherKey() {
             keys << key;
         KGlobalAccel::self()->setShortcut(theirs2, keys, KGlobalAccel::NoAutoloading);
     }
-    // and Alt+Tab back to KWin's switcher
-    const QList<std::pair<QString, QKeySequence>> kwinKeys{
-        {QStringLiteral("Walk Through Windows"), QKeySequence(Qt::ALT | Qt::Key_Tab)},
+    // and both switcher directions back to KWin
+    const QList<std::pair<QString, QList<QKeySequence>>> kwinKeys{
+        {QStringLiteral("Walk Through Windows"),
+         {QKeySequence(Qt::META | Qt::Key_Tab), QKeySequence(Qt::ALT | Qt::Key_Tab)}},
         {QStringLiteral("Walk Through Windows (Reverse)"),
-         QKeySequence::fromString(QStringLiteral("Alt+Shift+Tab"))}};
+         {QKeySequence::fromString(QStringLiteral("Meta+Shift+Tab")),
+          QKeySequence::fromString(QStringLiteral("Alt+Shift+Tab"))}}};
     for (const auto &k : kwinKeys) {
         for (const char *mine : {"switch-windows", "switch-windows-reverse"}) {
             QAction m;
@@ -169,9 +171,9 @@ void Shell::releaseLauncherKey() {
         a->setText(k.first);
         a->setProperty("componentName", QStringLiteral("kwin"));
         a->setProperty("componentDisplayName", QStringLiteral("KWin"));
-        KGlobalAccel::stealShortcutSystemwide(k.second);
-        KGlobalAccel::self()->setShortcut(a, {QKeySequence(Qt::META | Qt::Key_Tab), k.second},
-                                          KGlobalAccel::NoAutoloading);
+        for (const QKeySequence &key : k.second)
+            KGlobalAccel::stealShortcutSystemwide(key);
+        KGlobalAccel::self()->setShortcut(a, k.second, KGlobalAccel::NoAutoloading);
     }
 }
 
@@ -241,17 +243,19 @@ Shell::Shell(QObject *parent) : QObject(parent) {
             KGlobalAccel::stealShortcutSystemwide(k);
         KGlobalAccel::self()->setShortcut(a, keys, KGlobalAccel::NoAutoloading);
         connect(a, &QAction::triggered, this, &Shell::launcherToggleRequested);
-        // Our own Alt+Tab (KWin's switcher went missing on this machine, and ours matches the glass
-        // anyway)
-        auto addSwitch = [this](const char *id, const QString &text, const QKeySequence &key,
+        // Our own Alt+Tab and Meta+Tab switcher (KWin's switcher went missing on this machine,
+        // and ours matches the glass anyway)
+        auto addSwitch = [this](const char *id, const QString &text,
+                                const QList<QKeySequence> &keys,
                                 bool reverse) {
             auto *act = new QAction(this);
             act->setObjectName(QString::fromLatin1(id));
             act->setText(text);
             act->setProperty("componentName", QStringLiteral("sirca-shell"));
             act->setProperty("componentDisplayName", QStringLiteral("Sirca Shell"));
-            KGlobalAccel::stealShortcutSystemwide(key);
-            KGlobalAccel::self()->setShortcut(act, {key}, KGlobalAccel::NoAutoloading);
+            for (const QKeySequence &key : keys)
+                KGlobalAccel::stealShortcutSystemwide(key);
+            KGlobalAccel::self()->setShortcut(act, keys, KGlobalAccel::NoAutoloading);
             connect(act, &QAction::triggered, this,
                     [this, reverse] { Q_EMIT switcherRequested(reverse); });
         };
@@ -279,10 +283,12 @@ Shell::Shell(QObject *parent) : QObject(parent) {
             });
         }
         addSwitch("switch-windows", QStringLiteral("Switch Windows"),
-                  QKeySequence(Qt::ALT | Qt::Key_Tab), false);
+                  {QKeySequence(Qt::ALT | Qt::Key_Tab), QKeySequence(Qt::META | Qt::Key_Tab)},
+                  false);
         addSwitch("switch-windows-reverse", QStringLiteral("Switch Windows (Reverse)"),
-                  QKeySequence::fromString(QStringLiteral("Alt+Shift+Tab")),
-                  true); // (Alt|Shift|Backtab serialises empty)
+                  {QKeySequence::fromString(QStringLiteral("Alt+Shift+Tab")),
+                   QKeySequence::fromString(QStringLiteral("Meta+Shift+Tab"))},
+                  true);
     }
 }
 

@@ -609,7 +609,7 @@ Window {
                         Row_ {
                             label: "Switch windows"
                             Sber.Label {
-                                text: "Alt+Tab"
+                                text: "Alt+Tab / Meta+Tab"
                                 secondary: true
                             }
                         }

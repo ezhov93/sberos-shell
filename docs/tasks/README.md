@@ -149,7 +149,7 @@ PANEL-008; затем Оська и уведомления (PANEL-004/PANEL-005)
 | [SHELL-007](archive/SHELL-007.md) | Исправить результаты аудита QML Sirca Shell | Готово | PANEL-002, PANEL-006, TEST-001 |
 | [SHELL-008](archive/SHELL-008.md) | Исправить результаты аудита Qt C++ Sirca Shell | Готово | PANEL-003, PANEL-008, DESKTOP-ICONS, TEST-001 |
 | [SHELL-GLASS-EFFECT](archive/SHELL-GLASS-EFFECT.md) | Удалить пользовательские KWin-эффекты Sirca | Готово | — |
-| [DESKTOP-001](DESKTOP-001.md) | Рефакторинг desktop под стилистику UI Kit | В работе | Координация с SHELL-001, UIKIT-001 |
+| [DESKTOP-001](DESKTOP-001.md) | Рефакторинг desktop и темы Kvantum под стилистику UI Kit | В работе | Координация с SHELL-001, UIKIT-001 |
 | [DESKTOP-ICONS](DESKTOP-ICONS.md) | Перенести значки и работу с файлами рабочего стола в Sirca | В работе | PANEL-009 |
 
 26.10.2026 основная композиция экрана блокировки `desktop/lock/` приведена к

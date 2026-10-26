@@ -11,8 +11,9 @@ the window manager. Popups are not separate windows: they grow out of the bar an
 
 This adapted shell defaults to one bottom `UnifiedPanel` with five logical zones:
 Sber/settings, applications, a centred Oska entry area, indicators, and quick
-settings/calendar. Application tray icons have their own island inside the
-indicators zone; system controls remain in the indicators island. Oska stays at
+settings/calendar. The status area contains only an application tray island; the
+previous system-indicator row was removed. Quick settings and the clock remain in
+their own zone. Oska stays at
 the screen centre as neighbouring content changes. The Oska search field stays
 in the centre of the panel. Typing expands
 local KRunner/Milou app and document results above it inside the same surface;
@@ -25,8 +26,8 @@ a blurred desktop background, paged app grid and name-only local search; Esc or 
 closes it. For a direct preview, run `sirca-shell --open-launchpad`. Right-click
 the terminal for desktop actions and pinning. Esc/outside clicks close one child
 level; the existing global launcher action closes all levels or opens the menu
-on the last active screen in unified mode. A development launch does not own Super. Show-desktop, workspaces and other
-existing widgets remain in the indicators area for now. The task model, pinning and app previews are reused from
+on the last active screen in unified mode. A development launch does not own Super. The former status-indicator row
+is removed from the panel; only application tray icons remain in that zone. The task model, pinning and app previews are reused from
 Dock. New block and popup backgrounds use UI Kit colours without blur. System popups open upward inside the same layer-shell surface. Long task
 and status areas scroll independently.
 

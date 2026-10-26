@@ -19,14 +19,11 @@ Dock {
     readonly property real trayIslandWidth: nativeTray.implicitWidth > 0 ? Math.min(Math.max(64, screenW * 0.10) + 16, nativeTray.implicitWidth + 16) : 0
     readonly property real trayGap: trayIslandWidth > 0 ? zoneGap : 0
     readonly property rect trayRect: Qt.rect(essentialRect.x - trayGap - trayIslandWidth, barRect.y, trayIslandWidth, dockH)
-    readonly property real indicatorsAvailableWidth: Math.max(0, trayRect.x - oskaRect.x - oskaRect.width - trayGap)
-    readonly property real indicatorsWidth: Math.min(indicatorsAvailableWidth, status.implicitWidth + 16)
     readonly property rect sberRect: Qt.rect(barRect.x, barRect.y, dockH, dockH)
     readonly property rect oskaRect: Qt.rect((width - oskaWidth) / 2, barRect.y, oskaWidth, dockH)
     readonly property rect essentialRect: Qt.rect(barRect.x + dockW - systemZoneWidth, barRect.y, systemZoneWidth, dockH)
-    readonly property rect indicatorsRect: Qt.rect(trayRect.x - trayGap - indicatorsWidth, barRect.y, indicatorsWidth, dockH)
     readonly property rect applicationsRect: Qt.rect(sberRect.x + sberRect.width + zoneGap, barRect.y, Math.max(Config.dockCell + 2 * pad, Math.min(contentW, oskaRect.x - sberRect.x - sberRect.width - 2 * zoneGap)), dockH)
-    panelZones: [sberRect, applicationsRect, oskaRect, indicatorsRect, trayRect, essentialRect]
+    panelZones: [sberRect, applicationsRect, oskaRect, trayRect, essentialRect]
     leadingWidth: applicationsRect.x - barRect.x
     trailingWidth: dockW - leadingWidth - applicationsRect.width
     taskAreaX: applicationsRect.x + pad
@@ -104,7 +101,7 @@ Dock {
         toggle(name, item.mapToItem(panel.contentItem, item.width / 2, 0).x);
     }
     function placeMedia() {
-        popupAnchor = media.mapToItem(panel.contentItem, media.width / 2, 0).x;
+        popupAnchor = essentialRect.x + essentialRect.width / 2;
     }
     function openPage(page) {
         requestedPage = page || "main";
@@ -332,118 +329,6 @@ Dock {
         }
     }
     Flickable {
-        id: statusViewport
-        enabled: !panel.editing
-        x: panel.indicatorsRect.x + 8
-        y: panel.barRect.y
-        width: Math.max(0, panel.indicatorsRect.width - 16)
-        height: panel.dockH
-        contentWidth: status.implicitWidth
-        contentHeight: height
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        flickableDirection: Flickable.HorizontalFlick
-        WheelHandler {
-            target: null
-            enabled: statusViewport.contentWidth > statusViewport.width
-            onWheel: event => {
-                const delta = event.angleDelta.x || event.angleDelta.y;
-                statusViewport.contentX = Math.max(0, Math.min(statusViewport.contentWidth - statusViewport.width, statusViewport.contentX - delta / 2));
-                event.accepted = true;
-            }
-        }
-        Row {
-            id: status
-            height: panel.dockH
-            spacing: 6
-            PanelButton {
-                visible: panel.placed("desktop")
-                symbol: "user-desktop-symbolic"
-                description: qsTr("Show desktop")
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: panel.showDesktopRequested()
-            }
-            Workspaces {
-                allowed: panel.placed("workspaces")
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            PanelButton {
-                visible: !!panel.recorder && (panel.recorder.recording || panel.recorder.finishing)
-                text: panel.recorder ? panel.recorder.clock : ""
-                description: qsTr("Stop recording")
-                anchors.verticalCenter: parent.verticalCenter
-                enabled: !!panel.recorder && panel.recorder.recording
-                onClicked: panel.recorder.stop()
-            }
-            MediaIsland {
-                id: media
-                anchors.verticalCenter: parent.verticalCenter
-                allowed: panel.placed("media") && panel.screenW >= 1400
-                quiet: panel.quiet
-                lobeOpen: panel.openLobe === "media"
-                barLeft: panel.x
-                slideY: panel.y + panel.barRect.y
-                onClicked: {
-                    panel.placeMedia();
-                    panel.toggle("media");
-                }
-            }
-            Repeater {
-                model: panel.placedWidgets.filter(name => name.indexOf("tile:") === 0)
-                BarTile {
-                    required property string modelData
-                    name: modelData.substring(5)
-                    qs: panel.nativeControl
-                    anchors.verticalCenter: parent.verticalCenter
-                    onOpenPage: page => panel.openPage(page)
-                    onOsd: (icon, value) => osd.showProgress(icon, value * 100, 100, "")
-                }
-            }
-            Repeater {
-                model: panel.placedWidgets.filter(name => name.indexOf("user:") === 0)
-                UserWidget {
-                    required property string modelData
-                    name: modelData.substring(5)
-                    quiet: panel.quiet
-                    width: implicitWidth
-                    height: panel.dockH
-                }
-            }
-            BarBattery {
-                flat: true
-                foreground: Theme.Palette.Text.Default.Primary
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: panel.openPage("main")
-            }
-            BarPrivacy {
-                flat: true
-                anchors.verticalCenter: parent.verticalCenter
-                audio: volumeLoader.item
-                onClicked: panel.openSoundPage()
-            }
-            BarMic {
-                flat: true
-                foreground: Theme.Palette.Text.Default.Primary
-                anchors.verticalCenter: parent.verticalCenter
-                audio: volumeLoader.item
-                allowed: panel.placed("mic")
-            }
-            PanelButton {
-                symbol: "media-removable-symbolic"
-                description: qsTr("Removable drives")
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: panel.openAt("disks", this)
-            }
-            PanelButton {
-                symbol: "view-statistics-symbolic"
-                description: qsTr("System monitor")
-                visible: panel.placed("system")
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: panel.openAt("system", this)
-            }
-        }
-    }
-    Flickable {
         x: panel.trayRect.x + 8
         y: panel.barRect.y
         width: Math.max(0, panel.trayRect.width - 16)
@@ -470,6 +355,11 @@ Dock {
                 });
             }
         }
+    }
+    MediaIsland {
+        id: media
+        visible: false
+        allowed: false
     }
     Row {
         id: essential

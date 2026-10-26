@@ -14,6 +14,9 @@ Item {
     height: implicitHeight
     property bool dockHosted: false
     property string dockEdge: "bottom"
+    // The integrated SberOS panel places Quick Settings with the clock while
+    // the remaining status cells stay in their own island.
+    property string controlCenterPlacement: "all"
     // Reveal progress of the auto-hiding Bar this cluster lives in. 1 for a
     // cluster that is not inside a sliding Bar (the Dock host) and for a Bar
     // that is permanently visible.
@@ -58,7 +61,11 @@ Item {
     // decision (unready = keep, ready without battery = hide) and is unit
     // tested, so an unready or unavailable UPower cannot hide a laptop's cell.
     readonly property bool showBatteryCell: VisibilityPolicy.shouldShowBatteryCell(UPower.displayDevice.ready, UPower.displayDevice.isPresent)
-    readonly property var visibleTrailingCells: trailingCells.filter(entry => !AppearanceConfigService.isStatusCellHidden(entry.key) && (entry.key !== "battery" || root.showBatteryCell))
+    readonly property var visibleTrailingCells: trailingCells.filter(entry =>
+        !AppearanceConfigService.isStatusCellHidden(entry.key)
+        && (entry.key !== "battery" || root.showBatteryCell)
+        && (root.controlCenterPlacement !== "control-center-only" || entry.key === "controlcenter")
+        && (root.controlCenterPlacement !== "without-control-center" || entry.key !== "controlcenter"))
 
     property Item pendingControlCenterAnchor: null
     readonly property var controlCenter: controlCenterLoader.item
@@ -288,7 +295,7 @@ Item {
 
         Item {
             id: collectionSlot
-            width: systemTray.itemSize
+            width: root.controlCenterPlacement === "control-center-only" ? 0 : systemTray.itemSize
             height: root.height
         }
         Item {

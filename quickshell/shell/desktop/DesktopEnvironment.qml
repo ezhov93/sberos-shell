@@ -253,6 +253,7 @@ Item {
                 anchors.centerIn: parent
                 dockHosted: true
                 dockEdge: ConfigService.position
+                controlCenterPlacement: "without-control-center"
             }
         }
     }
@@ -341,16 +342,27 @@ Item {
     Component {
         id: integratedClock
         Item {
-            implicitWidth: dateStatus.implicitWidth + 24
+            implicitWidth: clockContent.implicitWidth + 24
             implicitHeight: 72
             FrostedSurface {
                 anchors.fill: parent
                 radius: 24
             }
-            BarDateStatus {
-                id: dateStatus
+            Row {
+                id: clockContent
                 anchors.centerIn: parent
-                onActivated: sourceItem => integratedCalendarPopup.toggle(sourceItem)
+                spacing: 8
+                BarDateStatus {
+                    id: dateStatus
+                    anchors.verticalCenter: parent.verticalCenter
+                    onActivated: sourceItem => integratedCalendarPopup.toggle(sourceItem)
+                }
+                BarStatusArea {
+                    anchors.verticalCenter: parent.verticalCenter
+                    dockHosted: true
+                    dockEdge: ConfigService.position
+                    controlCenterPlacement: "control-center-only"
+                }
             }
         }
     }

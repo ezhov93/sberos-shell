@@ -68,9 +68,11 @@ Dock {
     systemOpen: openLobe !== "" || showingCards
     systemFocus: openLobe !== "" || searchField.activeFocus
     restingKeyboardMode: cards.replyingCount > 0 ? "ondemand" : "none"
-    systemWidth: openLobe === "search" || openLobe === "notif" || showingCards ? oskaWidth : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
+    systemContentInset: openLobe === "gear" ? 0 : lobePad
+    systemInnerSurface: openLobe !== "gear"
+    systemWidth: openLobe === "search" || openLobe === "notif" || showingCards ? oskaWidth : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * systemContentInset)
     systemGap: openLobe === "search" ? 16 : openLobe === "notif" || showingCards ? 8 : 0
-    systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * lobePad)
+    systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * systemContentInset)
     systemAnchorX: openLobe === "search" || showingCards ? searchField.mapToItem(panel.contentItem, searchField.width / 2, 0).x : popupAnchor
     onSystemCloseRequested: {
         if (openLobe === "search")
@@ -508,10 +510,10 @@ Dock {
     // All system popups grow upward inside the same surface and share its input mask.
     Flickable {
         id: systemContent
-        x: panel.systemRect.x + panel.lobePad
-        y: panel.systemRect.y + panel.lobePad
-        width: Math.max(1, panel.systemWidth - 2 * panel.lobePad)
-        height: Math.max(0, panel.systemRect.height - 2 * panel.lobePad)
+        x: panel.systemRect.x + panel.systemContentInset
+        y: panel.systemRect.y + panel.systemContentInset
+        width: Math.max(1, panel.systemWidth - 2 * panel.systemContentInset)
+        height: Math.max(0, panel.systemRect.height - 2 * panel.systemContentInset)
         contentWidth: width
         contentHeight: panel.activeSystemViewHeight
         visible: panel.systemUp

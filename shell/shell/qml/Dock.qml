@@ -41,6 +41,8 @@ Surface {
     property real systemHeight: 400
     property real systemGap: 0
     property real systemAnchorX: width / 2
+    property int systemContentInset: lobePad
+    property bool systemInnerSurface: true
     signal systemCloseRequested
     signal launchpadRequested
     property real systemGrow: systemOpen ? 1 : 0
@@ -828,6 +830,7 @@ Surface {
             height: Math.max(0, parent.height - 14)
             radius: 17
             color: Config.panelInnerSurface
+            visible: dock.systemInnerSurface
         }
     }
     Rectangle {

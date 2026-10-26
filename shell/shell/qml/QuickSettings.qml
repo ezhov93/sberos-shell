@@ -44,13 +44,13 @@ Item {
     readonly property int topPad: 15
     readonly property int bottomPad: 21
     readonly property int gap: 8
-    readonly property color tileSurface: Config.dark ? Theme.Palette.Surface.Default.SolidSecondary : Theme.Palette.Background.Default.Basic
-    readonly property color tileActiveSurface: Theme.Palette.Surface.Default.Accent
-    readonly property color tileHoverSurface: Config.dark ? Theme.Palette.Surface.Default.SolidSecondaryHover : Theme.Palette.Background.Default.Secondary
-    readonly property color tileInactiveIconSurface: Theme.Palette.Surface.Default.SolidSecondaryHover
-    readonly property color tileOutline: Theme.Palette.Outline.Default.SolidSecondaryHover
-    readonly property color primaryText: Theme.Palette.Text.Default.Primary
-    readonly property color secondaryText: Theme.Palette.Text.Default.Secondary
+    readonly property color tileSurface: Config.dark ? Qt.rgba(43 / 255, 50 / 255, 59 / 255, 0.92) : Qt.rgba(1, 1, 1, 0.92)
+    readonly property color tileActiveSurface: "#54b7b1"
+    readonly property color tileHoverSurface: Config.dark ? "#363e48" : "#ebedf2"
+    readonly property color tileInactiveIconSurface: "#e8eaf0"
+    readonly property color tileOutline: Qt.rgba(1, 1, 1, 0.06)
+    readonly property color primaryText: Config.dark ? "#e5e8ed" : "#484c5b"
+    readonly property color secondaryText: Config.dark ? "#959ba8" : "#9296a6"
 
     // ---------- backends ----------
     // Everything that comes from a PRIVATE Plasma module (network, Bluetooth, brightness, night light, sound) is its own
@@ -602,17 +602,17 @@ Item {
             }
             Kirigami.Icon {
                 anchors.centerIn: parent
-                width: 17
-                height: 17
+                width: 16
+                height: 16
                 source: tile.icon
                 isMask: true
                 roundToIconSize: false
-                color: tile.on ? Theme.Palette.Text.OnDark.Primary : qs.secondaryText
+                color: tile.on ? Theme.Palette.Text.OnDark.Primary : qs.primaryText
             }
         }
         Column {
             anchors.left: bubble.right
-            anchors.leftMargin: 10
+            anchors.leftMargin: 12
             anchors.right: parent.right
             anchors.rightMargin: tile.more ? 30 : 10
             anchors.verticalCenter: parent.verticalCenter
@@ -680,6 +680,9 @@ Item {
         property real value: 0
         property bool more: false
         property bool enabled_: true
+        property bool mockStyle: false
+        property bool showValue: true
+        property string accessibleName: ""
         signal moved(real v)
         signal iconTapped
         signal opened
@@ -691,19 +694,66 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             size: 30
             icon: sr.icon
+            visible: !sr.mockStyle
             onTapped: sr.iconTapped()
+        }
+        Kirigami.Icon {
+            id: bareIcon
+            x: 8
+            anchors.verticalCenter: parent.verticalCenter
+            width: 24
+            height: 24
+            source: sr.icon
+            isMask: true
+            color: sr.mockStyle ? qs.secondaryText : qs.primaryText
+            visible: sr.mockStyle
+            Accessible.role: Accessible.Button
+            Accessible.name: sr.accessibleName
+            activeFocusOnTab: true
+            TapHandler {
+                onTapped: sr.iconTapped()
+            }
+        }
+        Rectangle {
+            id: mockTrack
+            x: slider.x
+            y: slider.y + (slider.height - height) / 2
+            width: slider.width
+            height: 16
+            radius: 8
+            color: Qt.rgba(148 / 255, 154 / 255, 170 / 255, 0.5)
+            visible: sr.mockStyle
+            Rectangle {
+                width: mockTrack.width * slider.visualPosition
+                height: parent.height
+                radius: parent.radius
+                color: "white"
+            }
+            Rectangle {
+                width: 16
+                height: 16
+                radius: 8
+                x: Math.max(0, Math.min(mockTrack.width - width, mockTrack.width * slider.visualPosition - width / 2))
+                color: "white"
+                border.width: 1
+                border.color: "#e8eaf0"
+            }
         }
         Sber.Slider {
             id: slider
-            anchors.left: ib.right
-            anchors.leftMargin: 10
-            anchors.right: val.left
-            anchors.rightMargin: 8
+            anchors.left: sr.mockStyle ? bareIcon.right : ib.right
+            anchors.leftMargin: sr.mockStyle ? 24 : 10
+            anchors.right: sr.showValue ? val.left : (sr.more ? nextBtn.left : parent.right)
+            anchors.rightMargin: sr.showValue ? 8 : sr.more ? 4 : 0
             anchors.verticalCenter: parent.verticalCenter
+            height: sr.mockStyle ? 40 : implicitHeight
             from: 0
             to: 100
             stepSize: 1
+            opacity: sr.mockStyle ? 0 : 1
             enabled: sr.enabled_
+            showRangeValues: !sr.mockStyle
+            Accessible.name: sr.accessibleName
             Binding {
                 target: slider
                 property: "value"
@@ -715,6 +765,7 @@ Item {
         }
         Text {
             id: val
+            visible: sr.showValue
             anchors.right: nextBtn.left
             anchors.rightMargin: sr.more ? 4 : 0
             anchors.verticalCenter: parent.verticalCenter
@@ -901,7 +952,7 @@ Item {
                     anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     elide: Text.ElideRight
-                    text: battery.percent + "%" + (battery.charging ? " · Зарядка" : "")
+                    text: battery.percent + "%"
                     color: qs.primaryText
                     font.pixelSize: 16
                     font.weight: Font.Medium
@@ -957,6 +1008,9 @@ Item {
                     SliderRow {
                         width: parent.width
                         height: 40
+                        mockStyle: true
+                        showValue: false
+                        accessibleName: qsTr("Громкость")
                         icon: qs.volIcon()
                         value: qs.volumePct
                         onMoved: v => {
@@ -984,6 +1038,9 @@ Item {
                     SliderRow {
                         width: parent.width
                         height: 40
+                        mockStyle: true
+                        showValue: false
+                        accessibleName: qsTr("Яркость")
                         icon: "brightness-high-symbolic"
                         value: qs.bright ? qs.bright.pct : 0
                         onMoved: v => {

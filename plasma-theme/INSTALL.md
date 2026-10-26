@@ -1,14 +1,35 @@
 # Installation
 
+## Installing the SberOS panel components
+
+For development of the SberOS Plasma panel, use the user-local installer from
+the repository root:
+
+```bash
+bash plasma-theme/install-sberos-panel.sh
+```
+
+It installs the SberOS shell and panel containment, menu, task manager, custom
+clock/calendar, the selected Plasma Drawer, Control Station and file-search
+applets, and the panel layout template. Existing user-local package versions are
+backed up under `${XDG_STATE_HOME:-$HOME/.local/state}/sberos-shell/plasma-install/`.
+The script does not use root, install the rest of AeroThemePlasma, change themes,
+or replace the current panel layout. Restart Plasma after installation. To use
+the new applet list in an existing profile, apply the installed SberOS panel
+layout from Plasma's layout controls or create a fresh SberOS shell profile.
+
+Use `--dry-run` to list the packages and backups without changing files.
+
 ## TABLE OF CONTENTS
 
-1. [Prerequisites](#preq)
-2. [Migration notice](#migration)
-3. [Getting started](#started)
-4. [First run](#firstrun)
-5. [Optional](#optional)
-6. [GTK](#gtk)
-7. [Uninstalling AeroThemePlasma (old)](#uninstall_old)
+1. [Installing the SberOS panel components](#installing-the-sberos-panel-components)
+2. [Prerequisites](#preq)
+3. [Migration notice](#migration)
+4. [Getting started](#started)
+5. [First run](#firstrun)
+6. [Optional](#optional)
+7. [GTK](#gtk)
+8. [Uninstalling AeroThemePlasma (old)](#uninstall_old)
 
 ## Prerequisites <a name="preq"></a>
 

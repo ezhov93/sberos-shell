@@ -6,7 +6,7 @@ import SircaShell
 Item {
     id: cal
     property bool open: false
-    implicitWidth: 348
+    implicitWidth: 324
     implicitHeight: col.implicitHeight + 12
     readonly property var loc: Qt.locale()
     property date now: new Date()
@@ -31,7 +31,10 @@ Item {
         }
     }
 
-    CalendarModel { id: events; dirs: Config.get("calendarDirs", events.defaultDirs()) }
+    CalendarModel {
+        id: events
+        dirs: Config.get("calendarDirs", events.defaultDirs())
+    }
 
     readonly property var dayEvents: {
         events.revision;
@@ -51,14 +54,11 @@ Item {
     }
 
     function sameDay(left, right) {
-        return left.getFullYear() === right.getFullYear() &&
-                left.getMonth() === right.getMonth() &&
-                left.getDate() === right.getDate();
+        return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth() && left.getDate() === right.getDate();
     }
 
     function timeAt(date) {
-        return date.toLocaleTimeString(loc, Locale.ShortFormat)
-                .replace(/\s?[AP]M$/i, match => match.trim().toLowerCase());
+        return date.toLocaleTimeString(loc, Locale.ShortFormat).replace(/\s?[AP]M$/i, match => match.trim().toLowerCase());
     }
 
     function timeOf(event) {
@@ -147,7 +147,9 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             color: Config.inkDim
                             font.pixelSize: 12
-                            font.features: { "tnum": 1 }
+                            font.features: {
+                                "tnum": 1
+                            }
                             text: cal.nextEvent ? cal.whenOf(cal.nextEvent) : ""
                         }
                     }
@@ -155,7 +157,12 @@ Item {
             }
         }
 
-        Rectangle { width: parent.width - 12; x: 6; height: 1; color: Config.fg(0.08) }
+        Rectangle {
+            width: parent.width - 12
+            x: 6
+            height: 1
+            color: Config.fg(0.08)
+        }
 
         Sber.CalendarView {
             id: calendarView
@@ -218,7 +225,11 @@ Item {
                         anchors.fill: parent
                         radius: 8
                         color: Config.fg(eventHover.hovered ? 0.07 : 0)
-                        Behavior on color { ColorAnimation { duration: Config.quick } }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.quick
+                            }
+                        }
                     }
 
                     Rectangle {
@@ -237,7 +248,9 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         color: Config.inkDim
                         font.pixelSize: 12
-                        font.features: { "tnum": 1 }
+                        font.features: {
+                            "tnum": 1
+                        }
                         text: cal.timeOf(eventRow.modelData)
                     }
 
@@ -252,7 +265,9 @@ Item {
                         textFormat: Text.StyledText
                     }
 
-                    HoverHandler { id: eventHover }
+                    HoverHandler {
+                        id: eventHover
+                    }
                 }
             }
 

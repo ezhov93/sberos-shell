@@ -13,15 +13,31 @@ Item {
     property real strength: 0.5          // 0 = off
     property real spread: 2.0            // haze size relative to the icon
     visible: strength > 0.01
-    width: iconSize * spread; height: width
-    Kirigami.Icon { id: src; width: root.iconSize; height: width; source: root.source; roundToIconSize: false; visible: false }
+    width: iconSize * spread
+    height: width
+    Kirigami.Icon {
+        id: src
+        width: root.iconSize
+        height: width
+        source: root.source
+        roundToIconSize: false
+        visible: false
+    }
     MultiEffect {
         anchors.fill: parent
         source: src                       // stretched to the haze size, then blurred: no detail survives, only colour
         autoPaddingEnabled: true
-        blurEnabled: true; blur: 1.0; blurMax: 64
-        saturation: Config.hazeSaturation; brightness: Config.hazeLift
+        blurEnabled: true
+        blur: 1.0
+        blurMax: 64
+        saturation: Config.hazeSaturation
+        brightness: Config.hazeLift
         opacity: Math.min(1, root.strength * Config.hazeFactor)
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 200
+                easing.type: Easing.OutCubic
+            }
+        }
     }
 }

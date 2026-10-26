@@ -17,10 +17,6 @@ out the hard way.
   exactly as it was. If the shell crashes five times within a minute, Plasma's panels come back by themselves.
 - It takes over some shortcuts while it runs: Meta, Meta+Space, Meta+V, Meta+A, Print, Meta+Shift+S and R, Ctrl+Alt+Del and
   Alt+Tab. You get them back when you switch it off.
-- The blur and the glass edges come from a KWin effect plugin. It is optional and needs sudo. A compositor plugin runs inside
-  KWin, so a bug in it can take your whole session down with it. It is also built for the exact KWin you have. After a
-  Plasma upgrade KWin will refuse to load it until you run `./install.sh` again. Until then everything still works, it just
-  looks flat.
 - The desktop look changes your settings: KDE colour scheme, GTK 3 and 4 CSS, and icon theme. Every step makes a backup and has a
   revert.
 - Only Plasma on Wayland. No X11, no Hyprland, Sway or GNOME.
@@ -88,12 +84,11 @@ Keep the source folder if you install the light/dark switch. `glass-mode` and th
 | | |
 |---|---|
 | KDE Plasma 6.6, Wayland, KWin | yes, this is what I use |
-| KDE Plasma 6.7 | builds and runs against 6.7.5 in a headless test session (bar, dock, launcher, quick settings, the KWin effects). I do not use 6.7 day to day yet, so tell me what you see |
-| Older Plasma 6 | maybe. The shell might miss things, and the KWin effect is picky about versions |
+| KDE Plasma 6.7 | builds and runs against 6.7.5 in a headless test session (bar, dock, launcher, quick settings). I do not use 6.7 day to day yet, so tell me what you see |
+| Older Plasma 6 | maybe. The shell might miss things |
 | X11, Hyprland, Sway, GNOME | no |
 | One screen | yes |
-| Several screens | wallpaper on all, bar and dock per screen from edit mode. Tested with two virtual screens only |
-| Without the KWin effect | works, but flat: see-through surfaces with no blur and no lit edge |
+| Several screens | wallpaper and panel on all connected screens by default; individual panels can be disabled. Tested with two virtual screens only |
 | NVIDIA | yes, developed on it |
 | AMD, Intel | untested. Please tell me how it goes |
 | Without plasmashell | yes: `sirca-shell-switch plasma off` masks it and the shell takes over the desktop, the OSD and notifications (this is how I run it now). `plasma on` brings it back |
@@ -101,14 +96,12 @@ Keep the source folder if you install the light/dark switch. `glass-mode` and th
 **How heavy is it?** On my machine (7800X3D, RTX 5080, one 5120x1440 screen), from systemd's own accounting of
 whole-day sessions: plasmashell with its panels averaged 1.4–1.6 % of one core, Sirca Shell doing the same job 0.2–0.4 %,
 with a similar memory footprint (about 420 MB resident, peaks under 1 GB for both). Not a benchmark, just my days. The
-KWin effect is the part that costs GPU time, and it costs the same with or without the shell.
 
 ## What is in here
 
 | folder | what |
 |---|---|
 | `shell/` | the shell itself (C++ and QML). Its README lists every feature, the settings, scripting and the build dependencies |
-| `kwin-effects/` | the glass KWin effect (blur, refraction, lit edge, shapes the shell describes to it) and Glass Key, which puts glass inside apps that paint opaque windows |
 | `desktop/` | desktop look tools: KDE colour scheme, GTK 3 and 4, `glass-mode` (light, dark, colour themes), and the lock screen |
 | `wallpapers/` | the wallpapers I use: one picture in seven colours, dark and light (5120 × 1440) |
 | `setups/` | the colour themes, and my bar and dock layout as a file for `sirca-shell-setup import` |
@@ -118,7 +111,6 @@ KWin effect is the part that costs GPU time, and it costs the same with or witho
 Everything written for this project is GPL-3.0-or-later, see `LICENSE`. A lot of it stands on other people's work, and each
 folder keeps their notices:
 
-- `kwin-effects/` is a fork of **kwin-effects-glass** by 4v3ngR, itself a fork of KWin's blur effect (KDE) by way of Better Blur; GPL-3.0.
 - `desktop/third_party/adw-gtk3/` is **adw-gtk3** by lassekongo83, LGPL-2.1.
 - `shell/qml/control/` derives from **Plasma Control Hub** by zayronxio; `shell/applets/` holds forks of KDE Plasma applets (their headers are kept).
 - Fonts: **Outfit** and **Inter**, SIL Open Font License.

@@ -11,11 +11,20 @@ Row {
     spacing: 1
     height: 14
     readonly property var bands: source.bands
-    Spectrum { id: source; active: spec.live && available }
-    Repeater { model: 32
-        Rectangle { required property int index
+    Spectrum {
+        id: source
+        active: spec.live && available
+    }
+    Repeater {
+        model: 32
+        Rectangle {
+            required property int index
             readonly property real level: spec.bands[index] || 0
-            width: 2; radius: 1; anchors.verticalCenter: parent.verticalCenter
+            width: 2
+            radius: 1
+            anchors.verticalCenter: parent.verticalCenter
             height: 3 + Math.round(11 * level)
-            color: Config.fg(0.5 + 0.45 * level) } }   // no Behavior: 25 updates a second on the bar surface, like the meter
+            color: Config.fg(0.5 + 0.45 * level)
+        }
+    }   // no Behavior: 25 updates a second on the bar surface, like the meter
 }

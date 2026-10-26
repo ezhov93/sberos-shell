@@ -14,19 +14,15 @@ Dock {
     title: "SberOS — Panel"
     // Fixed centre and right-hand budgets keep system changes out of the task/search geometry.
     readonly property real zoneGap: 8
-    readonly property real oskaWidth: Math.min(448, screenW * 0.25)
+    readonly property real oskaWidth: Math.min(456, screenW * 0.25)
     readonly property real systemZoneWidth: essential.implicitWidth + 16
-    readonly property real indicatorsAvailableWidth:
-        Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap)
-    readonly property real indicatorsWidth:
-        Math.min(indicatorsAvailableWidth, status.implicitWidth + 16)
+    readonly property real indicatorsAvailableWidth: Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap)
+    readonly property real indicatorsWidth: Math.min(indicatorsAvailableWidth, status.implicitWidth + 16)
     readonly property rect sberRect: Qt.rect(barRect.x, barRect.y, dockH, dockH)
     readonly property rect oskaRect: Qt.rect((width - oskaWidth) / 2, barRect.y, oskaWidth, dockH)
     readonly property rect essentialRect: Qt.rect(barRect.x + dockW - systemZoneWidth, barRect.y, systemZoneWidth, dockH)
-    readonly property rect indicatorsRect: Qt.rect(essentialRect.x - zoneGap - indicatorsWidth, barRect.y,
-        indicatorsWidth, dockH)
-    readonly property rect applicationsRect: Qt.rect(sberRect.x + sberRect.width + zoneGap, barRect.y,
-        Math.max(Config.dockCell + 2 * pad, Math.min(contentW, oskaRect.x - sberRect.x - sberRect.width - 2 * zoneGap)), dockH)
+    readonly property rect indicatorsRect: Qt.rect(essentialRect.x - zoneGap - indicatorsWidth, barRect.y, indicatorsWidth, dockH)
+    readonly property rect applicationsRect: Qt.rect(sberRect.x + sberRect.width + zoneGap, barRect.y, Math.max(Config.dockCell + 2 * pad, Math.min(contentW, oskaRect.x - sberRect.x - sberRect.width - 2 * zoneGap)), dockH)
     panelZones: [sberRect, applicationsRect, oskaRect, indicatorsRect, essentialRect]
     leadingWidth: applicationsRect.x - barRect.x
     trailingWidth: dockW - leadingWidth - applicationsRect.width
@@ -47,10 +43,7 @@ Dock {
     readonly property var nativeControl: controlLoader.item
     readonly property var notifications: historyLoader.item
     property int oskaNotificationRevision: 0
-    readonly property bool oskaNotificationsInhibited: oskaNotificationSettings.notificationsInhibitedByApplication
-        || (oskaNotificationSettings.notificationsInhibitedUntil instanceof Date
-            && !isNaN(oskaNotificationSettings.notificationsInhibitedUntil.getTime())
-            && Date.now() < oskaNotificationSettings.notificationsInhibitedUntil.getTime())
+    readonly property bool oskaNotificationsInhibited: oskaNotificationSettings.notificationsInhibitedByApplication || (oskaNotificationSettings.notificationsInhibitedUntil instanceof Date && !isNaN(oskaNotificationSettings.notificationsInhibitedUntil.getTime()) && Date.now() < oskaNotificationSettings.notificationsInhibitedUntil.getTime())
     readonly property var oskaNotification: {
         oskaNotificationRevision;
         const roles = NotificationManager.Notifications;
@@ -62,14 +55,12 @@ Dock {
             summary: String(oskaFeed.data(index, roles.SummaryRole) || ""),
             body: String(oskaFeed.data(index, roles.BodyRole) || ""),
             applicationIcon: String(oskaFeed.data(index, roles.ApplicationIconNameRole) || ""),
-            icon: String(oskaFeed.data(index, roles.IconNameRole) || ""),
+            icon: String(oskaFeed.data(index, roles.IconNameRole) || "")
         };
     }
     readonly property bool oskaNotificationVisible: openLobe === "search" && oskaNotification !== null
     readonly property real oskaNotificationHeight: oskaNotificationVisible ? 56 : 0
-    readonly property real activeSystemViewHeight: openLobe === "search"
-        ? searchResults.y + searchResults.height + (oskaNotificationVisible ? 8 + oskaNotificationHeight : 0)
-        : systemView ? systemView.y + (systemView.implicitHeight || systemView.height) : 0
+    readonly property real activeSystemViewHeight: openLobe === "search" ? searchResults.y + searchResults.height + (oskaNotificationVisible ? 8 + oskaNotificationHeight : 0) : systemView ? systemView.y + (systemView.implicitHeight || systemView.height) : 0
     readonly property bool mediaAvailable: media.hasTrack
     readonly property int barW: dockW
     readonly property bool showingCards: openLobe === "" && !searchField.activeFocus && !launcherOpen && !previewShown && cards.count > 0
@@ -77,13 +68,15 @@ Dock {
     systemOpen: openLobe !== "" || showingCards
     systemFocus: openLobe !== "" || searchField.activeFocus
     restingKeyboardMode: cards.replyingCount > 0 ? "ondemand" : "none"
-    systemWidth: openLobe === "search" || openLobe === "notif" || showingCards ? oskaWidth
-        : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
+    systemWidth: openLobe === "search" || openLobe === "notif" || showingCards ? oskaWidth : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * lobePad)
     systemGap: openLobe === "search" ? 16 : openLobe === "notif" || showingCards ? 8 : 0
     systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * lobePad)
-    systemAnchorX: openLobe === "search" || showingCards
-        ? searchField.mapToItem(panel.contentItem, searchField.width / 2, 0).x : popupAnchor
-    onSystemCloseRequested: { if (openLobe === "search") searchField.focus = false; openLobe = "" }
+    systemAnchorX: openLobe === "search" || showingCards ? searchField.mapToItem(panel.contentItem, searchField.width / 2, 0).x : popupAnchor
+    onSystemCloseRequested: {
+        if (openLobe === "search")
+            searchField.focus = false;
+        openLobe = "";
+    }
     onOpenLobeChanged: {
         if (openLobe !== "") {
             warm = true;
@@ -132,7 +125,9 @@ Dock {
         SberCore.Core.Settings.setThemeMode(Config.dark ? SberCore.Settings.Dark : SberCore.Settings.Light);
     }
     Component.onCompleted: syncTheme()
-    NotificationManager.Settings { id: oskaNotificationSettings }
+    NotificationManager.Settings {
+        id: oskaNotificationSettings
+    }
     NotificationManager.Notifications {
         id: oskaFeed
         limit: 256
@@ -147,18 +142,28 @@ Dock {
         sortMode: NotificationManager.Notifications.SortByDate
         sortOrder: Qt.AscendingOrder
         groupMode: NotificationManager.Notifications.GroupDisabled
-        urgencies: NotificationManager.Notifications.LowUrgency
-            | NotificationManager.Notifications.NormalUrgency
-            | NotificationManager.Notifications.CriticalUrgency
+        urgencies: NotificationManager.Notifications.LowUrgency | NotificationManager.Notifications.NormalUrgency | NotificationManager.Notifications.CriticalUrgency
     }
     Connections {
         target: oskaFeed
-        function onCountChanged() { panel.oskaNotificationRevision++ }
-        function onDataChanged() { panel.oskaNotificationRevision++ }
-        function onRowsInserted() { panel.oskaNotificationRevision++ }
-        function onRowsRemoved() { panel.oskaNotificationRevision++ }
-        function onModelReset() { panel.oskaNotificationRevision++ }
-        function onLayoutChanged() { panel.oskaNotificationRevision++ }
+        function onCountChanged() {
+            panel.oskaNotificationRevision++;
+        }
+        function onDataChanged() {
+            panel.oskaNotificationRevision++;
+        }
+        function onRowsInserted() {
+            panel.oskaNotificationRevision++;
+        }
+        function onRowsRemoved() {
+            panel.oskaNotificationRevision++;
+        }
+        function onModelReset() {
+            panel.oskaNotificationRevision++;
+        }
+        function onLayoutChanged() {
+            panel.oskaNotificationRevision++;
+        }
     }
     Timer {
         interval: 10000
@@ -224,7 +229,8 @@ Dock {
         contentItem: Item {
             Sber.Icon {
                 anchors.centerIn: parent
-                width: 24; height: 24
+                width: 24
+                height: 24
                 name: "Sber"
                 size: 24
                 color: Theme.Palette.Text.Default.Primary
@@ -236,15 +242,22 @@ Dock {
     Item {
         id: oska
         objectName: "panel-oska"
-        x: panel.oskaRect.x; y: panel.oskaRect.y
-        width: panel.oskaRect.width; height: panel.oskaRect.height
+        x: panel.oskaRect.x
+        y: panel.oskaRect.y
+        width: panel.oskaRect.width
+        height: panel.oskaRect.height
         enabled: !panel.editing
         PanelButton {
             id: notificationButton
             x: 8
             anchors.verticalCenter: parent.verticalCenter
-            symbol: "notifications-symbolic"
+            width: 40
+            height: 40
+            padding: 0
             description: qsTr("Notifications")
+            contentItem: OskaAvatar {
+                anchors.fill: parent
+            }
             onClicked: panel.toggle("notif")
         }
         TextInput {
@@ -270,8 +283,10 @@ Dock {
             }
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Escape) {
-                    if (text !== "") text = "";
-                    else focus = false;
+                    if (text !== "")
+                        text = "";
+                    else
+                        focus = false;
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Down) {
                     searchResults.moveSelection(1);
@@ -291,15 +306,15 @@ Dock {
             anchors.verticalCenter: parent.verticalCenter
             width: searchField.width
             visible: searchField.text === ""
-            text: panel.greetingVisible
-                ? qsTr("Привет, Михаил! Желаю хорошего дня")
-                : qsTr("Найти приложение или документ")
+            text: panel.greetingVisible ? qsTr("Привет, Михаил! Желаю хорошего дня") : qsTr("Найти приложение или документ")
             color: Theme.Palette.Text.Default.Secondary
             font: Theme.Fonts.BodySB
             elide: Text.ElideRight
             enabled: false
         }
-        KeyboardInfo { id: keyboard }
+        KeyboardInfo {
+            id: keyboard
+        }
         PanelButton {
             id: layoutButton
             anchors.right: parent.right
@@ -552,9 +567,7 @@ Dock {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
-                        source: panel.oskaNotification
-                            ? panel.oskaNotification.applicationIcon || panel.oskaNotification.icon
-                            : "preferences-desktop-notification"
+                        source: panel.oskaNotification ? panel.oskaNotification.applicationIcon || panel.oskaNotification.icon : "preferences-desktop-notification"
                         roundToIconSize: false
                     }
                 }
@@ -579,10 +592,7 @@ Dock {
                     isMask: true
                     color: Theme.Palette.Text.Default.Primary
                     roundToIconSize: false
-                    visible: panel.oskaNotification
-                        && panel.oskaNotification.applicationIcon !== ""
-                        && panel.oskaNotification.icon !== ""
-                        && panel.oskaNotification.icon !== panel.oskaNotification.applicationIcon
+                    visible: panel.oskaNotification && panel.oskaNotification.applicationIcon !== "" && panel.oskaNotification.icon !== "" && panel.oskaNotification.icon !== panel.oskaNotification.applicationIcon
                 }
             }
         }

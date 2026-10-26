@@ -7,9 +7,20 @@ QtObject {
     id: set
     property string screenName: ""               // the output this set belongs to (Main's list model row)
     property var screen: null                    // its QScreen, looked up by name; kept while the name is gone (the set is being destroyed then)
-    function findScreen() { for (const s of Qt.application.screens) if (s.name === screenName) { screen = s; return } }
+    function findScreen() {
+        for (const s of Qt.application.screens)
+            if (s.name === screenName) {
+                screen = s;
+                return;
+            }
+    }
     onScreenNameChanged: findScreen()
-    property var _screens: Connections { target: Qt.application; function onScreensChanged() { set.findScreen() } }   // a re-plugged output is a new QScreen with the old name
+    property var _screens: Connections {
+        target: Qt.application
+        function onScreensChanged() {
+            set.findScreen();
+        }
+    }   // a re-plugged output is a new QScreen with the old name
     property var host: null                      // the root (Main.qml). Not named "main": a property called main shadows the id
     readonly property string name: screen ? screen.name : ""
     readonly property bool primary: name === Shell.primaryScreenName
@@ -19,40 +30,83 @@ QtObject {
     readonly property int ox: screen ? screen.virtualX : 0
     readonly property int oy: screen ? screen.virtualY : 0
 
-    property var wallpaper: Wallpaper { screen: set.screen; onPressedAnywhere: { set.host.closePopups(); set.host.closeDesktopMenu() }
-        onMenuRequested: (x, y) => set.host.openDesktopMenu(set.screen, x, y) }
+    property var wallpaper: Wallpaper {
+        screen: set.screen
+        onPressedAnywhere: {
+            set.host.closePopups();
+            set.host.closeDesktopMenu();
+        }
+        onMenuRequested: (x, y) => set.host.openDesktopMenu(set.screen, x, y)
+    }
     // plasmashell's desktop window can end up ABOVE the wallpaper again (whichever of the two mapped last is on top); then
     // a right click on the desktop opens Plasma's menu. D-Bus remapWallpaper re-maps ours on top.
-    property var _remap: Connections { target: Shell; function onRemapWallpaperRequested() { if (set.wallpaper) set.wallpaper.remapNow() } }
+    property var _remap: Connections {
+        target: Shell
+        function onRemapWallpaperRequested() {
+            if (set.wallpaper)
+                set.wallpaper.remapNow();
+        }
+    }
 
     // One unified panel per connected screen unless its config explicitly disables it.
     readonly property bool wantPanel: choice.panel !== undefined ? !!choice.panel : true
     property var panel: null
-    property var sberCatcher: SberMenuCatcher { host: set.host; panel: set.panel; targetScreen: set.screen }
-    readonly property var _cPanel: Component { UnifiedPanel {
-        screen: set.screen; userHidden: !set.wantPanel
-        recorder: set.host.recorder; editing: set.host.editing
-        externalMenuOpen: !!set.panel && set.host.activeSberPanel === set.panel
-        showingDesktop: set.host.showingDesktop
-        activeTitle: set.host.activeTitle; activeApp: set.host.activeApp; activeIcon: set.host.activeIcon
-        onEditRequested: set.host.setEditing(true)
-        onSberRequested: set.host.toggleSber(set.panel, false)
-        onPressedAnywhere: set.host.lastActiveScreenName = set.name
-        onSearchRequested: set.host.win("search").toggle()
-        onShowDesktopRequested: set.host.toggleShowDesktop()
-        onLauncherOpenChanged: if (launcherOpen) set.host.closeLobes()
-        covered: { set.host.rev; return !set.host.showingDesktop && set.host.overlaps(Qt.rect(set.ox + x + (width - dockW) / 2, set.oy + y + height - strutSize, dockW, strutSize)) }
-    } }
+    property var sberCatcher: SberMenuCatcher {
+        host: set.host
+        panel: set.panel
+        targetScreen: set.screen
+    }
+    readonly property var _cPanel: Component {
+        UnifiedPanel {
+            screen: set.screen
+            userHidden: !set.wantPanel
+            recorder: set.host.recorder
+            editing: set.host.editing
+            externalMenuOpen: !!set.panel && set.host.activeSberPanel === set.panel
+            showingDesktop: set.host.showingDesktop
+            activeTitle: set.host.activeTitle
+            activeApp: set.host.activeApp
+            activeIcon: set.host.activeIcon
+            onEditRequested: set.host.setEditing(true)
+            onSberRequested: set.host.toggleSber(set.panel, false)
+            onPressedAnywhere: set.host.lastActiveScreenName = set.name
+            onLaunchpadRequested: set.host.openLaunchpad(set.screen)
+            onShowDesktopRequested: set.host.toggleShowDesktop()
+            onLauncherOpenChanged: if (launcherOpen)
+                set.host.closeLobes()
+            covered: {
+                set.host.rev;
+                return !set.host.showingDesktop && set.host.overlaps(Qt.rect(set.ox + x + (width - dockW) / 2, set.oy + y + height - strutSize, dockW, strutSize));
+            }
+        }
+    }
     property bool _syncing: false
     property int _syncCalls: 0
     function sync() {
-        if (!host || !screen || _syncing) return
-        _syncing = true; _syncCalls++             // bindings re-enter sync while a panel is being built
-        if (!panel && wantPanel) panel = _cPanel.createObject(set)
-        else if (panel && !wantPanel) { panel.destroy(); panel = null }
-        _syncing = false
+        if (!host || !screen || _syncing)
+            return;
+        _syncing = true;
+        _syncCalls++;             // bindings re-enter sync while a panel is being built
+        if (!panel && wantPanel)
+            panel = _cPanel.createObject(set);
+        else if (panel && !wantPanel) {
+            panel.destroy();
+            panel = null;
+        }
+        _syncing = false;
     }
-    onWantPanelChanged: sync(); onPrimaryChanged: sync(); onHostChanged: sync(); onScreenChanged: sync()
-    Component.onCompleted: { findScreen(); sync() }
-    Component.onDestruction: { if (panel) panel.destroy(); if (wallpaper) wallpaper.destroy() }
+    onWantPanelChanged: sync()
+    onPrimaryChanged: sync()
+    onHostChanged: sync()
+    onScreenChanged: sync()
+    Component.onCompleted: {
+        findScreen();
+        sync();
+    }
+    Component.onDestruction: {
+        if (panel)
+            panel.destroy();
+        if (wallpaper)
+            wallpaper.destroy();
+    }
 }

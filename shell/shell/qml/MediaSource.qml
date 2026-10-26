@@ -12,14 +12,33 @@ QtObject {
     // while another app plays, so every source is watched here: a playing one wins (the model's own choice first, if that is
     // playing), and with nothing playing it is the model's choice as before.
     property var sources: []
-    readonly property var _watch: Instantiator { model: mpris
-        delegate: QtObject { required property var container }
-        onObjectAdded: (i, o) => { const l = src.sources.slice(); l.push(o); src.sources = l }
-        onObjectRemoved: (i, o) => { src.sources = src.sources.filter(x => x !== o) } }
-    readonly property var player: { const cur = mpris.currentPlayer
-        if (cur && cur.playbackStatus === Mpris.PlaybackStatus.Playing) return cur
-        for (let i = 0; i < sources.length; ++i) { const c = sources[i].container; if (c && c.playbackStatus === Mpris.PlaybackStatus.Playing) return c }
-        return cur }
+    readonly property var _watch: Instantiator {
+        model: mpris
+        delegate: QtObject {
+            required property var container
+        }
+        onObjectAdded: (i, o) => {
+            const l = src.sources.slice();
+            l.push(o);
+            src.sources = l;
+        }
+        onObjectRemoved: (i, o) => {
+            src.sources = src.sources.filter(x => x !== o);
+        }
+    }
+    readonly property var player: {
+        const cur = mpris.currentPlayer;
+        if (cur && cur.playbackStatus === Mpris.PlaybackStatus.Playing)
+            return cur;
+        for (let i = 0; i < sources.length; ++i) {
+            const c = sources[i].container;
+            if (c && c.playbackStatus === Mpris.PlaybackStatus.Playing)
+                return c;
+        }
+        return cur;
+    }
     readonly property bool playing: !!player && player.playbackStatus === Mpris.PlaybackStatus.Playing
-    readonly property var _model: Mpris.Mpris2Model { id: mpris }
+    readonly property var _model: Mpris.Mpris2Model {
+        id: mpris
+    }
 }

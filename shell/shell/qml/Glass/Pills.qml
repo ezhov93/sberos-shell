@@ -19,8 +19,10 @@ Row {
     spacing: 3
     visible: shown > 0
     function level(i) {
-        if (minimized) return 0.32;
-        if (i === hit) return 0.95;
+        if (minimized)
+            return 0.32;
+        if (i === hit)
+            return 0.95;
         return groupActive ? 0.42 : 0.55;
     }
     Repeater {
@@ -32,8 +34,17 @@ Row {
             radius: pills.thick / 2
             color: pills.attention ? Config.attention : Config.fgSolid
             opacity: pills.level(index)
-            Behavior on width { NumberAnimation { duration: Config.normal; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: Config.quick } }
+            Behavior on width {
+                NumberAnimation {
+                    duration: Config.normal
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Config.quick
+                }
+            }
         }
     }
 }

@@ -24,13 +24,20 @@ Item {
         z: -1
         visible: card.globalBool
 
-        color: Qt.rgba(root.themeBgColor.r, root.themeBgColor.g, root.themeBgColor.b,
-                       Math.min(1.0, root.cardAlpha + (card.hovered ? root.cardHoverBoost : 0)))
-        Behavior on color { ColorAnimation { duration: 120 } }
+        color: Qt.rgba(root.themeBgColor.r, root.themeBgColor.g, root.themeBgColor.b, Math.min(1.0, root.cardAlpha + (card.hovered ? root.cardHoverBoost : 0)))
+        Behavior on color {
+            ColorAnimation {
+                duration: 120
+            }
+        }
 
         border.width: 1
         border.color: card.hovered ? root.cardRimHoverColor : root.cardRimColor
-        Behavior on border.color { ColorAnimation { duration: 120 } }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 120
+            }
+        }
 
         // Top sheen: light catching the upper edge of the glass
         Rectangle {
@@ -38,9 +45,18 @@ Item {
             anchors.margins: 1
             radius: parent.radius - 1
             gradient: Gradient {
-                GradientStop { position: 0.0;  color: root.cardSheenColor }
-                GradientStop { position: 0.42; color: "transparent" }
-                GradientStop { position: 1.0;  color: root.cardFootColor }
+                GradientStop {
+                    position: 0.0
+                    color: root.cardSheenColor
+                }
+                GradientStop {
+                    position: 0.42
+                    color: "transparent"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: root.cardFootColor
+                }
             }
         }
 

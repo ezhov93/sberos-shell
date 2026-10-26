@@ -10,8 +10,9 @@ import org.kde.kirigami as Kirigami
 Item {
     id: root
     property bool expanded: false                      // set by the bar; the pages set it to false to close themselves
-    signal closeRequested()
-    onExpandedChanged: if (!expanded) closeRequested()
+    signal closeRequested
+    onExpandedChanged: if (!expanded)
+        closeRequested()
 
     readonly property color themeBgColor: "#18191b"
     readonly property bool isDarkTheme: true
@@ -34,7 +35,6 @@ Item {
     readonly property int mediumFontSize: Kirigami.Theme.defaultFont.pixelSize
     readonly property bool isVertical: false
     readonly property bool iconPositionRight: false
-    readonly property real scale: 1
     readonly property int pad: 12
     readonly property int gap: 10
     readonly property int bubbleSize: 34
@@ -46,5 +46,8 @@ Item {
     implicitHeight: panel.Layout.preferredHeight > 0 ? panel.Layout.preferredHeight : 420
     Kirigami.Theme.inherit: false
     Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
-    FullRepresentation { id: panel; anchors.fill: parent }
+    FullRepresentation {
+        id: panel
+        anchors.fill: parent
+    }
 }

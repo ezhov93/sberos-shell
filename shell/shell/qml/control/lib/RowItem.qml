@@ -27,7 +27,11 @@ Item {
         anchors.margins: 4
         radius: 12
         color: textArea.containsMouse ? root.rowHoverColor : "transparent"
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color {
+            ColorAnimation {
+                duration: 120
+            }
+        }
     }
 
     RowLayout {
@@ -58,24 +62,31 @@ Item {
             }
         }
 
-        ColumnLayout {
+        Item {
             Layout.fillWidth: true
-            spacing: 1
-            PlasmaComponents3.Label {
-                Layout.fillWidth: true
-                text: row.label
-                font.pixelSize: root.labelSize
-                font.weight: Font.DemiBold
-                elide: Text.ElideRight
+            implicitHeight: labels.implicitHeight
+
+            ColumnLayout {
+                id: labels
+                anchors.fill: parent
+                spacing: 1
+                PlasmaComponents3.Label {
+                    Layout.fillWidth: true
+                    text: row.label
+                    font.pixelSize: root.labelSize
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                PlasmaComponents3.Label {
+                    Layout.fillWidth: true
+                    text: row.sublabel
+                    visible: text !== ""
+                    font.pixelSize: root.subLabelSize
+                    opacity: 0.68
+                    elide: Text.ElideRight
+                }
             }
-            PlasmaComponents3.Label {
-                Layout.fillWidth: true
-                text: row.sublabel
-                visible: text !== ""
-                font.pixelSize: root.subLabelSize
-                opacity: 0.68
-                elide: Text.ElideRight
-            }
+
             MouseArea {
                 id: textArea
                 anchors.fill: parent

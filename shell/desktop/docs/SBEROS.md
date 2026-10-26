@@ -73,7 +73,7 @@ KDE получает отдельные группы Window/View/Button/Selectio
 
 | Область | Текущее назначение / потребители | Действие |
 | --- | --- | --- |
-| `design/tokens.json`, `tools/tokens2css.py`, `design/mock/` | Палитра Glass и HTML-макеты | Сохранить как исходный референс. Новые палитры SberOS не зависят от этих токенов |
+| `design/tokens.json`, `tools/tokens2css.py` | Палитра Glass | Сохранить как исходные ресурсы. Новые палитры SberOS не зависят от этих токенов |
 | `design/fonts/`, `design/wallpaper/`, `tools/make_default_wallpaper.py`, `wallpaper_variants.py` | Исходные ресурсы; генераторы обоев | Сохранить происхождение, лицензии и пользовательские обои; выбор фирменных ресурсов отложен |
 | `tools/gen_kde.py`, `gen_gtk.py` | Glass-генераторы; вызываются apply-скриптами и `mode.sh` | Сохранить переходный путь; новый генератор SberOS изолирован от него |
 | `tools/apply_kde.sh`, `apply_gtk.sh`, `apply_all.sh` | Применение Glass, резервные копии и откат; вызывает `shell/install.sh` | Не использовать для новых палитр. Следующий этап — отдельное применение и откат в тестовом профиле |

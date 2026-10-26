@@ -44,8 +44,7 @@ OsdWindow {
         property string icon
         property bool showingProgress: false
 
-        readonly property real fraction: showingProgress && osdMaxValue > 0
-            ? Math.max(0, Math.min(1, Number(osdValue) / osdMaxValue)) : 0
+        readonly property real fraction: showingProgress && osdMaxValue > 0 ? Math.max(0, Math.min(1, Number(osdValue) / osdMaxValue)) : 0
         readonly property string labelText: (showingProgress ? osdAdditionalText : osdValue) ?? ""
         readonly property bool overdrive: showingProgress && Number(osdValue) > 100
 
@@ -101,7 +100,12 @@ OsdWindow {
                         width: Math.max(bar.iconZone, osd.fraction * parent.width)
                         radius: height / 2
                         color: osd.overdrive ? Kirigami.Theme.neutralTextColor : Qt.rgba(1, 1, 1, 0.92)
-                        Behavior on width { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: 90
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
                 }
                 Kirigami.Icon {
@@ -127,7 +131,11 @@ OsdWindow {
                 font.weight: Font.DemiBold
                 opacity: 0.85
                 color: osd.overdrive ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
-                TextMetrics { id: metrics; font: percentLabel.font; text: "150%" }
+                TextMetrics {
+                    id: metrics
+                    font: percentLabel.font
+                    text: "150%"
+                }
             }
         }
     }

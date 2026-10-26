@@ -1,0 +1,17 @@
+[SddmGreeterTheme]
+Name=hexabee-light
+Description=hexabee SDDM theme light mode for KDE Plasma
+Author=linuxscoop
+Copyright=(c) 2014, David Edmundson
+License=CC-BY-SA
+Type=sddm-theme
+Version=0.1
+Website=https://github.com/linuxscoop/hexabee-sddm
+Screenshot=preview.jpg
+MainScript=Main.qml
+ConfigFile=theme.conf
+TranslationsDirectory=translations
+Email=linuxscoop@hotmail.com
+Theme-Id=hexabee-light
+Theme-API=2.0
+QtVersion=6

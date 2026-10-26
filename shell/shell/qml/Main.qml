@@ -8,13 +8,44 @@ QtObject {
     // The sets are keyed by output NAME, one row each in a list model that is edited in place: unplugging a middle screen
     // removes that screen's row and so that set only. (A count model gave the delegates an index: removing the middle
     // screen destroyed the LAST set and re-pointed the others at the wrong QScreen.) The set finds its QScreen by name.
-    property var screenList: ListModel { id: screenList }
-    function rescanScreens() { const have = Qt.application.screens.map(s => s.name)
-        for (let i = screenList.count - 1; i >= 0; --i) if (have.indexOf(screenList.get(i).screenName) < 0) screenList.remove(i)
-        for (const n of have) { let seen = false; for (let i = 0; i < screenList.count; ++i) if (screenList.get(i).screenName === n) { seen = true; break } if (!seen) screenList.append({ screenName: n }) } }
-    property var _scr: Connections { target: Qt.application; function onScreensChanged() { if (main._made && main._made.sberMenu) main._made.sberMenu.closeAll(); main.rescanScreens() } }
-    property var sets: Instantiator { model: screenList; delegate: ScreenSet { required screenName; host: main }
-        onObjectAdded: (i, o) => main.rescan(); onObjectRemoved: (i, o) => main.rescan() }
+    property var screenList: ListModel {
+        id: screenList
+    }
+    function rescanScreens() {
+        const have = Qt.application.screens.map(s => s.name);
+        for (let i = screenList.count - 1; i >= 0; --i)
+            if (have.indexOf(screenList.get(i).screenName) < 0)
+                screenList.remove(i);
+        for (const n of have) {
+            let seen = false;
+            for (let i = 0; i < screenList.count; ++i)
+                if (screenList.get(i).screenName === n) {
+                    seen = true;
+                    break;
+                }
+            if (!seen)
+                screenList.append({
+                    screenName: n
+                });
+        }
+    }
+    property var _scr: Connections {
+        target: Qt.application
+        function onScreensChanged() {
+            if (main._made && main._made.sberMenu)
+                main._made.sberMenu.closeAll();
+            main.rescanScreens();
+        }
+    }
+    property var sets: Instantiator {
+        model: screenList
+        delegate: ScreenSet {
+            required screenName
+            host: main
+        }
+        onObjectAdded: (i, o) => main.rescan()
+        onObjectRemoved: (i, o) => main.rescan()
+    }
     property var primarySet: null
     property string lastActiveScreenName: ""
     property var activeSberPanel: null
@@ -22,7 +53,8 @@ QtObject {
     function panelScreen(panel) {
         for (let i = 0; i < sets.count; ++i) {
             const set = sets.objectAt(i);
-            if (set && set.panel === panel) return set.screen;
+            if (set && set.panel === panel)
+                return set.screen;
         }
         return panel ? panel.screen : null;
     }
@@ -32,12 +64,15 @@ QtObject {
     function activePanel() {
         for (let i = 0; i < sets.count; ++i) {
             const s = sets.objectAt(i);
-            if (s && s.name === lastActiveScreenName && s.panel && !s.panel.userHidden) return s.panel;
+            if (s && s.name === lastActiveScreenName && s.panel && !s.panel.userHidden)
+                return s.panel;
         }
-        if (primarySet && primarySet.panel && !primarySet.panel.userHidden) return primarySet.panel;
+        if (primarySet && primarySet.panel && !primarySet.panel.userHidden)
+            return primarySet.panel;
         for (let i = 0; i < sets.count; ++i) {
             const s = sets.objectAt(i);
-            if (s && s.panel && !s.panel.userHidden) return s.panel;
+            if (s && s.panel && !s.panel.userHidden)
+                return s.panel;
         }
         return null;
     }
@@ -45,37 +80,96 @@ QtObject {
         const menu = win("sberMenu");
         const targetScreen = panelScreen(panel);
         if (menu.visible) {
-            if (keyboard) { menu.closeAll(); return; }
-            if (menu.child !== "") { menu.closeChild(); return; }
-            if (panel && menu.screen && targetScreen && menu.screen.name === targetScreen.name) { menu.closeAll(); return; }
+            if (keyboard) {
+                menu.closeAll();
+                return;
+            }
+            if (menu.child !== "") {
+                menu.closeChild();
+                return;
+            }
+            if (panel && menu.screen && targetScreen && menu.screen.name === targetScreen.name) {
+                menu.closeAll();
+                return;
+            }
             menu.closeAll();
         }
-        if (!panel) return;
+        if (!panel)
+            return;
         closePopups();
         lastActiveScreenName = targetScreen.name;
         activeSberScreen = targetScreen;
         activeSberPanel = panel;
-        menu.openAt(targetScreen, Qt.rect(panel.x + panel.sberRect.x, panel.y + panel.sberRect.y,
-            panel.sberRect.width, panel.sberRect.height));
+        menu.openAt(targetScreen, Qt.rect(panel.x + panel.sberRect.x, panel.y + panel.sberRect.y, panel.sberRect.width, panel.sberRect.height));
     }
-    function rescan() { let p = null; for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.primary) { p = o; break } } if (!p && sets.count) p = sets.objectAt(0); primarySet = p }
-    property var _ps: Connections { target: Shell; function onPrimaryScreenChanged() { main.rescan() } }
+    function rescan() {
+        let p = null;
+        for (let i = 0; i < sets.count; ++i) {
+            const o = sets.objectAt(i);
+            if (o && o.primary) {
+                p = o;
+                break;
+            }
+        }
+        if (!p && sets.count)
+            p = sets.objectAt(0);
+        primarySet = p;
+    }
+    property var _ps: Connections {
+        target: Shell
+        function onPrimaryScreenChanged() {
+            main.rescan();
+        }
+    }
     readonly property var dock: primarySet ? primarySet.panel : null
     // shared state for the unified panel (the task model is global)
     readonly property bool fullscreenActive: dock ? dock.fullscreenActive : false
     readonly property bool gameActive: dock ? dock.gameActive : false
     readonly property bool launcherOpen: dock ? dock.launcherOpen : false        // read-only: close through closeLauncher()
-    function closeLobes() { for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.panel) o.panel.openLobe = "" } }
-    function closeLauncher() { for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.panel) o.panel.launcherOpen = false } }
+    function closeLobes() {
+        for (let i = 0; i < sets.count; ++i) {
+            const o = sets.objectAt(i);
+            if (o && o.panel)
+                o.panel.openLobe = "";
+        }
+    }
+    function closeLauncher() {
+        for (let i = 0; i < sets.count; ++i) {
+            const o = sets.objectAt(i);
+            if (o && o.panel)
+                o.panel.launcherOpen = false;
+        }
+    }
+    function openLaunchpad(screen) {
+        closePopups();
+        win("launchpad").openAt(screen);
+    }
     // the menu window is moved to another screen only when it has to be: re-assigning Window.screen on a mapped layer
     // surface left the menu unable to show at all (2026-09-22)
-    function openDesktopMenu(screen, x, y) { const m = win("desktopMenu"); if (screen && !m.visible && m.screen !== screen && (!m.screen || m.screen.name !== screen.name)) { m.close_(); m.screen = screen; m.setupDone = false } m.openAt(x, y) }
+    function openDesktopMenu(screen, x, y) {
+        const m = win("desktopMenu");
+        if (screen && !m.visible && m.screen !== screen && (!m.screen || m.screen.name !== screen.name)) {
+            m.close_();
+            m.screen = screen;
+            m.setupDone = false;
+        }
+        m.openAt(x, y);
+    }
 
-    // ---- start-up self-test (6 s in: panel, shortcuts, fake input, Glass effect, notifications; a notification only
+    // ---- start-up self-test (6 s in: panel, shortcuts, fake input, notifications; a notification only
     // when something is missing) and the crash report for a run that systemd restarted after a failure
-    property var _selfTest: Timer { interval: 6000; running: true; onTriggered: { Shell.selfTest(); Shell.crashReport() } }
+    property var _selfTest: Timer {
+        interval: 6000
+        running: true
+        onTriggered: {
+            Shell.selfTest();
+            Shell.crashReport();
+        }
+    }
     // ---- follow the sun: the one acting instance (quick settings shows a display-only copy); does nothing unless autoMode == "sun"
-    property var autoMode: QSAutoMode { driver: true }
+    property var autoMode: QSAutoMode {
+        driver: true
+    }
     // ---- snap zones while a window is dragged (config snapZones); the window builds hidden and loads/unloads its KWin script itself
     property var _snap: SnapZones {}
     // ---- Alt+Tab
@@ -85,108 +179,425 @@ QtObject {
     // large windows' worth of QML in the start-up path). warm builds them one by one once the shell has settled, so the
     // first Alt+Tab or Meta+Space does not pay for it either.
     property var _made: ({})
-    readonly property var _lazy: ({ sberMenu: _cSberMenu, clipboardPanel: _cClipboardPanel, powerMenu: _cPowerMenu, welcome: _cWelcome, capture: _cCapture, settings: _cSettings, switcher: _cSwitcher, search: _cSearch, tiles: _cTiles, editScene: _cEdit, desktopMenu: _cDesktopMenu, cheatSheet: _cCheatSheet })
-    function win(name) { let w = _made[name]; if (!w) { const t = Date.now(); w = _lazy[name].createObject(main); _made[name] = w; if (!w) console.warn("could not build", name, _lazy[name].errorString()); else console.log("start-up: built", name, "in", Date.now() - t, "ms") } return w }
-    function closePopups() { if (_made.sberMenu) _made.sberMenu.closeAll(); main.closeLobes(); for (let i = 0; i < sets.count; ++i) { const o = sets.objectAt(i); if (o && o.panel) { o.panel.launcherOpen = false; o.panel.previewShown = false } } }
+    readonly property var _lazy: ({
+            sberMenu: _cSberMenu,
+            clipboardPanel: _cClipboardPanel,
+            powerMenu: _cPowerMenu,
+            welcome: _cWelcome,
+            capture: _cCapture,
+            settings: _cSettings,
+            switcher: _cSwitcher,
+            launchpad: _cLaunchpad,
+            tiles: _cTiles,
+            editScene: _cEdit,
+            desktopMenu: _cDesktopMenu,
+            cheatSheet: _cCheatSheet
+        })
+    function win(name) {
+        let w = _made[name];
+        if (!w) {
+            const t = Date.now();
+            w = _lazy[name].createObject(main);
+            _made[name] = w;
+            if (!w)
+                console.warn("could not build", name, _lazy[name].errorString());
+            else
+                console.log("start-up: built", name, "in", Date.now() - t, "ms");
+        }
+        return w;
+    }
+    function closePopups() {
+        if (_made.sberMenu)
+            _made.sberMenu.closeAll();
+        if (_made.launchpad)
+            _made.launchpad.close_();
+        main.closeLobes();
+        for (let i = 0; i < sets.count; ++i) {
+            const o = sets.objectAt(i);
+            if (o && o.panel) {
+                o.panel.launcherOpen = false;
+                o.panel.previewShown = false;
+            }
+        }
+    }
     // (closePopups must NOT close the desktop menu: the menu calls it from its own opened(), so it closed itself the moment
     // it opened: "no menu appears on right click", 2026-09-22. A press on the desktop closes it explicitly instead.)
-    function closeDesktopMenu() { const dm = _made["desktopMenu"]; if (dm && dm.visible) dm.close_() }
-    property var _warm: Timer { interval: 2500; running: true; repeat: true; property var todo: ["switcher", "search", "clipboardPanel", "tiles", "powerMenu", "capture", "settings"]
-        onTriggered: { interval = 200; const n = todo.shift(); if (n) main.win(n); if (todo.length === 0) stop() } }
-    property var _cSberMenu: Component { SberMenu {
-        onClosed: { main.activeSberPanel = null; main.activeSberScreen = null; }
-        onSettingsRequested: main.win("settings").openIt()
-    } }
-    property var _cClipboardPanel: Component { ClipboardPanel { entries: main.clipboard; onOpened: main.closePopups() } }
-    property var _cPowerMenu: Component { PowerMenu { onOpened: main.closePopups() } }
-    property var _cWelcome: Component { Welcome { onOpened: main.closePopups() } }
+    function closeDesktopMenu() {
+        const dm = _made["desktopMenu"];
+        if (dm && dm.visible)
+            dm.close_();
+    }
+    property var _openLaunchpadPreview: Timer {
+        interval: 900
+        running: Qt.application.arguments.indexOf("--open-launchpad") >= 0
+        onTriggered: main.openLaunchpad(main.primarySet ? main.primarySet.screen : Qt.application.screens[0])
+    }
+    property var _warm: Timer {
+        interval: 2500
+        running: true
+        repeat: true
+        property var todo: ["switcher", "clipboardPanel", "tiles", "powerMenu", "capture", "settings"]
+        onTriggered: {
+            interval = 200;
+            const n = todo.shift();
+            if (n)
+                main.win(n);
+            if (todo.length === 0)
+                stop();
+        }
+    }
+    property var _cSberMenu: Component {
+        SberMenu {
+            onClosed: {
+                main.activeSberPanel = null;
+                main.activeSberScreen = null;
+            }
+            onSettingsRequested: main.win("settings").openIt()
+        }
+    }
+    property var _cClipboardPanel: Component {
+        ClipboardPanel {
+            entries: main.clipboard
+            onOpened: main.closePopups()
+        }
+    }
+    property var _cPowerMenu: Component {
+        PowerMenu {
+            onOpened: main.closePopups()
+        }
+    }
+    property var _cWelcome: Component {
+        Welcome {
+            onOpened: main.closePopups()
+        }
+    }
     // first run (no "welcomed" key in the config): the card comes up once, a few seconds after the bar and dock
-    property var _welcomeOnce: Timer { interval: 4000; running: Config.get("welcomed", false) !== true; onTriggered: if (Config.get("welcomed", false) !== true) main.win("welcome").open() }
-    property var _cCapture: Component { Capture { onOpened: main.closePopups(); onRecordRequested: (x, y, w, h) => main.recorder.start(x, y, w, h) } }
+    property var _welcomeOnce: Timer {
+        interval: 4000
+        running: Config.get("welcomed", false) !== true
+        onTriggered: if (Config.get("welcomed", false) !== true)
+            main.win("welcome").open()
+    }
+    property var _cCapture: Component {
+        Capture {
+            onOpened: main.closePopups()
+            onRecordRequested: (x, y, w, h) => main.recorder.start(x, y, w, h)
+        }
+    }
     // every visible window's frame, top-most first, for "click = that window" in the screenshot overlay
     function windowRects() {
-        const m = windows; if (!m) return []; const R_ = TaskManager.AbstractTasksModel; const out = [];
-        for (let i = 0; i < m.count; ++i) { const idx = m.makeModelIndex(i); if (m.data(idx, R_.IsMinimized)) continue
-            const g = m.data(idx, R_.Geometry); if (g && g.width > 0) out.push({ x: g.x, y: g.y, width: g.width, height: g.height, z: m.data(idx, R_.StackingOrder) }) }
-        out.sort((a, b) => b.z - a.z); return out }
-    property var _dmr: Connections { target: Shell; function onDesktopMenuRequested(x, y) { if (x < 0) main.win("desktopMenu").close_(); else main.win("desktopMenu").openAt(x, y) } }   // negative = close
-    property var _cDesktopMenu: Component { DesktopMenu { onOpened: main.closePopups(); onAction: id => main.desktopAction(id) } }
-    function desktopAction(id) {
-        if (id === "wallpaper") win("settings").openIt(4)
-        else if (id === "edit") setEditing(true)
-        else if (id === "glass") win("settings").openIt()
-        else if (id === "terminal") Shell.runDetached(Shell.defaultTerminal(), [])
-        else if (id === "files") Shell.runDetached("xdg-open", [Shell.homePath()])
-        else if (id === "displays") Shell.runDetached("systemsettings", ["kcm_kscreen"])
-        else if (id === "system") Shell.runDetached("systemsettings", [])
-        else if (id === "lock") Shell.dbusSend("org.freedesktop.ScreenSaver", "/ScreenSaver", "org.freedesktop.ScreenSaver", "Lock")
-        else if (id === "power") { const p = win("powerMenu"); p.dryRun = false; p.toggle() }
-        else if (id === "mode") { const want = Config.dark ? "light" : "dark"; Shell.saveConfigKey("mode", want); if (Shell.hasProgram("glass-mode")) Shell.runDetached("glass-mode", [want]) }
-        else if (id.startsWith("theme:")) { const n = id.substring(6); if (Shell.hasProgram("glass-mode")) Shell.runDetached("glass-mode", ["theme", n]); else { const t = Config.themes[n]; Shell.saveConfigKeys({ theme: n, accent: t.accent, wallpaper: Config.dark ? t.dark : t.light }) } }
+        const m = windows;
+        if (!m)
+            return [];
+        const R_ = TaskManager.AbstractTasksModel;
+        const out = [];
+        for (let i = 0; i < m.count; ++i) {
+            const idx = m.makeModelIndex(i);
+            if (m.data(idx, R_.IsMinimized))
+                continue;
+            const g = m.data(idx, R_.Geometry);
+            if (g && g.width > 0)
+                out.push({
+                    x: g.x,
+                    y: g.y,
+                    width: g.width,
+                    height: g.height,
+                    z: m.data(idx, R_.StackingOrder)
+                });
+        }
+        out.sort((a, b) => b.z - a.z);
+        return out;
     }
-    property var _cSettings: Component { Settings {} }
-    property var _cSwitcher: Component { Switcher {} }
+    property var _dmr: Connections {
+        target: Shell
+        function onDesktopMenuRequested(x, y) {
+            if (x < 0)
+                main.win("desktopMenu").close_();
+            else
+                main.win("desktopMenu").openAt(x, y);
+        }
+    }   // negative = close
+    property var _cDesktopMenu: Component {
+        DesktopMenu {
+            onOpened: main.closePopups()
+            onAction: id => main.desktopAction(id)
+        }
+    }
+    function desktopAction(id) {
+        if (id === "wallpaper")
+            win("settings").openIt(4);
+        else if (id === "edit")
+            setEditing(true);
+        else if (id === "glass")
+            win("settings").openIt();
+        else if (id === "terminal")
+            Shell.runDetached(Shell.defaultTerminal(), []);
+        else if (id === "files")
+            Shell.runDetached("xdg-open", [Shell.homePath()]);
+        else if (id === "displays")
+            Shell.runDetached("systemsettings", ["kcm_kscreen"]);
+        else if (id === "system")
+            Shell.runDetached("systemsettings", []);
+        else if (id === "lock")
+            Shell.dbusSend("org.freedesktop.ScreenSaver", "/ScreenSaver", "org.freedesktop.ScreenSaver", "Lock");
+        else if (id === "power") {
+            const p = win("powerMenu");
+            p.dryRun = false;
+            p.toggle();
+        } else if (id === "mode") {
+            const want = Config.dark ? "light" : "dark";
+            Shell.saveConfigKey("mode", want);
+            if (Shell.hasProgram("glass-mode"))
+                Shell.runDetached("glass-mode", [want]);
+        } else if (id.startsWith("theme:")) {
+            const n = id.substring(6);
+            if (Shell.hasProgram("glass-mode"))
+                Shell.runDetached("glass-mode", ["theme", n]);
+            else {
+                const t = Config.themes[n];
+                Shell.saveConfigKeys({
+                    theme: n,
+                    accent: t.accent,
+                    wallpaper: Config.dark ? t.dark : t.light
+                });
+            }
+        }
+    }
+    property var _cSettings: Component {
+        Settings {}
+    }
+    property var _cSwitcher: Component {
+        Switcher {}
+    }
     property var recorder: Recorder {}
-    property var _rr: Connections { target: Shell; function onRecordRegionRequested(x, y, w, h) { main.recorder.start(x, y, w, h) } }
+    property var _rr: Connections {
+        target: Shell
+        function onRecordRegionRequested(x, y, w, h) {
+            main.recorder.start(x, y, w, h);
+        }
+    }
     // scripted screenshot without the overlay: grab a frame, cut the rectangle out of it
     property rect _grabRect
     property bool _grabPending: false
     // the rectangle is in desktop coordinates: the screen under its origin is captured and the cut is made screen-local
-    function screenAt(x, y) { for (const s of Qt.application.screens) if (x >= s.virtualX && x < s.virtualX + s.width && y >= s.virtualY && y < s.virtualY + s.height) return s; return Qt.application.screens[0] }
+    function screenAt(x, y) {
+        for (const s of Qt.application.screens)
+            if (x >= s.virtualX && x < s.virtualX + s.width && y >= s.virtualY && y < s.virtualY + s.height)
+                return s;
+        return Qt.application.screens[0];
+    }
     property var _grabScreen: null
-    property var _gr: Connections { target: Shell; function onGrabRegionRequested(x, y, w, h) { const s = main.screenAt(x, y); if (!s) return; main._grabScreen = s; main._grabRect = Qt.rect(x - s.virtualX, y - s.virtualY, w, h); main._grabPending = true; Screenshot.grab(s.name) } }
-    property var _gr2: Connections { target: Screenshot; function onFrameChanged() { if (!main._grabPending || !Screenshot.ready) return; main._grabPending = false
-        const r = main._grabRect, s = main._grabScreen; const p = Screenshot.finish(r.x, r.y, r.width, r.height, s ? s.width : Qt.application.screens[0].width, true, true); Screenshot.drop(); console.log("grabRegion ->", p) } }
+    property var _gr: Connections {
+        target: Shell
+        function onGrabRegionRequested(x, y, w, h) {
+            const s = main.screenAt(x, y);
+            if (!s)
+                return;
+            main._grabScreen = s;
+            main._grabRect = Qt.rect(x - s.virtualX, y - s.virtualY, w, h);
+            main._grabPending = true;
+            Screenshot.grab(s.name);
+        }
+    }
+    property var _gr2: Connections {
+        target: Screenshot
+        function onFrameChanged() {
+            if (!main._grabPending || !Screenshot.ready)
+                return;
+            main._grabPending = false;
+            const r = main._grabRect, s = main._grabScreen;
+            const p = Screenshot.finish(r.x, r.y, r.width, r.height, s ? s.width : Qt.application.screens[0].width, true, true);
+            Screenshot.drop();
+            console.log("grabRegion ->", p);
+        }
+    }
     // the lock screen wears the desktop's look: when the wallpaper, mode or accent changes, its state file is rewritten
     // (glass-lock-sync comes with Glass Desktop's lock screen; without it this does nothing)
     readonly property string lockLook: Config.get("wallpaper", "") + "|" + Config.get("mode", "dark") + "|" + Config.get("accent", "")
     onLockLookChanged: lockSync.restart()
-    property var _lockSync: Timer { id: lockSync; interval: 900; onTriggered: if (Shell.hasProgram("glass-lock-sync")) Shell.runDetached("glass-lock-sync", []) }
-    property var _themeLater: Timer { id: themeLater; interval: 350; onTriggered: { const b = main.activePanel(); const q = b ? b.nativeControl : null; if (q && q.paletteOpen !== undefined) q.paletteOpen = true } }
+    property var _lockSync: Timer {
+        id: lockSync
+        interval: 900
+        onTriggered: if (Shell.hasProgram("glass-lock-sync"))
+            Shell.runDetached("glass-lock-sync", [])
+    }
+    property var _themeLater: Timer {
+        id: themeLater
+        interval: 350
+        onTriggered: {
+            const b = main.activePanel();
+            const q = b ? b.nativeControl : null;
+            if (q && q.paletteOpen !== undefined)
+                q.paletteOpen = true;
+        }
+    }
     // ---- edit mode (right click on the panel, or D-Bus toggleEditMode)
     property bool editing: false
-    function setEditing(on) { if (on === editing) return; if (on) closePopups(); editing = on; const s = win("editScene"); if (on) s.open(); else s.close_() }
-    property var _cEdit: Component { EditScene {
-        screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
-        dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
-        onDone: main.setEditing(false); onMoreSettings: { main.setEditing(false); main.win("settings").openIt() } } }
-    property var _cTiles: Component { Tiles { onOpened: main.closePopups() } }
-    property var _cCheatSheet: Component { CheatSheet { onOpened: main.closePopups() } }
-    property var _cSearch: Component { Search { onOpened: main.closePopups() } }
-    property var _sw: Connections { target: Shell; function onSwitcherRequested(reverse) { main.closePopups(); main.win("switcher").step(reverse) } }
+    function setEditing(on) {
+        if (on === editing)
+            return;
+        if (on)
+            closePopups();
+        editing = on;
+        const s = win("editScene");
+        if (on)
+            s.open();
+        else
+            s.close_();
+    }
+    property var _cEdit: Component {
+        EditScene {
+            screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+            onDone: main.setEditing(false)
+            onMoreSettings: {
+                main.setEditing(false);
+                main.win("settings").openIt();
+            }
+        }
+    }
+    property var _cTiles: Component {
+        Tiles {
+            onOpened: main.closePopups()
+        }
+    }
+    property var _cCheatSheet: Component {
+        CheatSheet {
+            onOpened: main.closePopups()
+        }
+    }
+    property var _cLaunchpad: Component {
+        Launchpad {}
+    }
+    property var _sw: Connections {
+        target: Shell
+        function onSwitcherRequested(reverse) {
+            main.closePopups();
+            main.win("switcher").step(reverse);
+        }
+    }
 
     // ---- the shell's own global shortcuts (window operations are already done in C++; these are the shell-side ones)
-    property var _keys: Connections { target: Shell
+    property var _keys: Connections {
+        target: Shell
         // (main.dock is null until the primary set has built its panel, and while the primary screen is away)
-        function onLauncherToggleRequested() { main.toggleSber(main.sberPanel(), true); }
-        function onLobeToggleRequested(name) { const b = main.activePanel(); if (!b) return; if (name === "media") { if (!b.mediaAvailable) return; if (b.openLobe !== "media") b.placeMedia() } b.toggle(name) }
-        function onTrayMenuRequested(i) { const b = main.activePanel(); if (b) b.openTrayMenuAt(i) }
-        function onSettingsRequested() { main.win("settings").openIt() }
-        function onSettingsPageRequested(page) { main.win("settings").openIt(page) }
-        function onSearchPreviewRequested(q) { const b = main.activePanel(); if (b) b.focusSearch(q); }
+        function onLauncherToggleRequested() {
+            main.toggleSber(main.sberPanel(), true);
+        }
+        function onLobeToggleRequested(name) {
+            const b = main.activePanel();
+            if (!b)
+                return;
+            if (name === "media") {
+                if (!b.mediaAvailable)
+                    return;
+                if (b.openLobe !== "media")
+                    b.placeMedia();
+            }
+            b.toggle(name);
+        }
+        function onTrayMenuRequested(i) {
+            const b = main.activePanel();
+            if (b)
+                b.openTrayMenuAt(i);
+        }
+        function onSettingsRequested() {
+            main.win("settings").openIt();
+        }
+        function onSettingsPageRequested(page) {
+            main.win("settings").openIt(page);
+        }
+        function onSearchPreviewRequested(q) {
+            const b = main.activePanel();
+            if (b)
+                b.focusSearch(q);
+        }
         function onShortcutActivated(id) {
             if (id === "search") {
-                const b = main.activePanel(); if (b) b.focusSearch();
+                const b = main.activePanel();
+                if (b)
+                    b.focusSearch();
                 return;
             }
-            if (id === "record") { main.recorder.toggleOrAsk(() => { const c = main.win("capture"); c.dryRun = false; c.mode = "record"; c.begin(main.windowRects(), "") }); return }
-            if (id === "screenshot" || id === "screenshot-2") { main.win("capture").mode = "shot"; main.win("capture").dryRun = false; main.win("capture").begin(main.windowRects(), ""); return }
-            if (id === "screenshot-preview") { main.win("capture").dryRun = true; main.win("capture").begin(main.windowRects(), Config.wallpaper !== "" ? Config.wallpaper : Shell.plasmaWallpaper()); return }
-            if (id === "theme-picker") { const b = main.activePanel(); if (b) { b.openLobe = "gear"; themeLater.restart() } return }
-            if (id === "edit") { main.setEditing(!main.editing); return }
-            if (id === "tiles" || id === "tiles-preview") { const t = main.win("tiles"); t.dryRun = id === "tiles-preview"; t.toggle(); return }
-            if (id === "clipboard") { main.win("clipboardPanel").toggle(); return }
-            if (id === "cheatsheet") { main.win("cheatSheet").toggle(); return }
-            if (id === "notif-clear") { const b = main.activePanel(); if (b && b.notifications) b.notifications.clearAll(); return }
-            if (id === "welcome") { main.win("welcome").open(); return }
-            if (id === "power") { main.win("powerMenu").dryRun = false; main.win("powerMenu").toggle(); return }
-            if (id === "power-preview") { main.win("powerMenu").dryRun = true; main.win("powerMenu").toggle(); return }
-            if (id === "show-desktop") main.toggleShowDesktop();
-            else if (id.startsWith("dock-")) { const n = parseInt(id.substring(5)) - 1; const d = main.activePanel(); if (d && d.tasksModel && n < d.tasksModel.count) d.activateCell(n); }
-        } }
+            if (id === "record") {
+                main.recorder.toggleOrAsk(() => {
+                    const c = main.win("capture");
+                    c.dryRun = false;
+                    c.mode = "record";
+                    c.begin(main.windowRects(), "");
+                });
+                return;
+            }
+            if (id === "screenshot" || id === "screenshot-2") {
+                main.win("capture").mode = "shot";
+                main.win("capture").dryRun = false;
+                main.win("capture").begin(main.windowRects(), "");
+                return;
+            }
+            if (id === "screenshot-preview") {
+                main.win("capture").dryRun = true;
+                main.win("capture").begin(main.windowRects(), Config.wallpaper !== "" ? Config.wallpaper : Shell.plasmaWallpaper());
+                return;
+            }
+            if (id === "theme-picker") {
+                const b = main.activePanel();
+                if (b) {
+                    b.openLobe = "gear";
+                    themeLater.restart();
+                }
+                return;
+            }
+            if (id === "edit") {
+                main.setEditing(!main.editing);
+                return;
+            }
+            if (id === "tiles" || id === "tiles-preview") {
+                const t = main.win("tiles");
+                t.dryRun = id === "tiles-preview";
+                t.toggle();
+                return;
+            }
+            if (id === "clipboard") {
+                main.win("clipboardPanel").toggle();
+                return;
+            }
+            if (id === "cheatsheet") {
+                main.win("cheatSheet").toggle();
+                return;
+            }
+            if (id === "notif-clear") {
+                const b = main.activePanel();
+                if (b && b.notifications)
+                    b.notifications.clearAll();
+                return;
+            }
+            if (id === "welcome") {
+                main.win("welcome").open();
+                return;
+            }
+            if (id === "power") {
+                main.win("powerMenu").dryRun = false;
+                main.win("powerMenu").toggle();
+                return;
+            }
+            if (id === "power-preview") {
+                main.win("powerMenu").dryRun = true;
+                main.win("powerMenu").toggle();
+                return;
+            }
+            if (id === "show-desktop")
+                main.toggleShowDesktop();
+            else if (id.startsWith("dock-")) {
+                const n = parseInt(id.substring(5)) - 1;
+                const d = main.activePanel();
+                if (d && d.tasksModel && n < d.tasksModel.count)
+                    d.activateCell(n);
+            }
+        }
+    }
 
     // ---- click outside closes whatever is open
-    readonly property bool popupOpen: !!dock && (dock.openLobe !== "" || dock.launcherOpen || (dock.previewShown && dock.lobeMode === "menu"))
+    readonly property bool popupOpen: (!!dock && (dock.openLobe !== "" || dock.launcherOpen || (dock.previewShown && dock.lobeMode === "menu"))) || (!!_made.launchpad && _made.launchpad.visible)
     // (no click catcher any more: popups close on focus loss, see Surface.popupFocus. Catcher.qml is unused.)
 
     // ---- window watcher for dodging: every visible window on this desktop, ungrouped, with its geometry
@@ -199,39 +610,89 @@ QtObject {
     // including our wallpaper, so a right click then opened Plasma's menu.
     property var _hiddenByUs: []
     function toggleShowDesktop() {
-        const m = windows; if (!m) return; const R_ = TaskManager.AbstractTasksModel
+        const m = windows;
+        if (!m)
+            return;
+        const R_ = TaskManager.AbstractTasksModel;
         if (_hiddenByUs.length === 0) {
-            const ids = []
-            for (let i = 0; i < m.count; ++i) { const idx = m.makeModelIndex(i); if (m.data(idx, R_.IsMinimized) || m.data(idx, R_.IsLauncher)) continue
-                const w = m.data(idx, R_.WinIdList); if (w && w.length) { ids.push(String(w[0])); m.requestToggleMinimized(idx) } }
-            _hiddenByUs = ids; showingDesktop = ids.length > 0
+            const ids = [];
+            for (let i = 0; i < m.count; ++i) {
+                const idx = m.makeModelIndex(i);
+                if (m.data(idx, R_.IsMinimized) || m.data(idx, R_.IsLauncher))
+                    continue;
+                const w = m.data(idx, R_.WinIdList);
+                if (w && w.length) {
+                    ids.push(String(w[0]));
+                    m.requestToggleMinimized(idx);
+                }
+            }
+            _hiddenByUs = ids;
+            showingDesktop = ids.length > 0;
         } else {
-            const want = _hiddenByUs; _hiddenByUs = []
-            for (let i = 0; i < m.count; ++i) { const idx = m.makeModelIndex(i); const w = m.data(idx, R_.WinIdList)
-                if (w && w.length && want.indexOf(String(w[0])) >= 0 && m.data(idx, R_.IsMinimized)) m.requestToggleMinimized(idx) }
-            showingDesktop = false
+            const want = _hiddenByUs;
+            _hiddenByUs = [];
+            for (let i = 0; i < m.count; ++i) {
+                const idx = m.makeModelIndex(i);
+                const w = m.data(idx, R_.WinIdList);
+                if (w && w.length && want.indexOf(String(w[0])) >= 0 && m.data(idx, R_.IsMinimized))
+                    m.requestToggleMinimized(idx);
+            }
+            showingDesktop = false;
         }
     }
-    property var _sd: Connections { target: Shell
-        function onDbusSignal(iface, member, args) { if (iface === "org.kde.KWin" && member === "showingDesktopChanged") { if (main.dbg) console.log("showingDesktopChanged", args[0]); if (!!args[0]) main.showingDesktop = true; else if (main._hiddenByUs.length === 0) main.showingDesktop = false } } }
+    property var _sd: Connections {
+        target: Shell
+        function onDbusSignal(iface, member, args) {
+            if (iface === "org.kde.KWin" && member === "showingDesktopChanged") {
+                if (main.dbg)
+                    console.log("showingDesktopChanged", args[0]);
+                if (!!args[0])
+                    main.showingDesktop = true;
+                else if (main._hiddenByUs.length === 0)
+                    main.showingDesktop = false;
+            }
+        }
+    }
     Component.onCompleted: {
         rescanScreens();
         Shell.dbusListen("org.kde.KWin", "/KWin", "org.kde.KWin", "showingDesktopChanged");
         main.showingDesktop = !!Shell.dbusCall("org.kde.KWin", "/KWin", "org.freedesktop.DBus.Properties", "Get", ["org.kde.KWin", "showingDesktop"]);
     }
     property var windows: null
-    property var _vd: TaskManager.VirtualDesktopInfo { id: vdInfo }
-    property var _act: TaskManager.ActivityInfo { id: actInfo }
-    property var _late: Timer { interval: 1200; running: true; onTriggered: { main.windows = watchComp.createObject(main); bump.kick() } }
+    property var _vd: TaskManager.VirtualDesktopInfo {
+        id: vdInfo
+    }
+    property var _act: TaskManager.ActivityInfo {
+        id: actInfo
+    }
+    property var _late: Timer {
+        interval: 1200
+        running: true
+        onTriggered: {
+            main.windows = watchComp.createObject(main);
+            bump.kick();
+        }
+    }
     // a throttle, not a debounce: a window being dragged reports its frame continuously, and restarting the timer on every
     // report kept the bars from reacting until the drag paused. kick() lets the first report through within one frame.
-    property var _bump: Timer { id: bump; interval: 16; onTriggered: main.rev++; function kick() { if (!running) start() } }
-    property var _comp: Component { id: watchComp
+    property var _bump: Timer {
+        id: bump
+        interval: 16
+        onTriggered: main.rev++
+        function kick() {
+            if (!running)
+                start();
+        }
+    }
+    property var _comp: Component {
+        id: watchComp
         TaskManager.TasksModel {
             groupMode: TaskManager.TasksModel.GroupDisabled
             sortMode: TaskManager.TasksModel.SortDisabled
-            filterByVirtualDesktop: true; virtualDesktop: vdInfo.currentDesktop
-            filterByActivity: true; activity: actInfo.currentActivity
+            filterByVirtualDesktop: true
+            virtualDesktop: vdInfo.currentDesktop
+            filterByActivity: true
+            activity: actInfo.currentActivity
             // (filterNotMinimized would keep ONLY minimised windows; minimised ones are skipped in overlaps() instead)
             onDataChanged: bump.kick()
             onCountChanged: bump.kick()
@@ -239,8 +700,12 @@ QtObject {
             onRowsRemoved: bump.kick()
             onModelReset: bump.kick()
             onVirtualDesktopChanged: bump.kick()
-            onActiveTaskChanged: { main.refreshActive(); bump.kick() }
-        } }
+            onActiveTaskChanged: {
+                main.refreshActive();
+                bump.kick();
+            }
+        }
+    }
     readonly property bool dbg: Qt.application.arguments.indexOf("--debug") >= 0
     // the focused window, for the bar's title element (this model is ungrouped, so it is the real window, not its group)
     property string activeTitle: ""
@@ -248,27 +713,59 @@ QtObject {
     property var activeIcon
     onRevChanged: refreshActive()
     function refreshActive() {
-        const m = windows; const R_ = TaskManager.AbstractTasksModel; let a = null;
+        const m = windows;
+        const R_ = TaskManager.AbstractTasksModel;
+        let a = null;
         // scan for the active row: `activeTask` stays invalid until the first activation change after the model is built
-        if (m && !showingDesktop) for (let i = 0; i < m.count; ++i) { const idx = m.makeModelIndex(i); if (m.data(idx, R_.IsActive)) { a = idx; break; } }
-        if (dbg) console.log("refreshActive", a ? m.data(a, 0) : "-", m ? m.count : -1, showingDesktop);
-        if (!a) { activeTitle = ""; activeApp = ""; activeIcon = undefined; return; }
+        if (m && !showingDesktop)
+            for (let i = 0; i < m.count; ++i) {
+                const idx = m.makeModelIndex(i);
+                if (m.data(idx, R_.IsActive)) {
+                    a = idx;
+                    break;
+                }
+            }
+        if (dbg)
+            console.log("refreshActive", a ? m.data(a, 0) : "-", m ? m.count : -1, showingDesktop);
+        if (!a) {
+            activeTitle = "";
+            activeApp = "";
+            activeIcon = undefined;
+            return;
+        }
         const geometry = m.data(a, R_.Geometry);
-        if (geometry && geometry.width > 0) lastActiveScreenName = screenAt(geometry.x + geometry.width / 2, geometry.y + geometry.height / 2).name;
-        activeTitle = m.data(a, 0) || ""; activeApp = m.data(a, R_.AppName) || ""; activeIcon = m.data(a, 1);
+        if (geometry && geometry.width > 0)
+            lastActiveScreenName = screenAt(geometry.x + geometry.width / 2, geometry.y + geometry.height / 2).name;
+        activeTitle = m.data(a, 0) || "";
+        activeApp = m.data(a, R_.AppName) || "";
+        activeIcon = m.data(a, 1);
     }
     // a safety net only: the model's dataChanged / activeTaskChanged drive refreshActive, this catches a title that changed
     // without a signal we can rely on. Every 2.5 s it re-read the whole model at 240 Hz-rendering idle; 30 s is plenty for that.
-    property var _slow: Timer { interval: 30000; running: true; repeat: true; onTriggered: main.refreshActive() }
+    property var _slow: Timer {
+        interval: 30000
+        running: true
+        repeat: true
+        onTriggered: main.refreshActive()
+    }
     onShowingDesktopChanged: refreshActive()
     function overlaps(r) {
-        const m = windows; if (!m) return false;
+        const m = windows;
+        if (!m)
+            return false;
         const G = TaskManager.AbstractTasksModel.Geometry;
-        if (dbg) { let t = []; for (let i = 0; i < m.count; ++i) t.push(m.data(m.makeModelIndex(i), TaskManager.AbstractTasksModel.AppId) + " " + m.data(m.makeModelIndex(i), G)); console.log("overlaps?", r, t.join(" | ")); }
+        if (dbg) {
+            let t = [];
+            for (let i = 0; i < m.count; ++i)
+                t.push(m.data(m.makeModelIndex(i), TaskManager.AbstractTasksModel.AppId) + " " + m.data(m.makeModelIndex(i), G));
+            console.log("overlaps?", r, t.join(" | "));
+        }
         for (let i = 0; i < m.count; ++i) {
-            if (m.data(m.makeModelIndex(i), TaskManager.AbstractTasksModel.IsMinimized)) continue;
+            if (m.data(m.makeModelIndex(i), TaskManager.AbstractTasksModel.IsMinimized))
+                continue;
             const g = m.data(m.makeModelIndex(i), G);
-            if (g && g.width > 0 && g.x < r.x + r.width && g.x + g.width > r.x && g.y < r.y + r.height && g.y + g.height > r.y) return true;
+            if (g && g.width > 0 && g.x < r.x + r.width && g.x + g.width > r.x && g.y < r.y + r.height && g.y + g.height > r.y)
+                return true;
         }
         return false;
     }

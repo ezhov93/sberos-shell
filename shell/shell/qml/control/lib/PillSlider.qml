@@ -13,7 +13,6 @@ Item {
     property real to: 100
     property real value: 0
     property string icon: ""
-    property bool enabled: true
     signal moved(real newValue)
 
     implicitHeight: 28
@@ -37,7 +36,12 @@ Item {
             width: Math.max(pill.iconZone, pill.fraction * track.width)
             radius: height / 2
             color: root.isDarkTheme ? Config.fg(0.92) : Config.fg(1.0)
-            Behavior on width { enabled: !mouse.pressed; NumberAnimation { duration: 90 } }
+            Behavior on width {
+                enabled: !mouse.pressed
+                NumberAnimation {
+                    duration: 90
+                }
+            }
         }
     }
 
@@ -65,11 +69,15 @@ Item {
             pill.moved(v);
         }
         onPressed: mouse => set(mouse.x)
-        onPositionChanged: mouse => { if (pressed) set(mouse.x) }
+        onPositionChanged: mouse => {
+            if (pressed)
+                set(mouse.x);
+        }
         onWheel: wheel => {
             var step = (pill.to - pill.from) / 20;
             var v = Math.max(pill.from, Math.min(pill.to, pill.value + (wheel.angleDelta.y > 0 ? step : -step)));
-            pill.value = v; pill.moved(v);
+            pill.value = v;
+            pill.moved(v);
         }
     }
 }

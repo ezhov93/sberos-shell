@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Sirca Shell
-Comment=A liquid-glass shell for KDE Plasma: top bar and dock
+Comment=A shell for KDE Plasma: top bar and dock
 Exec=@SIRCA_SHELL_BIN@
 Icon=preferences-desktop-theme
 NoDisplay=true

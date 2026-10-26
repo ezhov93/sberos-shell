@@ -6,9 +6,13 @@ import SircaShell
 QtObject {
     id: cfg
     // re-read whenever the file changes (Shell.configRevision bumps): the settings window and hand edits apply live
-    function load(revision) { return Shell.loadConfig() }          // the argument is the dependency; a bare read gets optimised away
+    function load(revision) {
+        return Shell.loadConfig();
+    }          // the argument is the dependency; a bare read gets optimised away
     readonly property var user: load(Shell.configRevision)
-    function get(key, fallback) { return (user && user[key] !== undefined) ? user[key] : fallback }
+    function get(key, fallback) {
+        return (user && user[key] !== undefined) ? user[key] : fallback;
+    }
 
     // ---- light / dark. `mode` is written by the quick-settings toggle (tools: glass-mode, which also switches the KDE colour
     // scheme, GTK, icons and the wallpaper). Everything drawn ON the glass goes through fg(): white in dark mode, near-black in
@@ -22,18 +26,34 @@ QtObject {
     // `lt` runs 0 -> 1 over a quarter second when the mode flips, and every mode-dependent colour below is a MIX by it:
     // the whole shell cross-fades between its two looks instead of jumping. (Places that read `dark` directly still flip at once.)
     property real lt: dark ? 0 : 1
-    Behavior on lt { NumberAnimation { duration: 260; easing.type: Easing.InOutQuad } }
-    function mix(a, b) { const t = lt; return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t) }
-    function mixn(a, b) { return a + (b - a) * lt }
+    Behavior on lt {
+        NumberAnimation {
+            duration: 260
+            easing.type: Easing.InOutQuad
+        }
+    }
+    function mix(a, b) {
+        const t = lt;
+        return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t);
+    }
+    function mixn(a, b) {
+        return a + (b - a) * lt;
+    }
     // Light mode, third attempt (onur: flipped black = "black accents" no; everything in the theme colour = "too much"):
     // NEUTRAL slate for text, glyphs and overlays, with only a breath of the theme's hue in it, and the accent itself kept
     // for the few things that are ON (a switched-on tile's disc, a switch, today's date) and for the glow.
     //   tone(k): slate at depth k (0 = mid grey-blue, 1 = near black), 10 % of the accent mixed in so it is not dead grey
-    function tone(k) { const c = accent; const base = 0.42 - 0.30 * k; const t = 0.10
-        return Qt.rgba(base * (1 - t) + c.r * t * (1 - k * 0.6), base * (1 - t) + c.g * t * (1 - k * 0.6), (base + 0.03) * (1 - t) + c.b * t * (1 - k * 0.6), 1) }
+    function tone(k) {
+        const c = accent;
+        const base = 0.42 - 0.30 * k;
+        const t = 0.10;
+        return Qt.rgba(base * (1 - t) + c.r * t * (1 - k * 0.6), base * (1 - t) + c.g * t * (1 - k * 0.6), (base + 0.03) * (1 - t) + c.b * t * (1 - k * 0.6), 1);
+    }
     readonly property color onFill: mix(Qt.rgba(1, 1, 1, 0.92), accent)      // the fill of something that is ON; text on it: onFg
     readonly property color lightFg: tone(0.55)
-    function fg(a) { return mix(Qt.rgba(1, 1, 1, a), Qt.rgba(lightFg.r, lightFg.g, lightFg.b, Math.min(1, a * 1.3))) }
+    function fg(a) {
+        return mix(Qt.rgba(1, 1, 1, a), Qt.rgba(lightFg.r, lightFg.g, lightFg.b, Math.min(1, a * 1.3)));
+    }
     // colour haze (the blurred copy of icons / cover art under them). On light glass it must stay COLOUR: a strong saturation
     // boost and only a small lift, so a coloured icon leaves a clear tint and a dark one only a faint shade
     readonly property real hazeFactor: dark ? 1.0 : 1.0
@@ -43,19 +63,28 @@ QtObject {
     readonly property color glow: mix(Qt.rgba(1, 1, 1, 1), accent)                 // what an "open" icon glows in
     readonly property color onFg: mix(Qt.color("#1b1d20"), Qt.color("#ffffff"))        // text / glyphs on a filled fg shape (today's date, a switched-on tile)
     // solid little surfaces that float over other content (tooltips) and the settings window's sidebar
-    readonly property color popSurface: mix(Qt.rgba(24/255, 25/255, 27/255, 0.94), Qt.rgba(0.985, 0.985, 0.99, 0.96))
-    readonly property color sidebarTint: mix(Qt.rgba(24/255, 25/255, 27/255, 0.62), Qt.rgba(244/255, 245/255, 248/255, 0.46))
+    readonly property color popSurface: mix(Qt.rgba(24 / 255, 25 / 255, 27 / 255, 0.94), Qt.rgba(0.985, 0.985, 0.99, 0.96))
+    readonly property color sidebarTint: mix(Qt.rgba(24 / 255, 25 / 255, 27 / 255, 0.62), Qt.rgba(244 / 255, 245 / 255, 248 / 255, 0.46))
     // the glass body: a dark smoke in dark mode, milk in light mode (which needs more of it to carry dark text)
     // milk: how much denser the light glass is than the dark one. 0.60 for popups (text over anything); the bar passes less
-    function glassTint(a, milk) { return mix(Qt.rgba(32/255, 35/255, 38/255, a), Qt.rgba(0.975, 0.98, 0.99, Math.min(0.94, a + (milk === undefined ? 0.60 : milk)))) }   // milk has to be dense enough that dark text reads over a busy window behind it
+    function glassTint(a, milk) {
+        return mix(Qt.rgba(32 / 255, 35 / 255, 38 / 255, a), Qt.rgba(0.975, 0.98, 0.99, Math.min(0.94, a + (milk === undefined ? 0.60 : milk))));
+    }   // milk has to be dense enough that dark text reads over a busy window behind it
+    // Smart Panel's bottom islands: translucent shell, opaque dark inner surface, translucent light inner surface.
+    readonly property color panelSurface: mix(Qt.rgba(45 / 255, 62 / 255, 58 / 255, 0.85), Qt.rgba(247 / 255, 249 / 255, 251 / 255, 0.72))
+    readonly property color panelInnerSurface: mix(Qt.rgba(43 / 255, 50 / 255, 59 / 255, 1), Qt.rgba(1, 1, 1, 0.92))
+    readonly property color panelOutline: mix(Qt.rgba(1, 1, 1, 0.22), Qt.rgba(1, 1, 1, 0.52))
 
     // material
     readonly property color tint: glassTint(get("tintAlpha", 0.15))
     readonly property color rim: Qt.rgba(1, 1, 1, get("rimAlpha", 0.09) * mixn(1, 3.2))
     readonly property real sheen: get("sheenAlpha", 0.06) * mixn(1, 2.5)
     readonly property color ink: mix(Qt.color("#eff0f1"), tone(0.85))
-    readonly property color inkDim: mix(Qt.rgba(239/255, 240/255, 241/255, 0.68), Qt.rgba(tone(0.75).r, tone(0.75).g, tone(0.75).b, 0.74))
-    function hex(c) { const h = v => ("0" + Math.round(v * 255).toString(16)).slice(-2); return "#" + h(c.a) + h(c.r) + h(c.g) + h(c.b) }   // #AARRGGBB for StyledText
+    readonly property color inkDim: mix(Qt.rgba(239 / 255, 240 / 255, 241 / 255, 0.68), Qt.rgba(tone(0.75).r, tone(0.75).g, tone(0.75).b, 0.74))
+    function hex(c) {
+        const h = v => ("0" + Math.round(v * 255).toString(16)).slice(-2);
+        return "#" + h(c.a) + h(c.r) + h(c.g) + h(c.b);
+    }   // #AARRGGBB for StyledText
     readonly property color attention: "#f6a03a"
     readonly property color accent: get("accent", "#4c6ed6")         // selection frames, edit mode, primary buttons (the desktop itself stays monochrome)
     readonly property real cornerRadius: get("cornerRadius", 22)
@@ -68,8 +97,8 @@ QtObject {
 
     // Legacy widget groups are reused by the unified panel's indicators area.
     function widgetList(key, fallback) {
-        const configured = get(key, fallback)
-        return Array.isArray(configured) ? configured.filter(name => name !== "weather") : fallback
+        const configured = get(key, fallback);
+        return Array.isArray(configured) ? configured.filter(name => name !== "weather") : fallback;
     }
     readonly property var barLeft: widgetList("barLeft", ["desktop", "workspaces", "tray", "title"])
     readonly property var barCenter: widgetList("barCenter", ["clock"])
@@ -83,31 +112,52 @@ QtObject {
     readonly property string dateFormat: get("dateFormat", "ddd d MMM")
     readonly property bool barHoverPills: get("barHoverPills", true)   // the soft pill behind a widget under the pointer
     readonly property real barIconScale: get("barIconScale", 1.0)
-    readonly property bool dockBlur: get("dockBlur", true)
     readonly property real dockTintAlpha: get("dockTintAlpha", get("tintAlpha", 0.15))
     readonly property real dockRimAlpha: get("dockRimAlpha", get("rimAlpha", 0.09))
     readonly property real dockSheen: get("dockSheen", get("sheenAlpha", 0.06))
     readonly property real dockShadow: get("dockShadow", 0.55)
     // ---- visibility (#7): "always" reserves space, "dodge" slides under windows, "below" lets windows go under it.
-    readonly property string dockVisibility: { const v = get("dockVisibility", ""); if (v === "always" || v === "dodge" || v === "below") return v; return get("dockDodge", get("dodge", true)) ? "dodge" : "always" }
+    readonly property string dockVisibility: {
+        const v = get("dockVisibility", "");
+        if (v === "always" || v === "dodge" || v === "below")
+            return v;
+        return get("dockDodge", get("dodge", true)) ? "dodge" : "always";
+    }
     readonly property bool dockDodge: dockVisibility === "dodge"
     // ---- the look per state: touched, maximized and fullscreen.
     readonly property real dockTouchedOpacity: get("dockTouchedOpacity", get("dockTintAlphaTouched", 0.85))
-    readonly property bool dockTouchedBlur: get("dockTouchedBlur", true)
     readonly property string dockMaximizedMode: get("dockMaximizedMode", "touched")
     readonly property real dockMaximizedOpacity: get("dockMaximizedOpacity", 0.85)
-    readonly property bool dockMaximizedBlur: get("dockMaximizedBlur", true)
     readonly property string dockFullscreenMode: get("dockFullscreenMode", "hide")
     readonly property real dockFullscreenOpacity: get("dockFullscreenOpacity", 1.0)
-    readonly property bool dockFullscreenBlur: get("dockFullscreenBlur", false)
-    // the resolved look of a surface in a state: { opacity, blur, width, corners }; opacity < 0 = the normal one
+    // the resolved look of a surface in a state: { opacity, width, corners }; opacity < 0 = the normal one
     function lookFor(state) {
-        const norm = { opacity: -1, blur: dockBlur, width: "keep", corners: "round" }
-        if (state === "maximized" && dockMaximizedMode === "touched") state = "touched"
-        if (state === "touched") return { opacity: dockTouchedOpacity, blur: dockTouchedBlur, width: "keep", corners: "round" }
-        if (state === "maximized") return { opacity: dockMaximizedOpacity, blur: dockMaximizedBlur, width: "keep", corners: "round" }
-        if (state === "fullscreen") return { opacity: dockFullscreenOpacity, blur: dockFullscreenBlur, width: "keep", corners: "round" }
-        return norm
+        const norm = {
+            opacity: -1,
+            width: "keep",
+            corners: "round"
+        };
+        if (state === "maximized" && dockMaximizedMode === "touched")
+            state = "touched";
+        if (state === "touched")
+            return {
+                opacity: dockTouchedOpacity,
+                width: "keep",
+                corners: "round"
+            };
+        if (state === "maximized")
+            return {
+                opacity: dockMaximizedOpacity,
+                width: "keep",
+                corners: "round"
+            };
+        if (state === "fullscreen")
+            return {
+                opacity: dockFullscreenOpacity,
+                width: "keep",
+                corners: "round"
+            };
+        return norm;
     }
     readonly property int barHeight: get("barHeight", 37)
     readonly property int barGap: get("barGap", 8)
@@ -123,7 +173,7 @@ QtObject {
     readonly property bool dodge: get("dodge", true)            // bars slide away under windows instead of reserving space
 
     // dock
-    readonly property int dockHeight: get("dockHeight", 60)
+    readonly property int dockHeight: get("dockHeight", 72)
     readonly property int dockGap: get("dockGap", 8)
     readonly property int dockRadius: get("dockRadius", 20)
     readonly property int dockCell: get("dockCell", 60)
@@ -153,6 +203,5 @@ QtObject {
     // Sirca's own AppsModel-backed launcher.
     readonly property var favorites: get("favorites", ["firefox.desktop", "org.kde.dolphin.desktop", "org.kde.konsole.desktop", "systemsettings.desktop", "org.kde.discover.desktop"])
     readonly property real dockMagnify: get("dockMagnify", 1.22)
-    readonly property var launchers: get("launchers", [
-        "preferred://browser", "preferred://filemanager", "applications:org.kde.konsole.desktop", "applications:systemsettings.desktop" ])
+    readonly property var launchers: get("launchers", ["preferred://browser", "preferred://filemanager", "applications:org.kde.konsole.desktop", "applications:systemsettings.desktop"])
 }

@@ -12,11 +12,27 @@ Item {
     id: hello
     implicitWidth: label.implicitWidth
     property date now: new Date()
-    Timer { interval: 60000; running: !widget.quiet; repeat: true; onTriggered: hello.now = new Date() }
-    Text { id: label; anchors.verticalCenter: parent.verticalCenter
+    Timer {
+        interval: 60000
+        running: !widget.quiet
+        repeat: true
+        onTriggered: hello.now = new Date()
+    }
+    Text {
+        id: label
+        anchors.verticalCenter: parent.verticalCenter
         readonly property int h: hello.now.getHours()
         text: h < 5 ? "Still up?" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
-        color: widget.hovered ? widget.config.accent : widget.config.ink; font.pixelSize: 13; font.weight: Font.Medium
-        Behavior on color { ColorAnimation { duration: widget.config.quick } } }
-    TapHandler { onTapped: widget.shell.notify("Hello", "It is " + Qt.formatTime(hello.now, "hh:mm"), "") }
+        color: widget.hovered ? widget.config.accent : widget.config.ink
+        font.pixelSize: 13
+        font.weight: Font.Medium
+        Behavior on color {
+            ColorAnimation {
+                duration: widget.config.quick
+            }
+        }
+    }
+    TapHandler {
+        onTapped: widget.shell.notify("Hello", "It is " + Qt.formatTime(hello.now, "hh:mm"), "")
+    }
 }

@@ -12,14 +12,11 @@ Item {
     id: nightLight
 
     readonly property bool available: Boolean(control.properties.available)
-    readonly property bool enabled: Boolean(control.properties.enabled)
+    readonly property bool enabledBySchedule: Boolean(control.properties.enabled)
     readonly property bool running: Boolean(control.properties.running)
     readonly property bool inhibited: Boolean(control.properties.inhibited)
-    readonly property bool on: available && enabled && running && !inhibited
-    readonly property string statusText: !available ? i18n("Unavailable")
-                                       : !enabled ? i18n("Off")
-                                       : inhibited ? i18n("Paused")
-                                       : running ? i18n("On") : i18n("Scheduled")
+    readonly property bool on: available && enabledBySchedule && running && !inhibited
+    readonly property string statusText: !available ? i18n("Unavailable") : !enabledBySchedule ? i18n("Off") : inhibited ? i18n("Paused") : running ? i18n("On") : i18n("Scheduled")
 
     DBus.Properties {
         id: control
@@ -30,6 +27,6 @@ Item {
     }
 
     function toggle() {
-        NightLightInhibitor.toggleInhibition()
+        NightLightInhibitor.toggleInhibition();
     }
 }

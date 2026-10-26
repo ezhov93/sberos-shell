@@ -12,9 +12,13 @@ Window {
     property bool ready: false
     color: "transparent"
     flags: Qt.FramelessWindowHint
-    width: Screen.width; height: Screen.height
+    width: Screen.width
+    height: Screen.height
     visible: ready && !!host && !!host.activeSberPanel && host.activeSberScreen !== targetScreen
-    Component.onCompleted: { Shell.setupCatcher(catcher); ready = true; }
+    Component.onCompleted: {
+        Shell.setupCatcher(catcher);
+        ready = true;
+    }
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
@@ -28,8 +32,13 @@ Window {
                 }
             }
             const menu = catcher.host.win("sberMenu");
-            if (menu.child !== "") menu.closeChild(); else menu.closeAll();
+            if (menu.child !== "")
+                menu.closeChild();
+            else
+                menu.closeAll();
         }
-        onWheel: event => { event.accepted = true; }
+        onWheel: event => {
+            event.accepted = true;
+        }
     }
 }

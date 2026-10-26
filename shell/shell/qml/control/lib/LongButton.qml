@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
@@ -17,7 +16,7 @@ KSvg.FrameSvgItem {
     Layout.fillHeight: true
     Layout.rightMargin: root.smallSpacing
     Layout.leftMargin: root.smallSpacing
-    signal clicked;
+    signal clicked
 
     property alias title: title.text
     property alias subtitle: subtitle.text
@@ -27,7 +26,8 @@ KSvg.FrameSvgItem {
     property int margin: root.buttonMargin
 
     GridLayout {
-        rows: 2; columns: 2
+        rows: 2
+        columns: 2
         anchors.fill: parent
         anchors.margins: button.margin
         rowSpacing: -root.mediumSpacing
@@ -62,7 +62,7 @@ KSvg.FrameSvgItem {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: {
-            button.clicked()
+            button.clicked();
         }
     }
 }

@@ -26,16 +26,33 @@ Item {
         color: mouse.pressed ? Config.fg(0.18) : mouse.containsMouse ? root.toggleOffColor : "transparent"
         border.width: mouse.containsMouse ? 1 : 0
         border.color: root.cardRimColor
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color {
+            ColorAnimation {
+                duration: 100
+            }
+        }
     }
     Kirigami.Icon {
         anchors.centerIn: parent
-        width: btn.iconSize; height: width
+        width: btn.iconSize
+        height: width
         source: btn.icon
         opacity: mouse.containsMouse ? 1 : 0.8
         scale: mouse.pressed ? 0.92 : 1
-        Behavior on scale { NumberAnimation { duration: 80 } }
+        Behavior on scale {
+            NumberAnimation {
+                duration: 80
+            }
+        }
     }
-    MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; onClicked: btn.clicked() }
-    PlasmaComponents3.ToolTip { visible: btn.tooltip !== "" && mouse.containsMouse; text: btn.tooltip }
+    MouseArea {
+        id: mouse
+        anchors.fill: parent
+        hoverEnabled: true
+        onClicked: btn.clicked()
+    }
+    PlasmaComponents3.ToolTip {
+        visible: btn.tooltip !== "" && mouse.containsMouse
+        text: btn.tooltip
+    }
 }

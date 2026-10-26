@@ -14,7 +14,15 @@ QtObject {
     readonly property bool autoOn: auto_ && busy
     readonly property bool active: on || autoOn
     readonly property string status: on ? "On" : autoOn ? "While full-screen" : (auto_ ? "Auto" : "Off")
-    readonly property var manual: IdleInhibitor { reason: "Caffeine: kept awake from the bar"; inhibited: caf.on }
-    readonly property var automatic: IdleInhibitor { reason: "Caffeine: a full-screen window has focus"; inhibited: caf.autoOn }
-    function toggle() { on = !on }
+    readonly property var manual: IdleInhibitor {
+        reason: "Caffeine: kept awake from the bar"
+        inhibited: caf.on
+    }
+    readonly property var automatic: IdleInhibitor {
+        reason: "Caffeine: a full-screen window has focus"
+        inhibited: caf.autoOn
+    }
+    function toggle() {
+        on = !on;
+    }
 }

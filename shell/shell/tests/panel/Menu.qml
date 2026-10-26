@@ -7,7 +7,9 @@ QtObject {
     property var app: Main {}
     property var menu: null
     property var events: null
-    property var eventFactory: Component { TestEvent {} }
+    property var eventFactory: Component {
+        TestEvent {}
+    }
     property int step: 0
     property bool capturing: false
     property var actions: []
@@ -16,29 +18,51 @@ QtObject {
     property var savedScreens: null
     property string primaryName: ""
     property string secondaryName: ""
-    function check(ok, text) { if (!ok) { console.error("PANEL FAIL:", text); Qt.exit(1); throw new Error(text); } }
-    function click(x, y, button) { check(events.mouseClick(menu.contentItem, x, y, button || Qt.LeftButton, Qt.NoModifier, 0), "mouse event delivered"); }
-    function key(key) { check(events.keyClick(key, Qt.NoModifier, 0), "key event delivered"); }
-    function entry(index, button) { click(menu.menuRect.x + menu.cellSize / 2, menu.menuRect.y + menu.cellSize * (index + 0.5), button); }
+    function check(ok, text) {
+        if (!ok) {
+            console.error("PANEL FAIL:", text);
+            Qt.exit(1);
+            throw new Error(text);
+        }
+    }
+    function click(x, y, button) {
+        check(events.mouseClick(menu.contentItem, x, y, button || Qt.LeftButton, Qt.NoModifier, 0), "mouse event delivered");
+    }
+    function key(key) {
+        check(events.keyClick(key, Qt.NoModifier, 0), "key event delivered");
+    }
+    function entry(index, button) {
+        click(menu.menuRect.x + menu.menuRect.width / 2, menu.menuRect.y + menu.menuPadding + (menu.cellSize + menu.menuSpacing) * index + menu.cellSize / 2, button);
+    }
     function capture(name, next) {
-        if (!CAPTURE_ENABLED) { if (next) Qt.callLater(next); return; }
+        if (!CAPTURE_ENABLED) {
+            if (next)
+                Qt.callLater(next);
+            return;
+        }
         capturing = true;
         check(menu.contentItem.grabToImage(result => {
             test.check(result.saveToFile("OUTPUT_DIR/" + name + ".png"), "screenshot saved");
             test.capturing = false;
-            if (next) Qt.callLater(next);
+            if (next)
+                Qt.callLater(next);
         }), "screenshot starts");
     }
     property var timer: Timer {
-        running: true; repeat: true; interval: 1000
+        running: true
+        repeat: true
+        interval: 1000
         onTriggered: {
-            if (test.capturing) return;
+            if (test.capturing)
+                return;
             const p = test.app.dock;
             if (test.step === 0) {
                 test.menu = test.app.win("sberMenu");
                 test.menu.dryRun = true;
                 test.events = test.eventFactory.createObject(test.menu.contentItem);
-                test.menu.actionInvoked.connect(id => { test.actions.push(id); });
+                test.menu.actionInvoked.connect(id => {
+                    test.actions.push(id);
+                });
                 test.originalLaunchers = Config.launchers.slice();
                 test.app.toggleSber(p, false);
             } else if (test.step === 1) {
@@ -125,13 +149,16 @@ QtObject {
                     let second = null;
                     for (let i = 0; i < test.app.sets.count; ++i) {
                         const s = test.app.sets.objectAt(i);
-                        if (s && s.name === b.name) second = s.panel;
+                        if (s && s.name === b.name)
+                            second = s.panel;
                     }
                     test.check(second, "second screen panel exists");
                     test.app.lastActiveScreenName = b.name;
                     test.check(test.app.activePanel() === second, "keyboard actions select the last active screen panel");
                     const choices = Object.assign({}, test.savedScreens);
-                    choices[a.name] = Object.assign({}, choices[a.name] || {}, { panel: false });
+                    choices[a.name] = Object.assign({}, choices[a.name] || {}, {
+                        panel: false
+                    });
                     Shell.saveConfigKey("screens", choices);
                 }
             } else if (test.step === 10) {
@@ -140,7 +167,8 @@ QtObject {
                     let second = null;
                     for (let i = 0; i < test.app.sets.count; ++i) {
                         const s = test.app.sets.objectAt(i);
-                        if (s && s.name === test.secondaryName) second = s.panel;
+                        if (s && s.name === test.secondaryName)
+                            second = s.panel;
                     }
                     test.check(second && test.app.activePanel() === second, "active screen remains usable without a primary panel");
                     test.app.lastActiveScreenName = "";
@@ -156,7 +184,10 @@ QtObject {
                     let second = null, outside = null;
                     for (let i = 0; i < test.app.sets.count; ++i) {
                         const s = test.app.sets.objectAt(i);
-                        if (s && s.name === b.name) { second = s.panel; outside = s.sberCatcher; }
+                        if (s && s.name === b.name) {
+                            second = s.panel;
+                            outside = s.sberCatcher;
+                        }
                     }
                     test.app.toggleSber(p, false);
                     test.entry(2);

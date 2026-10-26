@@ -1,7 +1,7 @@
 # Sirca Shell
 
-A liquid-glass shell for KDE Plasma 6 on Wayland. It replaces Plasma's panels with its own top bar and dock; KWin stays
-the window manager. Popups are not separate windows: they grow out of the bar and the dock as one glass shape.
+A shell for KDE Plasma 6 on Wayland. It replaces Plasma's panels with its own top bar and dock; KWin stays
+the window manager. Popups are not separate windows: they grow out of the bar and the dock as one surface.
 
 > **Status: alpha.** Built for and tested on Plasma 6.6, Ubuntu 26.04 and NVIDIA. Multi-screen surface routing has an
 > isolated two-screen virtual-display check; physical multi-monitor Wayland hotplug, mixed scaling and other GPUs still
@@ -12,9 +12,15 @@ the window manager. Popups are not separate windows: they grow out of the bar an
 This adapted shell defaults to one bottom `UnifiedPanel` with five separate opaque
 blocks: Sber/settings, applications, a centred Oska entry area, indicators, and
 quick settings/calendar. Oska stays at the screen centre as neighbouring content
-changes. Its search and notification buttons currently use the existing views;
-the full Oska is a separate task. The Sber button opens a four-entry menu with
-shell settings, the configured terminal, power/session and collapse. Right-click
+changes. The Oska search field stays in the centre of the panel. Typing expands
+local KRunner/Milou app and document results above it inside the same surface;
+the results scroll independently. Meta+Space focuses this field. Corporate
+search is excluded from the MVP. The notification button still uses its existing
+view. The Sber button opens a four-entry menu with
+shell settings, the configured terminal, power/session and collapse. The
+applications button opens a full-screen Launchpad on that panel's screen, with
+a blurred desktop background, paged app grid and name-only local search; Esc or a click on the background
+closes it. For a direct preview, run `sirca-shell --open-launchpad`. Right-click
 the terminal for desktop actions and pinning. Esc/outside clicks close one child
 level; the existing global launcher action closes all levels or opens the menu
 on the last active screen in unified mode. A development launch does not own Super. Show-desktop, workspaces and other
@@ -27,7 +33,8 @@ options and fills the screen with `dockFillMargin` side margins.
 The panel is enabled on every connected screen by default;
 `screens.<output>.panel: false` disables it on a selected screen. Existing
 configuration is not deleted. Hosted applet
-fallbacks and the separate top-bar editor are no longer available.
+support has been removed; system controls are implemented by Sirca itself, and
+the separate top-bar editor is no longer available.
 
 [ADR-0008](../../docs/adr/0008-unified-bottom-panel.md),
 [requirements](../../docs/rules/unified-panel.md), and
@@ -58,7 +65,7 @@ and GNOME pin migration are outside the current panel implementation.
 - **Do Not Disturb, timed** - the quick-settings tile steps through: an hour, until the morning, until switched off.
 - **A welcome card** on the first start names the things nobody finds alone (again: `qdbus6 onur.SircaShell /SircaShell onur.SircaShell.showWelcome`).
 - **Edit mode** - right click an empty spot on the bar or the dock. Widgets become chips you drag between left, centre
-  and right or remove; handles resize the bar; two strips hold every option (sizes, width modes, blur / tint / edge /
+  and right or remove; handles resize the bar; two strips hold every option (sizes, width modes, tint / edge /
   sheen / shadow / haze per surface, clock format, dock behaviour …). Everything applies while you drag.
 - **Safety** - `sirca-shell-reload` refuses a build that does not load; five crashes in a minute restore the Plasma
   panels automatically; your Plasma layout is saved and restored exactly.
@@ -66,7 +73,6 @@ and GNOME pin migration are outside the current panel implementation.
 ## What it needs
 
 - KDE Plasma **6.6** on **Wayland** (KWin). Not X11, not other compositors.
-- For the glass look: the glass KWin effect in `../kwin-effects` (the installer builds it). Without it the shell runs, but the bar and dock are flat tinted shapes without blur or a lit edge.
 - Optional: `gpu-screen-recorder` and `ffmpeg` (screen recording), the Mudeer KWin script (the tile picker uses its
   gaps; without it the shell places windows itself), Dolphin ("Show in folder").
 - The matching themes (GTK, Qt, window decoration, lock screen) live in `../desktop`.
@@ -77,7 +83,7 @@ Ubuntu / Debian names:
 
 ```
 sudo apt install build-essential cmake extra-cmake-modules qt6-base-dev qt6-declarative-dev \
-  liblayershellqtinterface-dev libplasma-dev kwayland-dev libkf6windowsystem-dev libkf6package-dev \
+  liblayershellqtinterface-dev kwayland-dev libkf6windowsystem-dev \
   libkf6config-dev libkf6i18n-dev libkf6globalaccel-dev libkf6service-dev libkf6guiaddons-dev libkf6kio-dev
 ```
 
@@ -88,19 +94,17 @@ Fedora (tested in a Fedora 44 sandbox, Plasma 6.7.5):
 
 ```
 sudo dnf install cmake gcc-c++ extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-devel layer-shell-qt-devel \
-  libplasma-devel kf6-kwayland-devel kf6-kwindowsystem-devel kf6-kpackage-devel kf6-kconfig-devel kf6-ki18n-devel \
+  kf6-kwayland-devel kf6-kwindowsystem-devel kf6-kconfig-devel kf6-ki18n-devel \
   kf6-kglobalaccel-devel kf6-kservice-devel kf6-kguiaddons-devel kf6-kio-devel
 ```
 
 Runtime on Fedora: `plasma-milou` (the search; the shell exits without it), `plasma-nm plasma-pa powerdevil kpipewire kf6-bluez-qt qt6-qt5compat`.
 
-and for the KWin effect: `kwin-devel kdecoration-devel kf6-kcmutils-devel libepoxy-devel libdrm-devel vulkan-headers`
-(KWin's development files need epoxy, drm and the Vulkan headers to be found by CMake, and Fedora does not pull them in).
 For the Qt style and decoration: `kf6-frameworkintegration-devel kf6-kcolorscheme-devel kf6-kiconthemes-devel
 kf6-kirigami-devel qt6-qtdeclarative-devel`.
 
-On Arch the equivalents are `extra-cmake-modules qt6-base qt6-declarative layer-shell-qt kio libplasma kwayland
-kwindowsystem kpackage kconfig ki18n kglobalaccel kservice kguiaddons` plus `plasma-workspace plasma-nm plasma-pa
+On Arch the equivalents are `extra-cmake-modules qt6-base qt6-declarative layer-shell-qt kio kwayland
+kwindowsystem kconfig ki18n kglobalaccel kservice kguiaddons` plus `plasma-workspace plasma-nm plasma-pa
 powerdevil milou kpipewire bluez-qt qt6-5compat` (untested).
 
 ## Install
@@ -118,8 +122,10 @@ sirca-shell-switch off       # stops the shell and restores the saved layout exa
 ```
 
 `sirca-shell-switch status` shows where things stand. `sirca-shell-switch plasma off` runs the session without
-plasmashell at all (the shell then draws the wallpaper and serves the volume / brightness display); `plasma on` brings
-it back. That mode is experimental: there is no desktop right-click menu and there are no desktop icons.
+plasmashell at all (the shell then draws the wallpaper, displays the contents of the XDG Desktop folder on the primary
+screen and serves the volume / brightness display); `plasma on` brings it back. Desktop items can be opened, renamed,
+trashed, sorted, repositioned, and adjusted for icon size and spacing. Launchpad's app context menu creates application
+shortcuts in the Desktop folder. Plasma remains responsible for desktop files and icons while plasmashell is running.
 
 KWin only gives a program the window list, screenshots and input replay if a desktop file asks for them **and its
 `Exec=` is the path of the running binary**. `install.sh` takes care of that; if you move the binary, reinstall.
@@ -159,6 +165,23 @@ python3 tests/run-settings-tests.py --output /tmp/sber-settings-check
 
 See [results and screenshots](tests/settings/README.md). Wayland integration,
 real service calls and full accessibility coverage still need desktop verification.
+
+Focused C++ regressions cover calendar recurrence, lyrics request restart, clipboard
+shutdown persistence, malformed config preservation, busy removable media, shortcut
+permission failures and stale tray replies. Enable them with `-DSIRCA_BUILD_TESTS=ON`
+when configuring the shell; Qt Test and Python 3 are required in that mode. The
+config-preservation and removable-media tests use `dbus-run-session`; temporary XDG
+directories isolate configuration. Panel smoke checks can run offscreen or exercise
+the live Wayland session using temporary configuration:
+
+```sh
+cmake -S . -B build -DSIRCA_BUILD_TESTS=ON
+cmake --build build -j4
+ctest --test-dir build --output-on-failure
+python3 tests/run-panel-smoke.py --binary "$PWD/build/bin/sirca-shell" --output /tmp/sber-panel-check
+python3 tests/run-panel-smoke.py --wayland --menu --binary "$PWD/build/bin/sirca-shell" --output /tmp/sber-wayland-menu
+python3 tests/run-panel-smoke.py --wayland --layout --binary "$PWD/build/bin/sirca-shell" --output /tmp/sber-wayland-layout
+```
 
 ### Current configuration
 
@@ -207,8 +230,8 @@ known look keys with sane values, never runs anything, keeps your own wallpapers
 | X11 session, other compositors | no: the shell is layer-shell windows plus KWin's D-Bus and protocols |
 | One screen | works; the bar and dock are on the primary output |
 | Several screens | wallpaper on every screen; the bar and dock on the primary, or on any screen you choose in edit mode (Screens). Tested with virtual screens only |
-| Without plasmashell (`sirca-shell-switch plasma off`) | works for daily use; Plasma's desktop widgets and its clipboard applet are gone, the shell brings its own wallpaper, clipboard and notifications |
-| The glass look (blur, refraction, rim) | needs the companion KWin effect; without it the bar and dock are plain translucent surfaces |
+| Without plasmashell (`sirca-shell-switch plasma off`) | works for daily use; Plasma's desktop widgets and clipboard applet are gone, Sirca provides its own wallpaper, desktop icons on the primary output, clipboard and notifications |
+| Bar and dock surfaces | use solid UI Kit colours |
 | Light and dark | both; with the companion `glass-mode` script the whole desktop switches with one cross-fade |
 | Screen recording | needs `gpu-screen-recorder` (and `ffmpeg` for HDR screens); without it a recording ends at once with a notification that says so |
 | NVIDIA | developed on it (open kernel driver); AMD and Intel are untested by the author |
@@ -216,16 +239,14 @@ known look keys with sane values, never runs anything, keeps your own wallpapers
 ## Known limits
 
 - One screen. The bar and dock appear on the primary output only.
-- The bar is a pill: its corner radius is fixed by the glass effect. The dock sits at the bottom only.
+- The bar uses the configured rounded surface; the dock sits at the bottom only.
 - Recording captures through the display hardware (KMS), so the desktop must not be HDR-tonemapped by something else;
   with HDR on, recordings are tonemapped to SDR when you stop.
-- The fallbacks that host real Plasma applets (tray, quick settings, launcher, calendar, notifications as `native… = false`)
-  need forked applets that are not part of this repository yet.
 - Identifiers such as the D-Bus name `onur.SircaShell` carry the author's name and may change before a 1.0.
 
 ## Layout of the code
 
-- `src/` - C++: layer-shell setup, shapes → blur region and input mask, global shortcuts, D-Bus, config, tray host,
+- `src/` - C++: layer-shell setup, shapes → input masks, global shortcuts, D-Bus, config, tray host,
   apps model, clipboard, screenshots, recording.
 - `qml/` - everything you see. `Surface.qml` is a layer-shell window whose shape is the union of its lobes;
   `Dock.qml` and `UnifiedPanel.qml`; `EditScene.qml`; `Config.qml` holds every token and default.
@@ -236,11 +257,8 @@ known look keys with sane values, never runs anything, keeps your own wallpapers
 GPL-3.0-or-later, see `LICENSE`.
 
 - `qml/control/` (the "classic" quick-settings pages) derives from **Plasma Control Hub** by zayronxio, GPL-3.0-or-later.
-- `applets/` holds forks of KDE Plasma's system tray and notifications applets (KDE contributors; LGPL-2.0-or-later and
-  GPL-2.0-or-later, headers kept in the files).
-- The glass itself is drawn by a fork of **kwin-effects-glass** by 4v3ngR.
 - The emoji list (`qml/data/emoji.json`) is built from Unicode's `emoji-test.txt` (© Unicode, Inc., Unicode License v3) by `scripts/gen-emoji.py`.
-- Built on Qt, KDE Frameworks, libplasma and LayerShellQt.
+- Built on Qt, KDE Frameworks, Plasma QML modules and LayerShellQt.
 
 The agreed Smart Panel scope keeps our Qt/QML/UI Kit stack and KWin/Wayland;
 no GNOME extension is planned. Corporate settings are outside MVP. The Sber menu

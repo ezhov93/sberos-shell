@@ -8,7 +8,6 @@ import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.ksvg as KSvg
 import org.kde.kirigami as Kirigami
 
-
 import "../lib" as Lib
 
 Lib.Card {
@@ -43,8 +42,7 @@ Lib.Card {
             anchors.fill: parent
             model: network.appletProxyModel
 
-            ScrollBar.vertical: ScrollBar {
-            }
+            ScrollBar.vertical: ScrollBar {}
 
             delegate: ConnectionItem {
                 width: ListView.view ? ListView.view.width : 0
@@ -56,7 +54,7 @@ Lib.Card {
                 spacing: root.smallSpacing
 
                 RowLayout {
-                    height: implicitHeight + root.smallSpacing
+                    Layout.preferredHeight: implicitHeight + root.smallSpacing
 
                     PlasmaComponents3.ToolButton {
                         Layout.preferredHeight: root.largeFontSize * 2.5
@@ -107,14 +105,11 @@ Lib.Card {
                                 function onScanningChanged() {
                                     if (network.handler.scanning)
                                         timer.restart();
-
                                 }
 
                                 target: network.handler
                             }
-
                         }
-
                     }
 
                     // Airplane mode section
@@ -134,9 +129,7 @@ Lib.Card {
                         PlasmaComponents3.ToolTip {
                             text: airPlaneModeSwitchButton.checked ? i18n("Disable airplane mode") : i18n("Enable airplane mode")
                         }
-
                     }
-
                 }
 
                 KSvg.SvgItem {
@@ -150,17 +143,12 @@ Lib.Card {
                     svg: KSvg.Svg {
                         imagePath: "widgets/line"
                     }
-
                 }
 
                 Item {
                     Layout.fillHeight: true
                 }
-
             }
-
         }
-
     }
-
 }

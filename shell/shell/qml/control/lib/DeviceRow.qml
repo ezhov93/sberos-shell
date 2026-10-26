@@ -14,7 +14,8 @@ Item {
     readonly property bool isDefault: model.PulseObject ? (model.PulseObject.default ?? false) : false
     readonly property string deviceName: {
         var o = model.PulseObject;
-        if (!o) return model.Description ?? model.Name ?? "";
+        if (!o)
+            return model.Description ?? model.Name ?? "";
         var nick = o.pulseProperties ? o.pulseProperties["node.nick"] : undefined;
         return nick || o.description || o.name || "";
     }
@@ -30,7 +31,12 @@ Item {
         anchors.leftMargin: 8
         anchors.rightMargin: 8
         spacing: 8
-        Kirigami.Icon { source: row.icon; Layout.preferredWidth: 16; Layout.preferredHeight: 16; opacity: row.isDefault ? 1 : 0.7 }
+        Kirigami.Icon {
+            source: row.icon
+            Layout.preferredWidth: 16
+            Layout.preferredHeight: 16
+            opacity: row.isDefault ? 1 : 0.7
+        }
         PlasmaComponents3.Label {
             Layout.fillWidth: true
             text: row.deviceName
@@ -38,12 +44,21 @@ Item {
             font.weight: row.isDefault ? Font.DemiBold : Font.Normal
             elide: Text.ElideMiddle
         }
-        Kirigami.Icon { source: "checkmark-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16; visible: row.isDefault; color: Kirigami.Theme.textColor }
+        Kirigami.Icon {
+            source: "checkmark-symbolic"
+            Layout.preferredWidth: 16
+            Layout.preferredHeight: 16
+            visible: row.isDefault
+            color: Kirigami.Theme.textColor
+        }
     }
     MouseArea {
         id: mouse
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: { if (row.model.PulseObject) row.model.PulseObject.default = true }
+        onClicked: {
+            if (row.model.PulseObject)
+                row.model.PulseObject.default = true;
+        }
     }
 }

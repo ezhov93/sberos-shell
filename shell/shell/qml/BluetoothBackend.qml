@@ -6,6 +6,16 @@ import org.kde.bluezqt 1.0 as BluezQt
 QtObject {
     readonly property QtObject bt: BluezQt.Manager
     readonly property bool on: bt.bluetoothOperational
-    readonly property string name: { for (let i = 0; i < bt.devices.length; ++i) if (bt.devices[i].connected) return bt.devices[i].name; return "" }
-    function toggle() { const want = !bt.bluetoothOperational; bt.bluetoothBlocked = !want; for (let i = 0; i < bt.adapters.length; ++i) bt.adapters[i].powered = want }
+    readonly property string name: {
+        for (let i = 0; i < bt.devices.length; ++i)
+            if (bt.devices[i].connected)
+                return bt.devices[i].name;
+        return "";
+    }
+    function toggle() {
+        const want = !bt.bluetoothOperational;
+        bt.bluetoothBlocked = !want;
+        for (let i = 0; i < bt.adapters.length; ++i)
+            bt.adapters[i].powered = want;
+    }
 }

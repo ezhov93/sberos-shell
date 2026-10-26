@@ -7,7 +7,7 @@ Item {
     width: conteiner.width
     property bool hasBattery: batteryControl.hasBatteries
     property bool batteryChargid: batteryControl.state === BatteryControlModel.Charging
-    property int percent: !hasBattery ? 100: batteryControl.percent
+    property int percent: !hasBattery ? 100 : batteryControl.percent
 
     BatteryControlModel {
         id: batteryControl
@@ -43,11 +43,10 @@ Item {
         }
 
         if (batteryChargid) {
-            return icon + "-charging-symbolic"
+            return icon + "-charging-symbolic";
         } else {
-            return icon + "-symbolic"
+            return icon + "-symbolic";
         }
-
     }
 
     Row {
@@ -73,8 +72,5 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             source: determineIcon(percent)
         }
-
     }
-
 }
-

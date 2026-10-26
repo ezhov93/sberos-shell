@@ -9,7 +9,6 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.desktop.modules.bar
 import qs.desktop.modules.common
-import qs.desktop.modules.notifications
 import qs.desktop.modules.platform
 import qs.desktop.modules.stage
 import qs.desktop.modules.dock
@@ -94,11 +93,6 @@ PopupWindow {
     readonly property string outgoingPage: pageMotion.outgoingPage
     readonly property bool hasActiveSubmenu: activeSubmenu !== "" || sessionModalVisible
     readonly property bool dockFacingLayout: dockHosted && dockEdge !== "top"
-    readonly property bool notificationsAboveControls: dockHosted
-    // The controls already have a 20px top inset. When the notification deck
-    // precedes them, consume that inset instead of adding a second section gap.
-    readonly property int historyLayoutAdjustment: notificationsAboveControls ? -20 : 12
-    readonly property real mainControlsOffsetY: notificationsAboveControls && historyShown ? notificationHistory.height + historyLayoutAdjustment : 0
     signal networkRequested
     signal bluetoothRequested
     signal wifiNetworkSelected(var network)
@@ -161,11 +155,7 @@ PopupWindow {
     // scroll the original-size controls instead of shrinking text and buttons.
     readonly property real availableHeight: Math.max(1, (targetScreen?.height ?? 900) - 110)
     readonly property real fitScale: 1
-    readonly property bool historyShown: cardMapped("") && (NotificationHistoryService.count > 0 || !notificationHistory.historyEmptyReady || notificationHistory.historyExitCount > 0)
-    readonly property real historyMaximumHeight: Math.min(560, Math.max(208, availableHeight - controlAreaHeight - historyLayoutAdjustment))
-    readonly property real historyHeight: historyShown ? notificationHistory.desiredHeight : 0
-    readonly property real naturalContentHeight: controlAreaHeight + (historyShown ? notificationHistory.height + historyLayoutAdjustment : 0)
-    readonly property int controlCenterHeight: Math.min(availableHeight, Math.max(540, naturalContentHeight))
+    readonly property int controlCenterHeight: Math.min(availableHeight, controlAreaHeight)
     readonly property int controlCenterWidth: Math.max(296, Math.min(488, (targetScreen?.width ?? 1920) - 32))
     readonly property real controlsWidth: controlCenterWidth - 30
     readonly property real quickControlWidth: (controlsWidth - 10) / 2
@@ -175,7 +165,7 @@ PopupWindow {
         id: inputArea
         width: panel.width
         y: Math.max(0, panelCanvas.y - controlViewport.contentY)
-        height: Math.max(0, Math.min(controlViewport.height, panelCanvas.y - controlViewport.contentY + panel.naturalContentHeight) - y)
+        height: Math.max(0, Math.min(controlViewport.height, panelCanvas.y - controlViewport.contentY + panel.controlAreaHeight) - y)
     }
     RoundedInputRegion {
         id: panelInputRegion
@@ -188,7 +178,7 @@ PopupWindow {
         width: panel.width
         height: panel.height
         contentWidth: panel.controlCenterWidth
-        contentHeight: Math.max(height, panel.naturalContentHeight)
+        contentHeight: Math.max(height, panel.controlAreaHeight)
         interactive: contentHeight > height + 1 || contentWidth > width + 1
         flickableDirection: Flickable.AutoFlickIfNeeded
         boundsBehavior: Flickable.StopAtBounds
@@ -206,7 +196,7 @@ PopupWindow {
         id: panelCanvas
         parent: controlViewport.contentItem
         width: panel.controlCenterWidth
-        height: panel.naturalContentHeight
+        height: panel.controlAreaHeight
         y: panel.dockFacingLayout ? Math.max(0, controlViewport.height - height) : 0
         scale: AppearanceTokens.motion.popupStartScale + (1 - AppearanceTokens.motion.popupStartScale) * popupMotion.progress
         transformOrigin: !panel.dockHosted ? Item.Top : panel.dockEdge === "left" ? Item.Left : panel.dockEdge === "right" ? Item.Right : Item.Bottom
@@ -256,22 +246,6 @@ PopupWindow {
             }
         }
     }
-    NotificationHistoryPane {
-        id: notificationHistory
-        showEmptyState: false
-        parent: panelCanvas
-        x: 20
-        y: panel.notificationsAboveControls ? 0 : panel.controlAreaHeight
-        width: panel.controlsWidth
-        maximumHeight: panel.historyMaximumHeight
-        height: panel.historyHeight
-        outerViewport: controlViewport
-        visible: panel.historyShown
-        opacity: panel.pageFactor("")
-        active: panel.isOpen && visible && !panel.hasActiveSubmenu
-        enabled: popupMotion.interactive && pageMotion.interactive
-    }
-
     QtObject {
         id: coordinator
         readonly property bool open: popupMotion.requestedOpen
@@ -336,13 +310,13 @@ PopupWindow {
     // rect rather than a flat fade: the submenu card morphs onto the Wi-Fi
     // pill (or the brightness/sound slider) it was opened from.
     readonly property var submenuSourceRects: ({
-            "wifi": Qt.rect(15, 271 + mainControlsOffsetY, 224, 56),
-            "bluetooth": Qt.rect(249, 271 + mainControlsOffsetY, 224, 56),
-            "brightness": Qt.rect(15, 95 + mainControlsOffsetY, controlsWidth, 68),
-            "sound": Qt.rect(15, 179 + mainControlsOffsetY, controlsWidth, 68),
+            "wifi": Qt.rect(15, 271, 224, 56),
+            "bluetooth": Qt.rect(249, 271, 224, 56),
+            "brightness": Qt.rect(15, 95, controlsWidth, 68),
+            "sound": Qt.rect(15, 179, controlsWidth, 68),
             // Power/session sheet returns to the power-key tile (offsetRight
             // 17, offsetTop 335, 224x56) like the Wi-Fi and Bluetooth pills.
-            "session": Qt.rect(247, 335 + mainControlsOffsetY, 224, 56)
+            "session": Qt.rect(247, 335, 224, 56)
         })
 
     // 0 when a page is at full size, 1 when it has fully collapsed onto its
@@ -500,7 +474,6 @@ PopupWindow {
         } else {
             controlViewport.contentX = 0;
             controlViewport.contentY = 0;
-            notificationHistory.reset();
             panel.sessionModalVisible = false;
             panel.submenuOpen = false;
             panel.activeSubmenu = "";
@@ -514,9 +487,7 @@ PopupWindow {
 
     function positionViewportForOpen() {
         controlViewport.contentX = 0;
-        // On a short output keep the dock-facing controls reachable immediately.
-        // Notifications above them remain available by scrolling upward.
-        controlViewport.contentY = panel.notificationsAboveControls ? Math.max(0, controlViewport.contentHeight - controlViewport.height) : 0;
+        controlViewport.contentY = 0;
     }
 
     // The Bar finished sliding; open the deferred panel now that its anchor
@@ -665,7 +636,7 @@ PopupWindow {
     // Disc toggles power; tapping the rest of the pill opens the network list.
     ControlParts.WifiCard {
         id: wifiCard
-        offsetTop: 271 + panel.mainControlsOffsetY
+        offsetTop: 271
         offsetRight: 249
         cardRadius: 17
         cardWidth: 224
@@ -678,7 +649,7 @@ PopupWindow {
     // Disc toggles power; tapping the pill opens the device list.
     ControlParts.BluetoothCard {
         id: bluetoothCard
-        offsetTop: 271 + panel.mainControlsOffsetY
+        offsetTop: 271
         offsetRight: 17
         cardRadius: 17
         cardWidth: 224
@@ -750,7 +721,7 @@ PopupWindow {
             cornerRadius: slotCard2.cardRadius
             selected: ThemeService.isDark
         }
-        offsetTop: 335 + panel.mainControlsOffsetY
+        offsetTop: 335
         offsetRight: 249
         cardRadius: 17
         cardWidth: 224
@@ -833,7 +804,7 @@ PopupWindow {
             pointer: powerPointer
             cornerRadius: slotCard3.cardRadius
         }
-        offsetTop: 335 + panel.mainControlsOffsetY
+        offsetTop: 335
         offsetRight: 17
         cardRadius: 17
         cardWidth: 224
@@ -921,7 +892,7 @@ PopupWindow {
             cornerRadius: slotCard4.cardRadius
             selected: ControlCenterService.doNotDisturbEnabled
         }
-        offsetTop: 399 + panel.mainControlsOffsetY
+        offsetTop: 399
         offsetRight: 249
         cardRadius: 17
         cardWidth: 224
@@ -997,7 +968,7 @@ PopupWindow {
             cornerRadius: slotCard5.cardRadius
             selected: ControlCenterService.nightLightActive
         }
-        offsetTop: 399 + panel.mainControlsOffsetY
+        offsetTop: 399
         offsetRight: 17
         cardRadius: 17
         cardWidth: 224
@@ -1068,7 +1039,7 @@ PopupWindow {
     // Utility toggles share the row between the quick actions and brightness.
     ControlParts.StageModeCard {
         id: stageModeCard
-        offsetTop: 463 + panel.mainControlsOffsetY
+        offsetTop: 463
         offsetRight: 249
         cardRadius: 17
         cardWidth: panel.halfControlWidth
@@ -1079,7 +1050,7 @@ PopupWindow {
     // Caffeine is held by the resident service, never the popup lifetime.
     ControlParts.KeepAwakeCard {
         id: keepAwakeCard
-        offsetTop: 463 + panel.mainControlsOffsetY
+        offsetTop: 463
         offsetRight: 17
         cardRadius: 17
         cardWidth: panel.halfControlWidth
@@ -1090,7 +1061,7 @@ PopupWindow {
     // ── Card 9: Display brightness ───────────────────────────────────
     ControlParts.BrightnessCard {
         id: slotCard6
-        offsetTop: 95 + panel.mainControlsOffsetY
+        offsetTop: 95
         offsetRight: 15
         cardRadius: AppearanceTokens.shape.extraLarge
         cardWidth: panel.controlsWidth
@@ -1106,7 +1077,7 @@ PopupWindow {
     // ── Card 8: Sound / volume ───────────────────────────────────────
     ControlParts.SoundCard {
         id: slotCard7
-        offsetTop: 179 + panel.mainControlsOffsetY
+        offsetTop: 179
         offsetRight: 15
         cardRadius: AppearanceTokens.shape.extraLarge
         cardWidth: panel.controlsWidth

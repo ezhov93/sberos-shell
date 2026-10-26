@@ -10,6 +10,9 @@ Item {
     id: root
 
     signal activated(Item sourceItem)
+    // The unified SberOS panel follows the compact date-and-time treatment in
+    // the Smart Panel mock. The standalone Bar keeps its existing long date.
+    property bool smartPanelFormat: false
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
@@ -44,7 +47,9 @@ Item {
 
         ThemeText {
             anchors.verticalCenter: parent.verticalCenter
-            text: I18n.fmt(clock.date, I18n.tr("dddd, MMMM d"))
+            text: root.smartPanelFormat
+                  ? Qt.locale().toString(clock.date, "ddd, d MMM") + " · " + Qt.locale().toString(clock.date, "HH:mm")
+                  : I18n.fmt(clock.date, I18n.tr("dddd, MMMM d"))
             color: ThemeService.barInk
             renderType: Text.NativeRendering
             font {

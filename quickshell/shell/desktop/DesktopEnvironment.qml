@@ -361,6 +361,7 @@ Item {
                 BarDateStatus {
                     id: dateStatus
                     anchors.verticalCenter: parent.verticalCenter
+                    smartPanelFormat: true
                     onActivated: sourceItem => integratedCalendarPopup.toggle(sourceItem)
                 }
             }

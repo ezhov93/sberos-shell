@@ -2,8 +2,8 @@
 
 import QtQuick
 import QtQuick.Controls.Basic
+import Qt5Compat.GraphicalEffects
 import org.kde.plasma.private.keyboardindicator as KeyboardIndicator
-import "state.js" as State
 
 Item {
     id: ui
@@ -14,7 +14,6 @@ Item {
     readonly property real u: Math.max(0.78, Math.min(1.6, height / 1080))
     readonly property string family: regularFont.status === FontLoader.Ready ? regularFont.name : "sans-serif"
     readonly property string displayFamily: lightFont.status === FontLoader.Ready ? lightFont.name : family
-    readonly property string wallpaper: State.wallpaper !== "" ? State.wallpaper : "assets/mock-lock-background.png"
     property bool busy: false
     property bool locked: false
     property bool noPassword: false
@@ -109,17 +108,27 @@ Item {
         key: Qt.Key_CapsLock
     }
 
-    Image {
-        id: background
+    ShaderEffectSource {
+        id: wallpaperTexture
         anchors.fill: parent
-        source: ui.wallpaper
-        sourceSize: Qt.size(1920, 1080)
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
+        sourceItem: typeof wallpaper !== "undefined" ? wallpaper : null
+        live: true
+        hideSource: false
         smooth: true
-        mipmap: true
-        onStatusChanged: if (status === Image.Error && source !== "assets/mock-lock-background.png")
-            source = "assets/mock-lock-background.png"
+        visible: false
+    }
+
+    FastBlur {
+        anchors.fill: parent
+        source: wallpaperTexture
+        radius: Math.min(48 * ui.u, 64)
+        transparentBorder: false
+        cached: false
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#1cffffff"
     }
 
     Column {
@@ -133,7 +142,10 @@ Item {
             color: ui.ink
             font.family: ui.family
             font.pixelSize: 19 * ui.u
-            text: Qt.formatDate(clock.now, "ddd, d MMMM")
+            text: {
+                const formatted = Qt.locale("ru_RU").toString(clock.now, "ddd, d MMMM");
+                return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+            }
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -210,13 +222,15 @@ Item {
                     color: submitButton.down ? "#edf5ef" : "transparent"
                     radius: passwordField.radius
                 }
-                contentItem: Text {
-                    text: "‹"
-                    color: ui.inkDim
-                    font.family: ui.family
-                    font.pixelSize: 38 * ui.u
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Item {
+                    Image {
+                        anchors.centerIn: parent
+                        width: 24 * ui.u
+                        height: width
+                        source: "icons/arrow-left.svg"
+                        sourceSize: Qt.size(48, 48)
+                        opacity: submitButton.enabled ? 1 : 0.55
+                    }
                 }
             }
 
@@ -270,13 +284,14 @@ Item {
                     color: showPasswordButton.down ? "#edf5ef" : "transparent"
                     radius: passwordField.radius
                 }
-                contentItem: Text {
-                    text: ui.showPassword ? "◉" : "◎"
-                    color: ui.inkDim
-                    font.family: "Inter"
-                    font.pixelSize: 24 * ui.u
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Item {
+                    Image {
+                        anchors.centerIn: parent
+                        width: 22 * ui.u
+                        height: width
+                        source: ui.showPassword ? "icons/eye-off.svg" : "icons/eye.svg"
+                        sourceSize: Qt.size(48, 48)
+                    }
                 }
             }
         }

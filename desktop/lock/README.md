@@ -30,3 +30,17 @@ After installation, verify the live lock screen with `Win+L` after the next
 login. The QML preview harness uses a mock authenticator; it does not validate
 the real lock protocol or PAM authentication. Relevant scenarios: `10-01` and
 `10-03`.
+
+The lock screen reads the active wallpaper item from KScreenLocker, so image
+wallpapers and Plasma wallpaper plugins/slideshows remain controlled by the
+desktop. It blurs that live wallpaper under a light overlay; no bundled preview
+image is used as a fallback. For a standalone preview, pass the current wallpaper
+image path as the final argument:
+
+```sh
+QT_QPA_PLATFORM=wayland sirca-shell --qml-test desktop/lock/test/harness.qml -- \
+    1920 1080 rest /tmp/lock-preview.png 3200 /absolute/path/to/wallpaper.jpg
+```
+
+The preview's mock wallpaper item stands in for KScreenLocker's live item. Qt's
+`Qt5Compat.GraphicalEffects` QML module is required for the blur.

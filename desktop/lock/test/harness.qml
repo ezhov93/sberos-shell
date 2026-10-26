@@ -1,5 +1,5 @@
 // Preview of the Glass lock screen with a mock authenticator (never the real locker).
-//   sirca-shell --qml-test harness.qml -- <W> <H> <rest|unlock|failed> <out.png> [ms]
+//   sirca-shell --qml-test harness.qml -- <W> <H> <rest|unlock|failed> <out.png> [ms] [wallpaper]
 // Without QT_QPA_PLATFORM=offscreen it opens a focus-free window for a moment and saves its own image (GPU effects on).
 import QtQuick
 import QtQuick.Window
@@ -18,6 +18,15 @@ Window {
     title: "Glass lock preview"
     property string kscreenlocker_userName: "onur"
     property string kscreenlocker_userImage: "/var/lib/AccountsService/icons/onur"
+    property alias wallpaper: previewWallpaper
+    Image {
+        id: previewWallpaper
+        anchors.fill: parent
+        source: win.a.length > 5 ? "file://" + win.a[5] : ""
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+    }
     QtObject {
         id: authenticator
         property bool hadPrompt: true

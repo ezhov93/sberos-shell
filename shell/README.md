@@ -17,8 +17,7 @@ out the hard way.
   exactly as it was. If the shell crashes five times within a minute, Plasma's panels come back by themselves.
 - It takes over some shortcuts while it runs: Meta, Meta+Space, Meta+V, Meta+A, Print, Meta+Shift+S and R, Ctrl+Alt+Del and
   Alt+Tab. You get them back when you switch it off.
-- The desktop look changes your settings: KDE colour scheme, GTK 3 and 4 CSS, and icon theme. Every step makes a backup and has a
-  revert.
+- The shell changes only its own appearance settings; it does not install or change system desktop themes.
 - Only Plasma on Wayland. No X11, no Hyprland, Sway or GNOME.
 - Several screens: every connected screen gets its own wallpaper and panel by default; edit mode can disable individual panels.
   Popups and shortcuts use the active or primary screen. I have tested two virtual screens and am still checking real hardware.
@@ -41,7 +40,7 @@ first, then write to me.
 
 The shell provides quick settings, an application and file launcher, grouped notifications, media controls, window previews, and an edit mode for arranging the bar and dock. Keyboard shortcuts include Meta+Space for search, Meta+A for the tile picker, Meta+V for clipboard history, and Meta+Shift+S for screenshots and screen recording.
 
-The bundled theme tools coordinate light or dark mode across the shell, KDE and GTK applications, icons, and wallpapers. Seven accent colours are included. The wallpapers are runtime assets installed from `wallpapers/`; they are kept in this source tree.
+The shell provides light and dark modes, seven accent colours, and bundled wallpapers. These settings affect Sirca only; KDE and GTK themes remain under system settings.
 
 ## SberOS workspace adaptation
 
@@ -69,7 +68,7 @@ does not constitute a production rollout or a migration from the GNOME panel.
 ./install.py
 ```
 
-You can take just the shell (no root needed), the shell plus the desktop look, or my whole setup with wallpapers.
+Install the shell alone or import the author’s optional bar and dock layout. Both choices leave system themes and wallpapers unchanged.
 
 ```
 sirca-shell-switch on      # saves your Plasma panels and takes over
@@ -77,7 +76,6 @@ sirca-shell-switch off     # your panels come back exactly as they were
 ./uninstall.py             # removes what was installed, part by part
 ```
 
-Keep the source folder if you install the light/dark switch. `glass-mode` and the theme generators run from it.
 
 ## What works and what does not
 
@@ -102,7 +100,6 @@ with a similar memory footprint (about 420 MB resident, peaks under 1 GB for bot
 | folder | what |
 |---|---|
 | `shell/` | the shell itself (C++ and QML). Its README lists every feature, the settings, scripting and the build dependencies |
-| `desktop/` | desktop look tools: KDE colour scheme, GTK 3 and 4, `glass-mode` (light, dark, colour themes), and the lock screen |
 | `wallpapers/` | the wallpapers I use: one picture in seven colours, dark and light (5120 × 1440) |
 | `setups/` | the colour themes, and my bar and dock layout as a file for `sirca-shell-setup import` |
 
@@ -111,10 +108,9 @@ with a similar memory footprint (about 420 MB resident, peaks under 1 GB for bot
 Everything written for this project is GPL-3.0-or-later, see `LICENSE`. A lot of it stands on other people's work, and each
 folder keeps their notices:
 
-- `desktop/third_party/adw-gtk3/` is **adw-gtk3** by lassekongo83, LGPL-2.1.
 - `shell/qml/control/` derives from **Plasma Control Hub** by zayronxio; `shell/applets/` holds forks of KDE Plasma applets (their headers are kept).
 - Fonts: **Outfit** and **Inter**, SIL Open Font License.
-- Icons: **Papirus** (GPL-3) by the Papirus Development Team. Not bundled; the installer fetches it if you do not have it, and the folder colours follow the colour theme.
+- Icons come from the system icon theme selected by the user; no icon pack is bundled or installed.
 
 Thank you to all of them.
 

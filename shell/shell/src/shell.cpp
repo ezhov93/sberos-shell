@@ -485,7 +485,7 @@ QJsonObject Shell::readConfigObject(bool *ok) const {
 }
 
 // Every write of config.json goes through here: a QSaveFile writes next to it and renames over it,
-// so a reader (the shell itself through its watcher, glass-mode, a hand-started settings window)
+// so a reader (the shell itself through its watcher or a hand-started settings window)
 // never sees a half-written file. The revision is bumped right away; the watcher's own
 // notifications for this write are ignored (see watchConfig).
 void Shell::writeConfigObject(const QJsonObject &o) {
@@ -1173,8 +1173,8 @@ void Shell::watchConfig() {
         if (QFile::exists(file) && !m_configWatcher.files().contains(file))
             m_configWatcher.addPath(file); // editors (and our QSaveFile) replace the file
         // our own write already bumped the revision when it was made; its inotify echo must not
-        // reload everything a second time. Judged by content, not by time: glass-mode writes the
-        // file right after our "mode" write, and that must count.
+        // reload everything a second time. Judged by content, not by time, so another process
+        // changing the file immediately after one of our writes still counts.
         if (!m_ownConfigBytes.isEmpty()) {
             QFile f(file);
             if (f.open(QIODevice::ReadOnly) && f.readAll() == m_ownConfigBytes)

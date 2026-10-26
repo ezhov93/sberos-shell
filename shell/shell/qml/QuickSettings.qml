@@ -365,8 +365,6 @@ Item {
             {
                 const want = Config.dark ? "light" : "dark";
                 Shell.saveConfigKey("mode", want);
-                if (Shell.hasProgram("glass-mode"))
-                    Shell.runDetached("glass-mode", [want]);
                 break;
             }
         case "vpn":

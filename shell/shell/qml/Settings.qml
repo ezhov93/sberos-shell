@@ -679,36 +679,6 @@ Window {
                         }
                     }
                     Section {
-                        title: "Folder colour"
-                        visible: Shell.hasProgram("glass-folder-color")
-                        Item {
-                            width: parent.width
-                            height: fflow.implicitHeight + 24
-                            Flow {
-                                id: fflow
-                                x: 14
-                                y: 12
-                                width: parent.width - 28
-                                spacing: 8
-                                Repeater {
-                                    model: [["blue", "#5294e2"], ["indigo", "#5c6bc0"], ["bluegrey", "#607d8b"], ["nordic", "#5e81ac"], ["darkcyan", "#45abb7"], ["violet", "#7e57c2"], ["grey", "#8e8e8e"], ["black", "#4f4f4f"]]   // literal-ok: colour swatches
-                                    Choice {
-                                        required property var modelData
-                                        text: modelData[0]
-                                        dot: modelData[1]
-                                        onTapped: Shell.runDetached("glass-folder-color", [modelData[0]])
-                                    }
-                                }
-                            }
-                        }
-                        Sber.Label {
-                            x: 16
-                            bottomPadding: 10
-                            text: "Applies to your Papirus copy. File managers show it after a restart."
-                            secondary: true
-                        }
-                    }
-                    Section {
                         title: "System"
                         Row_ {
                             label: "Colours, fonts, Plasma's wallpaper"

@@ -347,20 +347,14 @@ QtObject {
         } else if (id === "mode") {
             const want = Config.dark ? "light" : "dark";
             Shell.saveConfigKey("mode", want);
-            if (Shell.hasProgram("glass-mode"))
-                Shell.runDetached("glass-mode", [want]);
         } else if (id.startsWith("theme:")) {
             const n = id.substring(6);
-            if (Shell.hasProgram("glass-mode"))
-                Shell.runDetached("glass-mode", ["theme", n]);
-            else {
-                const t = Config.themes[n];
-                Shell.saveConfigKeys({
-                    theme: n,
-                    accent: t.accent,
-                    wallpaper: Config.dark ? t.dark : t.light
-                });
-            }
+            const t = Config.themes[n];
+            Shell.saveConfigKeys({
+                theme: n,
+                accent: t.accent,
+                wallpaper: Config.dark ? t.dark : t.light
+            });
         }
     }
     property var _cSettings: Component {
@@ -410,16 +404,6 @@ QtObject {
             Screenshot.drop();
             console.log("grabRegion ->", p);
         }
-    }
-    // the lock screen wears the desktop's look: when the wallpaper, mode or accent changes, its state file is rewritten
-    // (glass-lock-sync comes with Glass Desktop's lock screen; without it this does nothing)
-    readonly property string lockLook: Config.get("wallpaper", "") + "|" + Config.get("mode", "dark") + "|" + Config.get("accent", "")
-    onLockLookChanged: lockSync.restart()
-    property var _lockSync: Timer {
-        id: lockSync
-        interval: 900
-        onTriggered: if (Shell.hasProgram("glass-lock-sync"))
-            Shell.runDetached("glass-lock-sync", [])
     }
     property var _themeLater: Timer {
         id: themeLater

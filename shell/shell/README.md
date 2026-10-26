@@ -198,7 +198,7 @@ empty file is the default look. A few keys:
 | --- | --- |
 | `barLeft` `barCenter` `barRight` | widget names per group: `desktop workspaces tray title clock date system media bell gear` |
 | `barDodge` `dockDodge` | slide away under windows instead of reserving space |
-| `mode` | `dark` or `light`: everything drawn on the glass flips (the Appearance tile in quick settings; with glass-desktop's `glass-mode` the whole desktop follows) |
+| `mode` | `dark` or `light`: everything drawn by the shell flips (the Appearance tile in quick settings) |
 | `themes` `theme` | colour themes: `{name: {accent, light, dark}}` (accent + a wallpaper per mode), shown as swatches in quick settings |
 | `launchers` `favorites` | pinned dock apps, launcher favourites |
 | `welcomed` | `true` once the first-run card has been closed |
@@ -237,7 +237,7 @@ known look keys with sane values, never runs anything, keeps your own wallpapers
 | Several screens | wallpaper on every screen; the bar and dock on the primary, or on any screen you choose in edit mode (Screens). Tested with virtual screens only |
 | Without plasmashell (`sirca-shell-switch plasma off`) | works for daily use; Plasma's desktop widgets and clipboard applet are gone, Sirca provides its own wallpaper, desktop icons on the primary output, clipboard and notifications |
 | Bar and dock surfaces | use solid UI Kit colours |
-| Light and dark | both; with the companion `glass-mode` script the whole desktop switches with one cross-fade |
+| Light and dark | both, applied to the shell |
 | Screen recording | needs `gpu-screen-recorder` (and `ffmpeg` for HDR screens); without it a recording ends at once with a notification that says so |
 | NVIDIA | developed on it (open kernel driver); AMD and Intel are untested by the author |
 

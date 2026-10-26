@@ -1,5 +1,4 @@
-// Accent from the wallpaper. Twin of glass-desktop/tools/palette.py: same steps, same constants,
-// same tie rules.
+// Accent from the wallpaper. Deterministic steps and tie rules are documented here.
 //   1. box-average down to <= 128 px on the long side (integer factor, remainder dropped, integer
 //   rounding)
 //   2. median cut to 16 boxes: split the box with the widest channel range (ties: lower box index,

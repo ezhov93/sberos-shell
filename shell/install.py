@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guided per-user installer for Sirca Shell and its optional desktop components."""
+"""Guided per-user installer for Sirca Shell."""
 
 from __future__ import annotations
 
@@ -11,9 +11,6 @@ import pathlib
 import shutil
 import subprocess
 import sys
-import tarfile
-import tempfile
-import urllib.request
 
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -109,7 +106,7 @@ def qml_dir_candidates() -> list[pathlib.Path]:
     return candidates
 
 
-def preflight() -> tuple[bool, int, bool]:
+def preflight() -> tuple[bool, int]:
     head("1. Your system")
     fatal = False
     if os.environ.get("XDG_SESSION_TYPE") == "wayland":
@@ -153,7 +150,7 @@ def preflight() -> tuple[bool, int, bool]:
     if local_bin in os.environ.get("PATH", "").split(os.pathsep):
         ok("~/.local/bin is on your PATH")
     else:
-        warn("~/.local/bin is not on your PATH: the shell's commands (sirca-shell-switch, glass-mode) are installed there. Add it to your shell profile and log in again, or call them with the full path.")
+        warn("~/.local/bin is not on your PATH: sirca-shell-switch is installed there. Add it to your shell profile and log in again, or call it with the full path.")
 
     ecm_candidates = [os.environ.get("ECM_DIR", ""), "/usr/share/ECM/cmake", "/usr/share/cmake/ECM",
                       "/usr/lib64/cmake/ECM", "/usr/lib/cmake/ECM", "/usr/lib/x86_64-linux-gnu/cmake/ECM",
@@ -189,13 +186,7 @@ def preflight() -> tuple[bool, int, bool]:
         import numpy  # noqa: F401
         ok("python: Pillow + numpy (wallpaper tools)")
     except ImportError:
-        warn("python Pillow / numpy missing: the bundled wallpapers still work, only re-colouring your own wallpaper will not.")
-    have_papirus = any((p / "Papirus").is_dir() for p in
-                       (pathlib.Path("/usr/share/icons"), HOME / ".local/share/icons"))
-    if have_papirus:
-        ok("Papirus icons (the look uses them; folder colours follow the colour theme)")
-    else:
-        warn("Papirus icon theme not installed: the look step installs it into ~/.local/share/icons (about 200 MB, from github.com/PapirusDevelopmentTeam).")
+        warn("python Pillow / numpy missing: bundled wallpapers still work, recolouring your own wallpaper will not.")
     if any((directory / "org/kde/milou/qmldir").is_file() for directory in qml_dir_candidates()):
         ok("Milou QML module")
     else:
@@ -205,15 +196,15 @@ def preflight() -> tuple[bool, int, bool]:
         ok("gpu-screen-recorder (screen recording)")
     else:
         warn("gpu-screen-recorder not installed: screenshots work, recording will say it is missing.")
-    return fatal, count, have_papirus
+    return fatal, count
 
 
 def choose(preset: str) -> dict[str, bool] | None:
     head("3. What do you want?")
-    say(f"  {COL['B']}1) Shell only{COL['N']}            the bar, dock, launcher, search, notifications, clipboard, screenshots. No root.\n                            Surfaces use the shell's solid colours.\n  {COL['B']}2) Shell + the look{COL['N']}      1 + KDE colour scheme and GTK look + light/dark switch\n                            with colour themes and the bundled wallpapers + lock screen.\n  {COL['B']}3) The author's full setup{COL['N']}  2 + the author's bar and dock layout. Applies the sample layout.\n  {COL['B']}4) Let me pick{COL['N']}           choose each part yourself.")
-    selected = dict(shell=True, look=False, mode=False, lock=False, setup=False)
+    say(f"  {COL['B']}1) Shell only{COL['N']}            the bar, dock, launcher, search, notifications, clipboard and screenshots.\n  {COL['B']}2) The author's full setup{COL['N']}  1 + the author's bar and dock layout. Applies the sample layout.\n  {COL['B']}3) Let me pick{COL['N']}           choose whether to import the sample layout.")
+    selected = dict(shell=True, setup=False)
     if preset:
-        choices = {"shell": "1", "1": "1", "look": "2", "2": "2", "full": "3", "3": "3"}
+        choices = {"shell": "1", "1": "1", "full": "2", "2": "2"}
         choice = choices.get(preset)
         if choice is None:
             print(f"unknown preset: {preset}", file=sys.stderr)
@@ -221,120 +212,15 @@ def choose(preset: str) -> dict[str, bool] | None:
     elif YES:
         choice = "1"
     else:
-        choice = input("Your choice [1-4, default 1]: ").strip() or "1"
-    if choice in {"2", "3"}:
-        selected.update(look=True, mode=True, lock=True)
-    if choice == "3":
+        choice = input("Your choice [1-3, default 1]: ").strip() or "1"
+    if choice == "2":
         selected.update(setup=True)
-    elif choice == "4":
-        for key, prompt, default in (
-            ("look", "  KDE colour scheme + GTK 3/4 look (no root, revertible)?", True),
-            ("mode", "  Light/dark switch, colour themes and the bundled wallpapers (no root)?", True),
-            ("lock", "  Lock screen in the same look (no root; active from the next login)?", True),
-            ("setup", "  The author's bar and dock layout (only look and layout keys; your pinned apps stay)?", False),
-        ):
-            selected[key] = ask(prompt, default)
+    elif choice == "3":
+        selected["setup"] = ask("  Import the author's bar and dock layout (your pinned apps stay)?", False)
     elif choice != "1":
-        choice = "1"
+        print(f"unknown choice: {choice}", file=sys.stderr)
+        return None
     return selected
-
-
-def install_papirus() -> bool:
-    version = "20260801"
-    url = f"https://github.com/PapirusDevelopmentTeam/papirus-icon-theme/archive/refs/tags/{version}.tar.gz"
-    try:
-        with tempfile.TemporaryDirectory(prefix="sirca-papirus-") as tmp:
-            archive = pathlib.Path(tmp, "papirus.tar.gz")
-            urllib.request.urlretrieve(url, archive)
-            with tarfile.open(archive, "r:gz") as tar:
-                tar.extractall(tmp, filter="data")
-            extracted = pathlib.Path(tmp, f"papirus-icon-theme-{version}")
-            target = HOME / ".local/share/icons"
-            target.mkdir(parents=True, exist_ok=True)
-            added = []
-            for theme in ("Papirus", "Papirus-Dark", "Papirus-Light"):
-                if not (target / theme).exists():
-                    shutil.copytree(extracted / theme, target / theme)
-                    added.append(theme)
-            if added:
-                with (STATE / "papirus-added.txt").open("a", encoding="utf-8") as file:
-                    file.write("".join(name + "\n" for name in added))
-        command(["gtk-update-icon-cache", "-q", str(HOME / ".local/share/icons/Papirus")])
-        return True
-    except (OSError, tarfile.TarError, urllib.error.URLError) as exc:
-        print(f"Papirus download failed: {exc}", file=sys.stderr)
-        return False
-
-
-def icon_theme(theme: str) -> bool:
-    helpers = ("/usr/lib/x86_64-linux-gnu/libexec/plasma-changeicons", "/usr/lib/libexec/plasma-changeicons",
-               "/usr/libexec/plasma-changeicons", "/usr/lib64/libexec/plasma-changeicons")
-    for helper in helpers:
-        if pathlib.Path(helper).is_file() and os.access(helper, os.X_OK):
-            if command([helper, theme]).returncode == 0:
-                return True
-    return command(["kwriteconfig6", "--file", "kdeglobals", "--group", "Icons", "--key", "Theme", theme]).returncode == 0
-
-
-def apply_mode(have_papirus: bool) -> bool:
-    if not have_papirus and not DRY and not install_papirus():
-        return False
-    wallpaper_dir = HOME / ".local/share/wallpapers/sirca"
-    if not DRY:
-        wallpaper_dir.mkdir(parents=True, exist_ok=True)
-    for wallpaper in (ROOT / "wallpapers").glob("*.jpg"):
-        destination = wallpaper_dir / wallpaper.name
-        if not destination.exists() and not DRY:
-            shutil.copy2(wallpaper, destination)
-    if DRY:
-        say(f"  {COL['C']}[dry run]{COL['N']} bundled wallpapers to {wallpaper_dir}")
-    else:
-        ok(f"bundled wallpapers to {wallpaper_dir}")
-
-    links = {
-        HOME / ".local/bin/glass-mode": ROOT / "desktop/tools/mode.sh",
-        HOME / ".local/bin/glass-lock-sync": ROOT / "desktop/tools/lock_state.sh",
-        HOME / ".local/bin/glass-folder-color": ROOT / "desktop/tools/folder_color.sh",
-    }
-    for link, source in links.items():
-        if DRY:
-            say(f"  {COL['C']}[dry run]{COL['N']} symlink {link} -> {source}")
-        else:
-            link.parent.mkdir(parents=True, exist_ok=True)
-            link.unlink(missing_ok=True)
-            link.symlink_to(source)
-    if not run("seven colour themes in the shell's config (kept if you already have themes)",
-               ["python3", str(ROOT / "setups/write_themes.py"), str(wallpaper_dir)]):
-        return False
-
-    current = output(["kreadconfig6", "--file", "kdeglobals", "--group", "Icons", "--key", "Theme"])
-    previous = STATE / "icon-theme.txt"
-    if not DRY and not previous.exists():
-        previous.write_text((current or "breeze") + "\n", encoding="utf-8")
-    if current.startswith(("Papirus", "Glass-Papirus")):
-        ok("icon theme already uses Papirus")
-    else:
-        config = HOME / ".config/sirca-shell/config.json"
-        try:
-            mode = json.loads(config.read_text()).get("mode", "dark")
-        except (OSError, ValueError):
-            mode = "dark"
-        if DRY:
-            say(f"  {COL['C']}[dry run]{COL['N']} icon theme: {'Papirus' if mode == 'light' else 'Papirus-Dark'}")
-        elif not icon_theme("Papirus" if mode == "light" else "Papirus-Dark"):
-            return False
-        else:
-            ok("icon theme: Papirus-Dark (your previous choice is kept)")
-
-    config = HOME / ".config/sirca-shell/config.json"
-    try:
-        accent = json.loads(config.read_text()).get("theme", "blue")
-    except (OSError, ValueError):
-        accent = "blue"
-    env = os.environ.copy()
-    run("apply the colour theme once (folder icons in the theme colour)",
-        [str(HOME / ".local/bin/glass-mode"), "theme", accent], env=env)
-    return True
 
 
 def main() -> int:
@@ -342,7 +228,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Guided per-user installer for Sirca Shell")
     parser.add_argument("--dry-run", action="store_true", help="show actions without changing anything")
     parser.add_argument("--yes", "-y", action="store_true", help="accept default prompts")
-    parser.add_argument("--preset", choices=("shell", "look", "full"), help="choose components without the menu")
+    parser.add_argument("--preset", choices=("shell", "full"), help="choose components without the menu")
     args = parser.parse_args()
     DRY, YES = args.dry_run, args.yes
     if os.geteuid() == 0 and os.environ.get("SIRCA_ALLOW_ROOT") != "1":
@@ -352,13 +238,13 @@ def main() -> int:
         STATE.mkdir(parents=True, exist_ok=True)
     LOG = STATE / ("install-" + dt.datetime.now().strftime("%Y%m%d-%H%M%S") + ".log")
 
-    intro = (f"{COL['B']}Sirca Shell{COL['N']}  -  a top bar and dock for KDE Plasma, with the themes that go with it.\n\n"
+    intro = (f"{COL['B']}Sirca Shell{COL['N']}  -  a unified panel and dock for KDE Plasma.\n\n"
              "This installer is a conversation, not a one-liner. It checks your system, explains what each part changes, "
              "lets you pick components, then installs the selection.\nNothing is changed before installation.")
     if DRY:
         intro += f" {COL['C']}(dry run: nothing will be changed at all){COL['N']}"
     say(intro)
-    fatal, _screens, have_papirus = preflight()
+    fatal, _screens = preflight()
     if fatal:
         say()
         bad("This system cannot run the shell (see the red lines). Nothing was changed.")
@@ -367,7 +253,7 @@ def main() -> int:
     say('  Build dependencies are listed in shell/README.md ("Build dependencies": Ubuntu, Fedora and Arch names); a failed build names what is missing.')
 
     head("2. What you should know before you say yes")
-    say("  • It replaces Plasma's panels while it is switched on. Your panel layout is saved first and restored exactly by sirca-shell-switch off.\n  • It is young software by one person, used daily on one Ubuntu 26.04 / Plasma 6.6 / NVIDIA machine. There is no warranty (GPL-3.0-or-later).\n  • It takes over global shortcuts while running and hands them back when switched off.\n  • The desktop look changes KDE and GTK settings. Each applier backs up what it touches and has a revert.\n  • Nothing is sent anywhere. No telemetry.")
+    say("  • It replaces Plasma's panels while it is switched on. Your panel layout is saved first and restored exactly by sirca-shell-switch off.\n  • It is young software by one person, used daily on one Ubuntu 26.04 / Plasma 6.6 / NVIDIA machine. There is no warranty (GPL-3.0-or-later).\n  • It takes over global shortcuts while running and hands them back when switched off.\n  • It does not change KDE/GTK themes, icon themes or the lock screen.\n  • Nothing is sent anywhere. No telemetry.")
     if not ask("Understood. Continue?", True):
         say("Nothing was changed.")
         return 0
@@ -377,8 +263,7 @@ def main() -> int:
         return 2
     head("4. With this choice")
     say("  Works: bar, dock, launcher, search, quick settings, notifications, clipboard, screenshots, tile picker, window switcher, power menu, edit mode, light and dark inside the shell.")
-    say("  Works: KDE and GTK apps in matching colours." if selected["look"] else "  Not: apps keep your current colours.")
-    say("  Works: desktop-wide light/dark and seven colour themes." if selected["mode"] else "  Not: desktop-wide light/dark switch and colour themes.")
+    say("  KDE/GTK themes and desktop-wide appearance are left as configured.")
     say("  Not yet for anyone: X11, other compositors, vertical dock.")
     if not DRY:
         STATE.mkdir(parents=True, exist_ok=True)
@@ -392,33 +277,12 @@ def main() -> int:
     steps = []
     if selected["shell"]:
         steps.append(("shell", "build and install the shell to ~/.local (a few minutes)", [str(ROOT / "shell/install.sh")]))
-    if selected["look"]:
-        steps.append(("look", "KDE colour scheme and GTK look (backups in ~/.local/state/glass-desktop)", [str(ROOT / "desktop/tools/apply_all.sh"), "apply"]))
+    if selected["setup"]:
+        steps.append(("setup", "the author's bar and dock layout (your config is backed up first)",
+                      [str(HOME / ".local/bin/sirca-shell-setup"), "import", str(ROOT / "setups/author.json")]))
     for key, description, argv in steps:
         if not run(description, argv):
             failures.append(key)
-    if selected["mode"]:
-        papirus_ready = have_papirus
-        if not have_papirus:
-            if not DRY:
-                say("  … Papirus icon theme into ~/.local/share/icons (no root, about 200 MB, release 20260801)")
-                if install_papirus():
-                    ok("Papirus icon theme installed")
-                    papirus_ready = True
-                else:
-                    bad("Papirus icon download failed")
-                    failures.append("Papirus icons")
-                    selected["mode"] = False
-            else:
-                say("  [dry run] download Papirus icon theme into ~/.local/share/icons")
-        if selected["mode"] and not apply_mode(papirus_ready):
-            failures.append("mode")
-    if selected["lock"] and not run("lock screen (active from the next login)",
-                                      [str(ROOT / "desktop/tools/install_lock.sh")]):
-        failures.append("lock")
-    if selected["setup"] and not run("the author's bar and dock layout (your config is backed up first)",
-                                     [str(HOME / ".local/bin/sirca-shell-setup"), "import", str(ROOT / "setups/author.json")]):
-        failures.append("setup")
     if not DRY:
         (STATE / "installed-components").write_text("".join(f"{k}={int(v)}\n" for k, v in selected.items()), encoding="utf-8")
 
@@ -426,8 +290,6 @@ def main() -> int:
     if failures:
         bad(f"These parts did not finish: {' '.join(failures)}   (log: {LOG}). The rest is installed; fix the cause and run this again.")
     say(f"  Switch it on:      {COL['C']}sirca-shell-switch on{COL['N']}        (saves your Plasma panels and hands over)\n  Switch it off:     {COL['C']}sirca-shell-switch off{COL['N']}       (your panels come back exactly as they were)\n  First start:       a welcome card names the things worth knowing. Right-click the bar or dock to edit them.\n  Remove everything: {COL['C']}{ROOT / 'uninstall.py'}{COL['N']}\n  Problems:          the log above, and {COL['C']}journalctl --user -u sirca-shell -b{COL['N']}")
-    if selected["mode"]:
-        say(f"  {COL['Y']}Keep this folder{COL['N']} ({ROOT}): glass-mode and the theme generators run from it.")
     return 0
 
 

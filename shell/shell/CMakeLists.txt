@@ -148,7 +148,7 @@ if(PipeWire_FOUND)
     target_compile_definitions(sirca-shell PRIVATE HAVE_PIPEWIRE)
 endif()
 install(TARGETS sirca-shell DESTINATION ${KDE_INSTALL_BINDIR})
-# glass-palette IMAGE: the accent a wallpaper asks for, from the shell's own code (checks it against glass-desktop/tools/palette.py)
+# glass-palette IMAGE: inspect the accent derived from a wallpaper without starting the shell
 qt_add_executable(glass-palette src/palette-main.cpp src/palette.cpp src/palette.h)
 target_include_directories(glass-palette PRIVATE src)
 target_link_libraries(glass-palette PRIVATE Qt6::Gui Qt6::Qml Qt6::Concurrent)

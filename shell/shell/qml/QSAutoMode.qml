@@ -3,8 +3,7 @@
 // `scheduledTransitionDateTime` when the next change begins; modes Automatic / Location / Times all work, Constant has no
 // schedule), else from a sunrise / sunset computation for `sunLatitude` / `sunLongitude` in the config (KWin does not
 // put its location on the bus). Without either the switch stays off with a note.
-// Two instances exist: Main's (`driver: true`) does the switching, quick settings' only shows the row. A transition runs
-// `glass-mode dark|light` (the whole desktop follows) or, without glass-desktop, flips the shell's own `mode` key.
+// Two instances exist: Main's (`driver: true`) does the switching, quick settings' only shows the row.
 import QtQuick
 import SircaShell
 
@@ -128,8 +127,6 @@ QtObject {
             return;
         console.log("sirca-shell: follow the sun:", want, "(next change", nextChange > 0 ? new Date(nextChange).toString() : "none", ")");
         Shell.saveConfigKey("mode", want);
-        if (Shell.hasProgram("glass-mode"))
-            Shell.runDetached("glass-mode", [want]);
     }
     readonly property var tick: Timer {
         repeat: false

@@ -1,9 +1,6 @@
 // Accent from the wallpaper (Material-You style): `Palette.fromImage(path)` /
-// `Palette.themeForWallpaper(path)`. The SAME algorithm lives in glass-desktop/tools/palette.py,
-// which derives the colour for Qt / GTK / folders
-// (`glass-mode theme wallpaper`); the two must agree, so every step is deterministic and integer
-// where it can be. The steps are described in palette.cpp next to the code and in palette.py's
-// docstring.
+// `Palette.themeForWallpaper(path)`. The shell derives the accent for its own surfaces. The steps
+// are deterministic and documented in palette.cpp.
 #pragma once
 #include <QImage>
 #include <QJSValue>
@@ -20,8 +17,8 @@ public:
     explicit Palette(QObject *parent = nullptr);
     // {accent, accentLight, hue (degrees), chroma, sourceChroma, source (the winning box),
     // swatches: [{hex, population, chroma}]}. accent: OKLCH L ~0.62 (a touch more for yellows), C
-    // 0.10..0.20: reads on dark and on light glass; accentLight is the same hue 0.12 darker, for
-    // things that sit on white. An unreadable file gives an empty map.
+    // 0.10..0.20: reads on dark and on light panel surfaces; accentLight is the same hue 0.12 darker,
+    // for things that sit on white. An unreadable file gives an empty map.
     Q_INVOKABLE QVariantMap fromImage(const QString &path) const;
     // a Config.themes entry: {accent, dark: path, light: lightPath || path}. The accent comes from
     // `path` (the dark picture when the theme has two: it is the one on screen most of the day

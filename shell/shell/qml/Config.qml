@@ -14,11 +14,11 @@ QtObject {
         return (user && user[key] !== undefined) ? user[key] : fallback;
     }
 
-    // ---- light / dark. `mode` is written by the quick-settings toggle (tools: glass-mode, which also switches the KDE colour
-    // scheme, GTK, icons and the wallpaper). Everything drawn ON the glass goes through fg(): white in dark mode, near-black in
-    // light mode. Things that sit on a coloured fill (badges, the record pill's dot, accent buttons) stay literally white.
+    // ---- light / dark. `mode` is written by the shell's quick-settings toggle. Everything drawn on the panel goes through
+    // fg(): white in dark mode, near-black in light mode. Things that sit on a coloured fill (badges, the record pill's dot,
+    // accent buttons) stay literally white.
     // colour themes: { name: { accent: "#rrggbb", light: "/wallpaper", dark: "/wallpaper" } } from the config; `theme` is the
-    // current one. Picking one (quick settings, or glass-mode theme NAME) sets the accent and the two wallpapers.
+    // current one. Picking one in the shell sets the accent and the two wallpapers.
     readonly property var themes: get("themes", ({}))
     readonly property string theme: get("theme", "")
     readonly property string mode: get("mode", "dark")

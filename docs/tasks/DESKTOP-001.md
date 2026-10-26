@@ -323,3 +323,11 @@ Lock screen и SDDM намеренно остаются отдельными с�
 ## Коммиты
 
 Постановка: `8ce8f24`. Первый этап: `git log -- shell/desktop/tools/gen_sber_theme.py`.
+
+27.10.2026: после переноса `desktop/` исправлен путь теста к генератору.
+`python3 -m unittest discover -s desktop/tests -p 'test_*.py' -v` — 5/5,
+`python3 -m py_compile shell/install.py shell/uninstall.py`, `bash -n
+desktop/install.sh`, сборка Sirca и `ctest --test-dir shell/shell/build` прошли.
+Старые темы Colloid удалены из корневого `desktop/Kvantum/`; активных ссылок на
+них не найдено. Установку и откат после отделения desktop-оформления от Sirca,
+а также визуальную проверку обеих тем ещё нужно выполнить.

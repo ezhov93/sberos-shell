@@ -1,7 +1,6 @@
 // glass-palette [--json] IMAGE…: the accent a wallpaper asks for, from the shell's own Palette
 // code. Prints one line per picture ("#rrggbb  path", or the whole analysis as JSON with --json).
-// Exists so the C++ and the Python twin (glass-desktop/tools/palette.py) can be compared without
-// starting the shell.
+// This standalone command exercises the shell's wallpaper palette analysis without starting it.
 #include "palette.h"
 #include <QGuiApplication>
 #include <QJsonDocument>

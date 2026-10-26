@@ -12,7 +12,7 @@ import unittest
 
 sys.dont_write_bytecode = True
 
-SCRIPT = Path(__file__).resolve().parents[0] / 'tools/gen_sber_theme.py'
+SCRIPT = Path(__file__).resolve().parents[1] / 'tools/gen_sber_theme.py'
 spec = importlib.util.spec_from_file_location('sber_theme', SCRIPT)
 theme = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(theme)

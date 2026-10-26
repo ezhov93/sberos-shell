@@ -11,7 +11,7 @@
         </entry>
         <entry name="layout" type="Int">
             <label>Layout</label>
-            <default>0</default>
+            <default>1</default>
         </entry>
         <entry name="animations" type="Bool">
             <default>False</default>

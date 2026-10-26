@@ -13,8 +13,10 @@ Lib.Slider {
     Layout.fillHeight: true
     visible: sinkAvailable && root.showVolume
     useIconButton: true
-    title: i18n("Volume")
-    canTogglePage: true
+    title: qsTr("Звук")
+    canTogglePage: false
+    quickSettingsStyle: true
+    noMargins: true
 
     // Volume Feedback
     Vol.VolumeFeedback {
@@ -28,24 +30,26 @@ Lib.Slider {
         id: paSinkModel
     }
 
-    value: Math.round(sink.volume / Vol.PulseAudio.NormalVolume * 100)
-    secondaryTitle: Math.round(sink.volume / Vol.PulseAudio.NormalVolume * 100) + "%"
+    value: sinkAvailable ? Math.round(sink.volume / Vol.PulseAudio.NormalVolume * 100) : 0
+    secondaryTitle: sinkAvailable ? Math.round(sink.volume / Vol.PulseAudio.NormalVolume * 100) + "%" : ""
 
     showTitle: root.volume_widget_title
     thinSlider: root.volume_widget_thin
-    flat: root.volume_widget_flat // bind to Lib.Card property
+    flat: quickSettingsStyle ? true : root.volume_widget_flat // bind to Lib.Card property
 
     // Changes icon based on the current volume percentage
-    source: Funcs.volIconName(sink.volume, sink.muted)
+    source: sinkAvailable ? Funcs.volIconName(sink.volume, sink.muted) : "audio-volume-muted"
 
     onValueChanged: {
-        if(root.playVolumeFeedback) {
+        if(root.playVolumeFeedback && sinkAvailable) {
             feedback.play(sink.index)
         }
     }
     // Update volume
     onMoved: {
-        sink.volume = value * Vol.PulseAudio.NormalVolume / 100
+        if (sinkAvailable) {
+            sink.volume = value * Vol.PulseAudio.NormalVolume / 100
+        }
     }
     // Display view that shows audio devices list
     onTogglePage: {
@@ -55,6 +59,9 @@ Lib.Slider {
 
     property var oldVol: 100 * Vol.PulseAudio.NormalVolume / 100
     onClicked: {
+        if (!sinkAvailable) {
+            return
+        }
         if(value!=0){
             oldVol = sink.volume
             sink.volume=0

@@ -22,6 +22,7 @@ Card {
 
     property bool showTitle: true
     property bool thinSlider: false
+    property bool quickSettingsStyle: false
 
     property int from: 0
     property int to: 100
@@ -38,13 +39,14 @@ Card {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: root.largeSpacing
+        anchors.margins: quickSettingsStyle ? 0 : root.largeSpacing
         clip: true
-        spacing: 1
+        spacing: quickSettingsStyle ? 0 : 1
 
         RowLayout {
-            Layout.fillHeight: true
+            Layout.fillHeight: !quickSettingsStyle
             Layout.fillWidth: true
+            Layout.preferredHeight: quickSettingsStyle ? 28 * root.scale : -1
             spacing: 1
             visible: showTitle
 
@@ -53,8 +55,8 @@ Card {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignLeft
-                font.pixelSize: root.largeFontSize
-                font.weight: Font.Bold
+                font.pixelSize: quickSettingsStyle ? 14 * root.scale : root.largeFontSize
+                font.weight: quickSettingsStyle ? Font.Medium : Font.Bold
                 font.capitalization: Font.Capitalize
                 elide: Text.ElideRight
             }
@@ -74,25 +76,28 @@ Card {
 
         }
         RowLayout {
-            Layout.fillHeight: true
+            Layout.fillHeight: !quickSettingsStyle
             Layout.fillWidth: true
+            Layout.preferredHeight: quickSettingsStyle ? 40 * root.scale : -1
             spacing: 0
 
             Kirigami.Icon {
                 id: icon
                 source: sliderComp.source
                 visible: !sliderComp.useIconButton
-                Layout.preferredHeight: root.largeFontSize*2
+                Layout.preferredHeight: quickSettingsStyle ? 24 * root.scale : root.largeFontSize * 2
                 Layout.preferredWidth: Layout.preferredHeight
                 Layout.margins: 0
+                Layout.leftMargin: quickSettingsStyle ? 8 * root.scale : 0
             }
 
             PlasmaComponents2.ToolButton {
                 id: iconButton
                 visible: sliderComp.useIconButton
                 icon.name: sliderComp.source
-                Layout.preferredHeight: root.largeFontSize*2
+                Layout.preferredHeight: quickSettingsStyle ? 24 * root.scale : root.largeFontSize * 2
                 Layout.preferredWidth: Layout.preferredHeight
+                flat: quickSettingsStyle
                 onClicked: sliderComp.clicked()
             }
 
@@ -100,6 +105,7 @@ Card {
                 id: slider
                 Layout.fillWidth: true
                 Layout.margins: 0
+                Layout.leftMargin: quickSettingsStyle ? 24 * root.scale : 0
                 from: sliderComp.from
                 to: sliderComp.to
                 stepSize: 2
@@ -109,18 +115,21 @@ Card {
                     x: slider.leftPadding
                     y: slider.topPadding + slider.availableHeight / 2 - height / 2
                     implicitWidth: 200
-                    implicitHeight: thinSlider ? 7 : 22
+                    implicitHeight: quickSettingsStyle ? 16 * root.scale : thinSlider ? 7 : 22
                     width: slider.availableWidth
-                    height: parent.height
+                    height: quickSettingsStyle ? 16 * root.scale : parent.height
                     radius: height / 2
-                    color: root.disabledBgColor
+                    color: quickSettingsStyle
+                        ? Qt.rgba(148 / 255, 154 / 255, 170 / 255, 0.5)
+                        : root.disabledBgColor
+                    border.width: quickSettingsStyle ? 0 : 1
                     border.color: root.isDarkTheme ? root.disabledBgColor : Qt.rgba(0, 0, 0, 0.27)
 
                     Rectangle {
                         id: levelIndicator
                         width: (value - from) / (to - from) * (slider.width - handle.width) + (handle.width)
                         height: parent.height - 2
-                        color:  highlightColor
+                        color: quickSettingsStyle ? "white" : highlightColor
                         radius: height / 2
                         border.width: 0
                         anchors.verticalCenter: parent.verticalCenter
@@ -131,10 +140,11 @@ Card {
                     id: handle
                     x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
                     y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                    implicitWidth: thinSlider ? 17 : levelIndicator.height
-                    implicitHeight: thinSlider ? 17 : levelIndicator.height
+                    implicitWidth: quickSettingsStyle ? 16 * root.scale : thinSlider ? 17 : levelIndicator.height
+                    implicitHeight: quickSettingsStyle ? 16 * root.scale : thinSlider ? 17 : levelIndicator.height
                     radius: height / 2
                     color: slider.pressed ? "#f0f0f0" : "#f6f6f6"
+                    border.width: quickSettingsStyle ? 0 : 1
                     border.color: "#bdbebf"
                 }
 
@@ -147,8 +157,9 @@ Card {
                 id: openVolumePageButton
                 visible: sliderComp.canTogglePage
                 icon.name: "arrow-right"
-                Layout.preferredHeight: root.largeFontSize*2
+                Layout.preferredHeight: quickSettingsStyle ? 24 * root.scale : root.largeFontSize * 2
                 Layout.preferredWidth: Layout.preferredHeight
+                flat: quickSettingsStyle
                 onClicked: sliderComp.togglePage()
             }
         }

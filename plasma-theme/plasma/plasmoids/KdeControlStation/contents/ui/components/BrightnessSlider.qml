@@ -70,7 +70,9 @@ Item {
             readonly property int brightnessMin: (mainScreen.maxBrightness > 100 ? 1 : 0)
 
             // Slider properties
-            title: mainScreen.label
+            title: qsTr("Дисплей")
+            quickSettingsStyle: true
+            noMargins: true
             source: "brightness-high"
             secondaryTitle: Math.round((mainScreen.brightness / mainScreen.maxBrightness)*100) + "%"
 
@@ -78,7 +80,7 @@ Item {
 
             showTitle: root.brightness_widget_title
             thinSlider: root.brightness_widget_thin
-            flat: root.brightness_widget_flat // bind to Lib.Card property
+            flat: quickSettingsStyle ? true : root.brightness_widget_flat // bind to Lib.Card property
 
             from: 0
             to: mainScreen.maxBrightness

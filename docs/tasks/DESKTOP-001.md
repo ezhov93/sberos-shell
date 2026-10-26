@@ -77,11 +77,14 @@ GPU-эффекты и локаль пользовательской сессии
 
 По запросу 2026-10-26 `onur.glasslock` установлен для текущего пользователя
 командой `kpackagetool6 --type Plasma/Shell --install desktop/lock/onur.glasslock`.
-`kpackagetool6 --list -t Plasma/Shell` показывает пакет; SHA-256 `LockScreenUi.qml`
+`kpackagetool6 --type Plasma/Shell --show onur.glasslock` подтвердил регистрацию
+и путь `~/.local/share/plasma/shells/onur.glasslock/`; SHA-256 `LockScreenUi.qml`
 и `mock-lock-background.png` совпадают с рабочей копией. Глобальная установка
 через `--global` не выполнена: `/usr/share/plasma/shells` требует root, а `sudo`
 запрашивает пароль. Установка для текущего пользователя не переключает активный
-shell; применение lock screen в живой Plasma ещё не проверено.
+shell; применение lock screen в живой Plasma ещё не проверено. Полный запуск
+Plasma для проверки из sandbox недоступен: Wayland/X11 display не подключён,
+а offscreen-запуск сообщает об отсутствующем QML-модуле `kvantum`.
 
 Первый этап: добавлен изолированный генератор KDE/GTK из ресурсов UI Kit,
 без изменений кода оболочки и библиотеки, установщиков и пользовательской сессии.

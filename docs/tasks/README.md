@@ -18,7 +18,7 @@ controls UI Kit сверяются по UIKIT-002; компоненты, спе�
 | Задача | Работа | Статус | Зависимости |
 | --- | --- | --- | --- |
 | [PANEL-MOCK-PARITY](PANEL-MOCK-PARITY.md) | Привести обе оболочки MVP к HTML-моку | В работе | PANEL-003–012, SHELL-001, UIKIT-001, QS-001/QS-004 |
-| [ATP-001](ATP-001.md) | Адаптировать Plasma к Smart Panel, панели на всех мониторах; Edit Mode и Personalize исключены из MVP, общая приёмка открыта | В работе | PANEL-000, PANEL-001 |
+| [ATP-001](ATP-001.md) | Адаптировать Plasma к Smart Panel, панели на всех мониторах и +N; Edit Mode и Personalize исключены из MVP, общая приёмка открыта | В работе | PANEL-000, PANEL-001 |
 
 ## Порядок работы
 

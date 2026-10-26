@@ -1,0 +1,32 @@
+[
+  {
+    "label": "normal",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "appletWidth": 200,
+    "cellSize": 48
+  },
+  {
+    "label": "compact",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "appletWidth": 564,
+    "cellSize": 48
+  },
+  {
+    "label": "overflow",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "appletWidth": 564,
+    "cellSize": 48
+  }
+]

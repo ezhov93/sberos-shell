@@ -14,6 +14,7 @@ Item {
 
     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
     property int cellSize: 48
+    property int slotWidth: cellSize
     property int iconSize: 32
     property string label
     property var iconSource
@@ -27,7 +28,7 @@ Item {
     signal previewHoverEntered
     signal previewHoverExited
 
-    implicitWidth: cellSize + (separatorBefore ? 8 : 0)
+    implicitWidth: slotWidth + (separatorBefore ? 8 : 0)
     implicitHeight: cellSize
     Accessible.role: Accessible.Button
     Accessible.name: label
@@ -36,6 +37,13 @@ Item {
     Accessible.onPressAction: root.activated()
     Keys.onMenuPressed: root.contextRequested()
     Keys.onReturnPressed: root.activated()
+    Keys.onEnterPressed: root.activated()
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) {
+            root.contextRequested()
+            event.accepted = true
+        }
+    }
     Keys.onSpacePressed: event => {
         root.activated()
         event.accepted = true
@@ -53,7 +61,7 @@ Item {
     Rectangle {
         x: root.separatorBefore ? 8 : 0
         y: 0
-        width: root.cellSize
+        width: root.slotWidth
         height: root.cellSize
         radius: 10
         color: mouse.pressed ? smartTheme.pressed : mouse.containsMouse || root.activeFocus ? smartTheme.hover : "transparent"

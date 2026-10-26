@@ -1,0 +1,17 @@
+********* Start testing of qmltestrunner *********
+Config: Using QtTest library 6.11.2, Qt 6.11.2 (x86_64-little_endian-lp64 shared (dynamic) release build; by GCC 16.2.0), debian unknown
+PASS   : qmltestrunner::TaskOverflow::initTestCase()
+PASS   : qmltestrunner::TaskOverflow::test_capacity(normal)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(shrinkBeforeOverflow)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(exactCompactFit)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(reserveCounterAndSeparator)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(separatorNotVisible)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(noLaunchers)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(counterOnly)
+PASS   : qmltestrunner::TaskOverflow::test_capacity(empty)
+PASS   : qmltestrunner::TaskOverflow::test_counterKeyboard()
+PASS   : qmltestrunner::TaskOverflow::test_counterTracksModel()
+PASS   : qmltestrunner::TaskOverflow::test_gridNavigationAndActions()
+PASS   : qmltestrunner::TaskOverflow::cleanupTestCase()
+Totals: 13 passed, 0 failed, 0 skipped, 0 blacklisted, 174ms
+********* Finished testing of qmltestrunner *********

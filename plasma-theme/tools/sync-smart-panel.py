@@ -22,7 +22,7 @@ for name in packages:
     ui = root / f'plasmoids/sberos.{name}/contents/ui'
     outputs[ui / 'SmartPanelTheme.qml'] = (root / 'shared/SmartPanelTheme.qml').read_bytes()
     outputs[ui / 'SmartPanelIcon.qml'] = (root / 'shared/SmartPanelIcon.qml').read_bytes()
-    if name in ['sbermenu', 'filesearch', 'controlcenter', 'clockcalendar']:
+    if name in ['sbermenu', 'smarttasks', 'filesearch', 'controlcenter', 'clockcalendar']:
         outputs[ui / 'SmartPopupPlacement.qml'] = (root / 'shared/SmartPopupPlacement.qml').read_bytes()
         outputs[ui.parent / 'assets/smart-panel/popup-frame.svg'] = (root / 'shared/SmartPopupFrame.svg').read_bytes()
     if name in ['applications', 'filesearch']:

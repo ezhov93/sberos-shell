@@ -1,0 +1,10 @@
+********* Start testing of qmltestrunner *********
+Config: Using QtTest library 6.11.2, Qt 6.11.2 (x86_64-little_endian-lp64 shared (dynamic) release build; by GCC 16.2.0), debian unknown
+PASS   : qmltestrunner::PanelContentSizing::initTestCase()
+PASS   : qmltestrunner::PanelContentSizing::test_growAndShrink()
+PASS   : qmltestrunner::PanelContentSizing::test_targetMockLayout()
+PASS   : qmltestrunner::PanelContentSizing::test_verticalUsesSum()
+PASS   : qmltestrunner::PanelContentSizing::test_withoutSearchUsesSum()
+PASS   : qmltestrunner::PanelContentSizing::cleanupTestCase()
+Totals: 6 passed, 0 failed, 0 skipped, 0 blacklisted, 2ms
+********* Finished testing of qmltestrunner *********

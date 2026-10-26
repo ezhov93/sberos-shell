@@ -11,7 +11,7 @@ if (panelScreen < 0 && screenCount > 0) {
 // Round down to next highest even number since the Panel size widget only displays
 // even numbers
 panel.location = "bottom"
-panel.height = 64
+panel.height = 72
 // Keep one shared panel and strut; the panel containment paints the mock's islands.
 panel.floating = false
 
@@ -51,9 +51,4 @@ fileSearch.writeConfig("displayMode", 3)
 var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
 systemSpacer.writeConfig("expanding", true)
 
-panel.addWidget("KdeControlStation")
-
-// The Plasma digital clock opens its calendar popup when clicked.
-var clock = panel.addWidget("org.kde.plasma.digitalclock")
-clock.currentConfigGroup = ["Appearance"]
-clock.writeConfig("showDate", true)
+panel.addWidget("io.gitgud.wackyideas.clockcalendar")

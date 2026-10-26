@@ -12,6 +12,7 @@ List of plasmoids:
     - Network Manager (io.gitgud.wackyideas.networkmanagement)
     - Show Desktop (Aero) (io.gitgud.wackyideas.win7showdesktop)
     - Digital Clock Lite (Aero) (io.gitgud.wackyideas.digitalclocklite)
+    - SberOS Clock and Calendar (io.gitgud.wackyideas.clockcalendar)
     - Battery and Power (io.gitgud.wackyideas.battery)
     - Keyboard Layout Switcher (io.gitgud.wackyideas.keyboardlayout)
 

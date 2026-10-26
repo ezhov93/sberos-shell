@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "io.gitgud.wackyideas.clockcalendar",
+        "Name": "SberOS Clock and Calendar",
+        "Description": "Clock and calendar popup matching the SberOS panel mock",
+        "Icon": "view-calendar",
+        "Category": "Utilities",
+        "License": "GPL-2.0-or-later",
+        "Version": "1.0",
+        "Authors": [
+            {
+                "Name": "SberOS Shell contributors"
+            }
+        ],
+        "Name[ru]": "Часы и календарь SberOS",
+        "Description[ru]": "Часы и календарь в стиле панели SberOS"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

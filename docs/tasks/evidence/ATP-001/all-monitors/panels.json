@@ -1,0 +1,37 @@
+{
+  "screenCount": 2,
+  "panels": [
+    {
+      "id": 3,
+      "screen": 0,
+      "height": 88,
+      "location": "bottom",
+      "locked": true,
+      "widgets": [
+        "io.gitgud.wackyideas.sbermenu",
+        "p-connor.plasma-drawer",
+        "io.gitgud.wackyideas.smarttasks",
+        "com.mcc45tr.filesearch",
+        "KdeControlStation",
+        "io.gitgud.wackyideas.clockcalendar",
+        "org.kde.plasma.notifications"
+      ]
+    },
+    {
+      "id": 11,
+      "screen": 1,
+      "height": 88,
+      "location": "bottom",
+      "locked": true,
+      "widgets": [
+        "io.gitgud.wackyideas.sbermenu",
+        "p-connor.plasma-drawer",
+        "io.gitgud.wackyideas.smarttasks",
+        "com.mcc45tr.filesearch",
+        "KdeControlStation",
+        "org.kde.plasma.notifications",
+        "io.gitgud.wackyideas.clockcalendar"
+      ]
+    }
+  ]
+}

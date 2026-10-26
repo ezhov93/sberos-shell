@@ -23,6 +23,9 @@ Item {
 
     readonly property int wallpaperScreen: containment?.plasmoid?.screen ?? -1
     readonly property Item workspaceWallpaper: containment?.wallpaper ?? null
+    SmartPanel.PanelScreenSync {
+        screen: root.wallpaperScreen
+    }
     function publishWallpaper() {
         SmartPanel.WorkspaceSurfaces.unregisterDesktop(root);
         if (workspaceWallpaper) SmartPanel.WorkspaceSurfaces.registerDesktop(root, wallpaperScreen, workspaceWallpaper);

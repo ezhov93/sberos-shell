@@ -7,6 +7,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.ksvg as KSvg
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.plasmoid
@@ -115,6 +116,10 @@ PlasmoidItem {
             screenGeometry: Plasmoid.containment.screenGeometry
             alignment: "left"
             overlapPanel: true
+            frameSource: Qt.resolvedUrl(root.powerMenuOpen
+                ? "../assets/smart-panel/power-popup-frame.svg"
+                : "../assets/smart-panel/popup-frame.svg")
+            frameBorders: root.powerMenuOpen ? KSvg.FrameSvg.NoBorder : KSvg.FrameSvg.AllBorders
         }
         implicitWidth: root.powerMenuOpen ? 352 : 72
         implicitHeight: root.powerMenuOpen ? 264 : 216

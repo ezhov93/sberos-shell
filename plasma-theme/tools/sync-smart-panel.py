@@ -27,6 +27,7 @@ for name in packages:
         outputs[ui.parent / 'assets/smart-panel/popup-frame.svg'] = (root / 'shared/SmartPopupFrame.svg').read_bytes()
     if name in ['applications', 'filesearch']:
         outputs[ui / 'OskaAvatar.qml'] = (root / 'shared/OskaAvatar.qml').read_bytes()
+outputs[root / 'plasmoids/sberos.sbermenu/contents/assets/smart-panel/power-popup-frame.svg'] = (root / 'shared/SmartPowerPopupFrame.svg').read_bytes()
 outputs[root / 'plasmoids/sberos.filesearch/contents/assets/smart-panel/search-popup-frame.svg'] = (root / 'shared/SmartSearchPopupFrame.svg').read_bytes()
 icons = {
     'sbermenu': ['sber', 'settings', 'terminal', 'power', 'down'],

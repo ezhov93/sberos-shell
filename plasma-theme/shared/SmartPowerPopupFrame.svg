@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="352" height="264" viewBox="0 0 352 264">
+  <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+  <!-- Match the two surfaces in sberos.sbermenu; empty space must not blur. -->
+  <g id="center" fill="white">
+    <rect x="0" y="48" width="72" height="216" rx="24"/>
+    <rect x="80" y="0" width="272" height="184" rx="16"/>
+  </g>
+  <rect id="hint-left-margin" width="0.001" height="0.001"/>
+  <rect id="hint-top-margin" width="0.001" height="0.001"/>
+  <rect id="hint-right-margin" width="0.001" height="0.001"/>
+  <rect id="hint-bottom-margin" width="0.001" height="0.001"/>
+</svg>

@@ -90,13 +90,9 @@ If you with to contribute in any way, please read [CONTRIBUTING](./CONTRIBUTING.
 Initially I wanted to make a Vista variant of AeroThemePlasma but [catpswin56](https://gitgud.io/catpswin56) beat me to it, use [VistaThemePlasma](https://gitgud.io/aeroshell/vtp/vistathemeplasma) if you want a Vista theme.
 
 ## Aero apps for AeroThemePlasma
-To install most of these, the commands to run after cloning are: 
 
-```
-cmake -DCMAKE_INSTALL_PREFIX=/usr -B build . 
-cmake --build build
-sudo cmake --install build
-```
+The links below describe separate upstream projects; their installation is outside
+this SberOS panel working copy. Follow each project's own current instructions.
 
 ### Complete re-creations
 - [Linux Explorer](https://github.com/actuallyaridan/linux-explorer) by ActuallyAridan

@@ -3,14 +3,15 @@ import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 
 TextField {
-    placeholderTextColor: config.color
-    palette.text: config.color
+    placeholderTextColor: "#6c707f"
+    palette.text: "#17191c"
     font.pointSize: config.fontSize
-    font.family: config.font
+    font.family: config.font || "SF UI Text"
     width: parent.width
     background: Rectangle {
-        color: parent.focus ? "#ffffff" : "#dddddd"
-        radius: 100
-        opacity: 0.45
+        color: "#ffffff"
+        radius: 16
+        border.width: parent.activeFocus ? 2 : 1
+        border.color: parent.activeFocus ? "#108e26" : "#c4c7d4"
     }
 }

@@ -35,6 +35,7 @@ Item {
     // If we're using software rendering, draw outlines instead of shadows
     // See https://bugs.kde.org/show_bug.cgi?id=398317
     readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
+    readonly property real uiScale: Math.max(0.78, Math.min(1.6, height / 1080))
 
     Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
     Kirigami.Theme.inherit: false
@@ -66,6 +67,57 @@ Item {
                 sceneBackgroundImage: config.background
             }
         }
+    }
+
+    // Keep the mock's sharp branded wallpaper; interactive SDDM controls
+    // are drawn above the live background.
+    Image {
+        source: "assets/sberos-entry-mark.png"
+        width: 256 * root.uiScale
+        height: 128 * root.uiScale
+        x: (root.width - width) / 2
+        y: 444 * root.uiScale
+        sourceSize.width: 256
+        sourceSize.height: 128
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+    }
+
+    property date currentDateTime: new Date()
+    Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: root.currentDateTime = new Date()
+    }
+
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 152 * root.uiScale
+        width: parent.width
+        height: 24 * root.uiScale
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        text: {
+            const value = root.currentDateTime.toLocaleDateString(Qt.locale("ru_RU"), "ddd, d MMMM");
+            return value.charAt(0).toUpperCase() + value.slice(1);
+        }
+        color: "#17191c"
+        font.family: "Noto Sans"
+        font.pixelSize: 16 * root.uiScale
+    }
+
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 184 * root.uiScale
+        width: parent.width
+        height: 80 * root.uiScale
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        text: Qt.formatTime(root.currentDateTime, "hh:mm")
+        color: "#17191c"
+        font.family: "Noto Sans"
+        font.pixelSize: 64 * root.uiScale
     }
 
     RejectPasswordAnimation {
@@ -108,58 +160,23 @@ Item {
         //takes one full minute for the ui to disappear
         Timer {
             id: fadeoutTimer
-            running: true
+            running: false
             interval: 60000
             onTriggered: {
                 if (!loginScreenRoot.blockUI) {
-                    userListComponent.mainPasswordBox.showPassword = false;
+                    userListComponent.mainPasswordBox.echoMode = TextInput.Password;
                     loginScreenRoot.uiVisible = false;
                 }
             }
         }
-        WallpaperFader {
-            visible: config.type === "image"
-            anchors.fill: parent
-            state: loginScreenRoot.uiVisible ? "on" : "off"
-            source: wallpaper
-            mainStack: mainStack
-            footer: footer
-            clock: clock
-        }
-
-        DropShadow {
-            id: clockShadow
-            anchors.fill: clock
-            source: clock
-            visible: !softwareRendering
-            radius: 6
-            samples: 14
-            spread: 0.3
-            color : "black" // shadows should always be black
-            Behavior on opacity {
-                OpacityAnimator {
-                    duration: Kirigami.Units.veryLongDuration * 2
-                    easing.type: Easing.InOutQuad
-                }
-            }
-        }
-
-        Clock {
-            id: clock
-            property Item shadow: clockShadow
-            visible: y > 0
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: (userListComponent.userList.y + mainStack.y)/2 - height/2
-            Layout.alignment: Qt.AlignBaseline
-        }
-
         QQC2.StackView {
             id: mainStack
             anchors {
                 left: parent.left
                 right: parent.right
             }
-            height: root.height + Kirigami.Units.gridUnit * 3
+            y: root.height * 0.28
+            height: root.height * 0.72
 
             // If true (depends on the style and environment variables), hover events are always accepted
             // and propagation stopped. This means the parent MouseArea won't get them and the UI won't be shown.
@@ -184,24 +201,16 @@ Item {
             initialItem: Login {
                 id: userListComponent
                 userListModel: userModel
+                formTopMargin: root.height * 0.34
                 //loginScreenUiVisible: loginScreenRoot.uiVisible
                 userListCurrentIndex: userModel.lastIndex >= 0 ? userModel.lastIndex : 0
                 lastUserName: userModel.lastUser
+                Component.onCompleted: {
+                    userList.visible = false;
+                    initialLoginStateTimer.start();
+                }
                 showUserList: {
-                    if (!userListModel.hasOwnProperty("count")
-                        || !userListModel.hasOwnProperty("disableAvatarsThreshold")) {
-                        return false
-                        }
-
-                        if (userListModel.count === 0 ) {
-                            return false
-                        }
-
-                        if (userListModel.hasOwnProperty("containsAllUsers") && !userListModel.containsAllUsers) {
-                            return false
-                        }
-
-                        return userListModel.count <= userListModel.disableAvatarsThreshold
+                    return userListModel.hasOwnProperty("count") && userListModel.count > 0;
                 }
 
                 notificationMessage: {
@@ -215,41 +224,8 @@ Item {
                     return parts.join(" • ");
                 }
 
-                actionItemsVisible: !inputPanel.keyboardActive
-                actionItems: [
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/suspend_primary.svgz"
-                        text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Suspend to RAM", "Sleep")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: sddm.suspend()
-                        enabled: sddm.canSuspend
-                    },
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/restart_primary.svgz"
-                        text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Restart")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: sddm.reboot()
-                        enabled: sddm.canReboot
-                    },
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/shutdown_primary.svgz"
-                        text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Shut Down")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: sddm.powerOff()
-                        enabled: sddm.canPowerOff
-                    },
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/switch_primary.svgz"
-                        text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "For switching to a username and password prompt", "Other…")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: mainStack.push(userPromptComponent)
-                        enabled: true
-                        visible: !userListComponent.showUsernamePrompt
-                    }]
+                actionItemsVisible: false
+                actionItems: [Item { visible: false; implicitWidth: 1; implicitHeight: 1 }]
 
                     onLoginRequest: {
                         root.notificationMessage = ""
@@ -342,6 +318,7 @@ Item {
             Login {
                 showUsernamePrompt: true
                 notificationMessage: root.notificationMessage
+                formTopMargin: root.height * 0.34
                 //loginScreenUiVisible: loginScreenRoot.uiVisible
                 fontSize: parseInt(config.fontSize) + 2
 
@@ -363,40 +340,8 @@ Item {
                     sddm.login(username, password, sessionButton.currentIndex)
                 }
 
-                actionItemsVisible: !inputPanel.keyboardActive
-                actionItems: [
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/suspend_primary.svgz"
-                        text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Suspend to RAM", "Sleep")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: sddm.suspend()
-                        enabled: sddm.canSuspend
-                    },
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/restart_primary.svgz"
-                        text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Restart")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: sddm.reboot()
-                        enabled: sddm.canReboot
-                    },
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/shutdown_primary.svgz"
-                        text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Shut Down")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: sddm.powerOff()
-                        enabled: sddm.canPowerOff
-                    },
-                    ActionButton {
-                        icon.name: "/usr/share/sddm/themes/hexabee-light/assets/switch_primary.svgz"
-                        text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "List Users")
-                        font.pointSize: parseInt(config.fontSize) + 1
-                        font.family: root.globalFontFamily
-                        onClicked: mainStack.pop()
-                    }
-                ]
+                actionItemsVisible: false
+                actionItems: [Item { visible: false; implicitWidth: 1; implicitHeight: 1 }]
             }
         }
 
@@ -464,6 +409,10 @@ Item {
                 }
             }
 
+            Item {
+                Layout.fillWidth: true
+            }
+
             PlasmaComponents3.ToolButton {
                 id: virtualKeyboardButton
 
@@ -493,6 +442,9 @@ Item {
 
                 font.pointSize: config.fontSize
                 font.family: root.globalFontFamily
+                text: ""
+                icon.name: "input-keyboard"
+                Accessible.name: qsTr("Раскладка клавиатуры")
 
                 onKeyboardLayoutChanged: {
                     // Otherwise the password field loses focus and virtual keyboard
@@ -514,6 +466,9 @@ Item {
 
                 font.pointSize: config.fontSize
                 font.family: customFont.status === FontLoader.Ready ? customFont.name : font.family
+                text: ""
+                icon.name: "system-run"
+                Accessible.name: qsTr("Сеанс рабочего стола")
 
                 onSessionChanged: {
                     // Otherwise the password field loses focus and virtual keyboard
@@ -531,14 +486,187 @@ Item {
                 }
             }
 
-            Item {
-                Layout.fillWidth: true
-            }
-
             Battery {
                 fontSize: config.fontSize
                 // Note: Battery component may need to be modified separately to accept font.family
             }
+
+        }
+    }
+
+    Timer {
+        id: initialLoginStateTimer
+        interval: 500
+        onTriggered: {
+            if (!userListComponent.initialViewChosen) {
+                userListComponent.credentialsVisible = !userListComponent.showUserList;
+            }
+        }
+    }
+
+    Column {
+        id: accountChooser
+        width: Math.min(378 * root.uiScale, root.width - 40 * root.uiScale)
+        height: 216 * root.uiScale
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 110 * root.uiScale
+        spacing: 4 * root.uiScale
+        visible: userListComponent.showUserList && !userListComponent.credentialsVisible
+
+        ListView {
+            id: accountListView
+            width: accountChooser.width
+            height: 164 * root.uiScale
+            model: userModel
+            clip: true
+            spacing: 4 * root.uiScale
+            interactive: contentHeight > height
+
+            delegate: QQC2.Button {
+                id: accountButton
+                required property int index
+                required property var model
+
+                width: accountListView.width
+                height: 80 * root.uiScale
+                Accessible.name: model.realName || model.name || qsTr("Пользователь")
+                onClicked: {
+                    userListComponent.initialViewChosen = true;
+                    userListComponent.userListCurrentIndex = index;
+                    userListComponent.showUsernamePrompt = false;
+                    userListComponent.credentialsVisible = true;
+                    Qt.callLater(function() { userListComponent.mainPasswordBox.forceActiveFocus(); });
+                }
+                background: Rectangle {
+                    radius: 16 * root.uiScale
+                    color: "#ffffff"
+                    border.width: accountButton.activeFocus || accountButton.down ? 2 * root.uiScale : 1 * root.uiScale
+                    border.color: accountButton.activeFocus || accountButton.down ? "#108e26" : "#c4c7d4"
+                }
+
+                contentItem: Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 16 * root.uiScale
+                    anchors.rightMargin: 16 * root.uiScale
+                    spacing: 12 * root.uiScale
+
+                    Item {
+                        width: 64 * root.uiScale
+                        height: 64 * root.uiScale
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: "#d9dbe6"
+                        }
+
+                        Image {
+                            anchors.centerIn: parent
+                            width: 32 * root.uiScale
+                            height: 32 * root.uiScale
+                            source: "assets/user-avatar.svg"
+                            sourceSize.width: 32
+                            sourceSize.height: 32
+                            smooth: true
+                        }
+
+                    }
+
+                    Text {
+                        width: parent.width - 92 * root.uiScale
+                        height: parent.height
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                        text: model.realName || model.name || qsTr("Пользователь")
+                        color: "#17191c"
+                        font.family: "Noto Sans"
+                        font.pixelSize: 16 * root.uiScale
+                        font.weight: Font.Normal
+                    }
+                }
+            }
+        }
+
+        QQC2.Button {
+            id: otherUserButton
+            width: accountChooser.width
+            height: 48 * root.uiScale
+            text: qsTr("Другой пользователь")
+            onClicked: {
+                userListComponent.initialViewChosen = true;
+                userListComponent.showUsernamePrompt = true;
+                userListComponent.lastUserName = "";
+                userListComponent.credentialsVisible = true;
+            }
+            background: Rectangle {
+                color: "transparent"
+            }
+            contentItem: Row {
+                spacing: 8 * root.uiScale
+                anchors.centerIn: parent
+                Image {
+                    source: "assets/user-add.svg"
+                    width: 20 * root.uiScale
+                    height: 20 * root.uiScale
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: otherUserButton.text
+                    color: "#17191c"
+                    font.family: "Noto Sans"
+                    font.pixelSize: 16 * root.uiScale
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
+    }
+
+    QQC2.ToolButton {
+        id: powerButton
+        width: 40 * root.uiScale
+        height: width
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: 28 * root.uiScale
+        anchors.rightMargin: 28 * root.uiScale
+        icon.name: "settings-configure"
+        Accessible.name: qsTr("Питание и настройки")
+        onClicked: powerMenu.open()
+        background: Rectangle {
+            color: "transparent"
+        }
+
+        QQC2.Menu {
+            id: powerMenu
+            QQC2.MenuItem {
+                text: qsTr("Спящий режим")
+                enabled: sddm.canSuspend
+                onTriggered: sddm.suspend()
+            }
+            QQC2.MenuItem {
+                text: qsTr("Перезагрузить")
+                enabled: sddm.canReboot
+                onTriggered: sddm.reboot()
+            }
+            QQC2.MenuItem {
+                text: qsTr("Выключить")
+                enabled: sddm.canPowerOff
+                onTriggered: sddm.powerOff()
+            }
+        }
+    }
+
+    QQC2.ToolButton {
+        visible: userListComponent.showUserList && userListComponent.credentialsVisible
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: root.height * 0.58
+        text: qsTr("← Пользователи")
+        onClicked: {
+            userListComponent.credentialsVisible = false;
+            userListComponent.showUsernamePrompt = false;
+            userListComponent.mainPasswordBox.text = "";
         }
     }
 

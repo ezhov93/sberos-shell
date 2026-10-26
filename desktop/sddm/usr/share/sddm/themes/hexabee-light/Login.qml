@@ -13,6 +13,9 @@ SessionManagementScreen {
     id: root
     property Item mainPasswordBox: passwordBox
     property bool showUsernamePrompt: !showUserList
+    property bool credentialsVisible: !showUserList
+    property bool initialViewChosen: false
+    property real formTopMargin: 0
     property int usernameFontSize
     property int fontSize: parseInt(config.fontSize)
     property string usernameFontColor
@@ -77,15 +80,16 @@ SessionManagementScreen {
     Input {
         id: userNameInput
         Layout.fillWidth: true
-        Layout.preferredHeight: 30
-        font.pointSize: fontSize + 1
-        opacity: passwordFieldOutlined ? 1.0 : 0.75
+        Layout.preferredHeight: 80
+        Layout.topMargin: showUsernamePrompt ? 0 : root.formTopMargin
+        font.pointSize: fontSize + 3
+        font.family: config.font || "SF UI Text"
         text: lastUserName
-        visible: showUsernamePrompt
+        visible: credentialsVisible && showUsernamePrompt
         focus: showUsernamePrompt && !lastUserName //if there's a username prompt it gets focus first, otherwise password does
-        placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Username")
-        placeholderTextColor: passwordFieldOutlined ? "white" : "white"
-        color: "white"
+        placeholderText: qsTr("Имя пользователя")
+        placeholderTextColor: "#6c707f"
+        color: "#17191c"
         //horizontalAlignment: TextInput.AlignHCenter
         leftPadding: fontSize
         rightPadding: leftPadding
@@ -94,17 +98,20 @@ SessionManagementScreen {
     Input {
         id: passwordBox
         Layout.fillWidth: true
-        font.pointSize: fontSize + 1
-        Layout.preferredHeight: 30
-        opacity: passwordFieldOutlined ? 1.0 : 0.75
-        font.family: config.Font || "Noto Sans"
-        placeholderText: config.PasswordFieldPlaceholderText == "Password" ? i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Password") : config.PasswordFieldPlaceholderText
+        font.pointSize: fontSize + 3
+        Layout.preferredHeight: 80
+        Layout.topMargin: showUsernamePrompt ? 0 : root.formTopMargin
+        font.family: config.font || "SF UI Text"
+        placeholderText: config.PasswordFieldPlaceholderText && config.PasswordFieldPlaceholderText !== "Password"
+            ? config.PasswordFieldPlaceholderText
+            : qsTr("Введите пароль")
+        visible: credentialsVisible
         focus: !showUsernamePrompt || lastUserName
         echoMode: TextInput.Password
         onAccepted: startLogin()
-        placeholderTextColor: passwordFieldOutlined ? "white" : "white"
-        passwordCharacter: config.PasswordFieldCharacter == "" ? "●" : config.PasswordFieldCharacter
-        color: "white"
+        placeholderTextColor: "#6c707f"
+        passwordCharacter: config.PasswordFieldCharacter ? config.PasswordFieldCharacter : "●"
+        color: "#17191c"
         //horizontalAlignment: TextInput.AlignHCenter
         leftPadding: fontSize
         rightPadding: leftPadding
@@ -124,15 +131,6 @@ SessionManagementScreen {
             }
         }
 
-        Keys.onReleased: {
-            if (loginButton.opacity == 0 && length > 0) {
-                showLoginButton.start()
-            }
-            if (loginButton.opacity > 0 && length == 0) {
-                hideLoginButton.start()
-            }
-        }
-
         Connections {
             target: sddm
             onLoginFailed: {
@@ -142,35 +140,27 @@ SessionManagementScreen {
         }
     }
 
-    Image {
+    QQC2.Button {
         id: loginButton
-        source: "assets/login.svgz"
-        smooth: true
-        sourceSize: Qt.size(passwordBox.height, passwordBox.height)
-        anchors {
-            left: passwordBox.right
-            verticalCenter: passwordBox.verticalCenter
+        Layout.preferredWidth: 193
+        Layout.preferredHeight: 48
+        Layout.alignment: Qt.AlignHCenter
+        text: qsTr("Войти")
+        visible: credentialsVisible && passwordBox.text.length > 0
+        enabled: passwordBox.text.length > 0
+        onClicked: startLogin()
+        background: Rectangle {
+            radius: 12
+            color: loginButton.down ? "#0b741d" : "#108e26"
         }
-        anchors.leftMargin: 8
-        visible: opacity > 0
-        opacity: 0
-        MouseArea {
-            anchors.fill: parent
-            onClicked: startLogin();
-        }
-        PropertyAnimation {
-            id: showLoginButton
-            target: loginButton
-            properties: "opacity"
-            to: 0.75
-            duration: 100
-        }
-        PropertyAnimation {
-            id: hideLoginButton
-            target: loginButton
-            properties: "opacity"
-            to: 0
-            duration: 80
+        contentItem: Text {
+            text: loginButton.text
+            color: "white"
+            font.family: config.font || "SF UI Text"
+            font.pointSize: 14
+            font.weight: Font.DemiBold
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 }

@@ -22,6 +22,8 @@
 
 - [Единая нижняя панель](unified-panel.md) — правила перехода по ADR-0008.
 
+- [Значки рабочего стола Sirca](desktop-icons.md) — отображение XDG-папки Desktop и управление значками.
+
 - [Адаптация Smart Panel](panel-adaptation.md) — перенос требований GNOME, статусы и открытые решения PANEL-000.
 
 - [Меню Сбер](sber-menu.md) — поведение MVP и интеграция PANEL-002.

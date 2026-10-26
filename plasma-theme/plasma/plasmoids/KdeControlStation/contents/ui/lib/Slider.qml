@@ -59,6 +59,7 @@ Card {
                 font.weight: quickSettingsStyle ? Font.Medium : Font.Bold
                 font.capitalization: Font.Capitalize
                 elide: Text.ElideRight
+                color: quickSettingsStyle ? "#484c5b" : Kirigami.Theme.textColor
             }
 
             PlasmaComponents.Label {
@@ -71,6 +72,7 @@ Card {
                 font.weight: Font.Bold
                 font.capitalization: Font.Capitalize
                 horizontalAlignment: Text.AlignRight
+                color: quickSettingsStyle ? "#9296a6" : Kirigami.Theme.textColor
             }
 
 
@@ -85,6 +87,7 @@ Card {
                 id: icon
                 source: sliderComp.source
                 visible: !sliderComp.useIconButton
+                color: quickSettingsStyle ? "#484c5b" : Kirigami.Theme.textColor
                 Layout.preferredHeight: quickSettingsStyle ? 24 * root.scale : root.largeFontSize * 2
                 Layout.preferredWidth: Layout.preferredHeight
                 Layout.margins: 0
@@ -95,6 +98,7 @@ Card {
                 id: iconButton
                 visible: sliderComp.useIconButton
                 icon.name: sliderComp.source
+                icon.color: quickSettingsStyle ? "#484c5b" : Kirigami.Theme.textColor
                 Layout.preferredHeight: quickSettingsStyle ? 24 * root.scale : root.largeFontSize * 2
                 Layout.preferredWidth: Layout.preferredHeight
                 flat: quickSettingsStyle
@@ -157,6 +161,7 @@ Card {
                 id: openVolumePageButton
                 visible: sliderComp.canTogglePage
                 icon.name: "arrow-right"
+                icon.color: quickSettingsStyle ? "#9296a6" : Kirigami.Theme.textColor
                 Layout.preferredHeight: quickSettingsStyle ? 24 * root.scale : root.largeFontSize * 2
                 Layout.preferredWidth: Layout.preferredHeight
                 flat: quickSettingsStyle

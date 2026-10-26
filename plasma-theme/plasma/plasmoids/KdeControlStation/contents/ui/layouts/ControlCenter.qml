@@ -11,11 +11,9 @@ Item {
     Layout.fillHeight: true
     clip: true
 
-    readonly property color panelColor: root.isDarkTheme
-        ? Qt.rgba(45 / 255, 62 / 255, 58 / 255, 0.85)
-        : Qt.rgba(247 / 255, 249 / 255, 251 / 255, 0.72)
-    readonly property color innerColor: root.isDarkTheme ? "#2b323b" : Qt.rgba(1, 1, 1, 0.92)
-    readonly property color panelEdge: root.isDarkTheme ? "#38ffffff" : "#85ffffff"
+    readonly property color panelColor: Qt.rgba(247 / 255, 249 / 255, 251 / 255, 0.72)
+    readonly property color innerColor: Qt.rgba(1, 1, 1, 0.92)
+    readonly property color panelEdge: "#85ffffff"
 
     Rectangle {
         anchors.fill: parent

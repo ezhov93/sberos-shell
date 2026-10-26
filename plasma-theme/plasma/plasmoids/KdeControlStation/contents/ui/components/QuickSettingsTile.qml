@@ -12,7 +12,9 @@ Item {
     property bool available: true
     property bool actionable: available
     property bool hasSubpage: false
-    property bool dark: root.isDarkTheme
+    // Quick settings follow the Smart Panel mock's light palette regardless
+    // of the host Plasma color scheme.
+    property bool dark: false
     property real uiScale: root.scale
     property color innerColor: dark ? "#2b323b" : Qt.rgba(1, 1, 1, 0.92)
     property color hoverColor: dark ? "#363e48" : "#ebedf2"

@@ -29,56 +29,26 @@ if (panel.formFactor === "horizontal") {
 }
 
 panel.addWidget("io.gitgud.wackyideas.sbermenu")
+var appLauncher = panel.addWidget("p-connor.plasma-drawer")
+appLauncher.currentConfigGroup = ["General"]
+appLauncher.writeConfig("icon", "view-app-grid-symbolic")
+appLauncher.writeConfig("appIconSize", 120)
+appLauncher.writeConfig("maxNumberColumns", 8)
+appLauncher.writeConfig("backgroundType", 1)
+appLauncher.writeConfig("customBackgroundColor", "#32353e")
+appLauncher.writeConfig("backgroundOpacity", 58)
+appLauncher.writeConfig("showSystemActions", false)
+appLauncher.writeConfig("searchRunners", "krunner_services")
+
 var applications = panel.addWidget("io.gitgud.wackyideas.smarttasks")
 applications.currentConfigGroup = ["General"]
 applications.writeConfig("launchers", "preferred://filemanager,preferred://browser,applications:org.kde.konsole.desktop,applications:systemsettings.desktop")
 
-/* Next up is determining whether to add the Input Method Panel
- * widget to the panel or not. This is done based on whether
- * the system locale's language id is a member of the following
- * white list of languages which are known to pull in one of
- * our supported IME backends when chosen during installation
- * of common distributions. */
+var fileSearch = panel.addWidget("com.mcc45tr.filesearch")
+fileSearch.currentConfigGroup = ["Panel"]
+fileSearch.writeConfig("displayMode", 3)
 
-var langIds = ["as",    // Assamese
-               "bn",    // Bengali
-               "bo",    // Tibetan
-               "brx",   // Bodo
-               "doi",   // Dogri
-               "gu",    // Gujarati
-               "hi",    // Hindi
-               "ja",    // Japanese
-               "kn",    // Kannada
-               "ko",    // Korean
-               "kok",   // Konkani
-               "ks",    // Kashmiri
-               "lep",   // Lepcha
-               "mai",   // Maithili
-               "ml",    // Malayalam
-               "mni",   // Manipuri
-               "mr",    // Marathi
-               "ne",    // Nepali
-               "or",    // Odia
-               "pa",    // Punjabi
-               "sa",    // Sanskrit
-               "sat",   // Santali
-               "sd",    // Sindhi
-               "si",    // Sinhala
-               "ta",    // Tamil
-               "te",    // Telugu
-               "th",    // Thai
-               "ur",    // Urdu
-               "vi",    // Vietnamese
-               "zh_CN", // Simplified Chinese
-               "zh_TW"] // Traditional Chinese
+var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
+systemSpacer.writeConfig("expanding", true)
 
-if (langIds.indexOf(languageId) != -1) {
-    panel.addWidget("org.kde.plasma.keyboardlayout");
-}
-
-var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer");
-systemSpacer.writeConfig("expanding", true);
-
-panel.addWidget("org.kde.plasma.systemtray")
-panel.addWidget("org.kde.plasma.digitalclock")
-panel.addWidget("org.kde.plasma.showdesktop")
+panel.addWidget("KdeControlStation")

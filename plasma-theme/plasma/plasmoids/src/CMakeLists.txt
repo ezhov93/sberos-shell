@@ -1,6 +1,1 @@
-add_subdirectory(notifications_src)
-add_subdirectory(volume_src)
-add_subdirectory(systemtray_src)
-add_subdirectory(seventasks_src)
-add_subdirectory(sevenstart_src)
 add_subdirectory(desktopcontainment)

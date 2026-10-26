@@ -9,7 +9,6 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
-import org.kde.plasma.private.kicker as Kicker
 import org.kde.taskmanager as TaskManager
 
 PlasmoidItem {
@@ -17,15 +16,13 @@ PlasmoidItem {
 
     readonly property int cellSize: 48
     readonly property int iconSize: 32
-    readonly property int preferredCellCount: tasksModel.count + 1
+    readonly property int preferredCellCount: tasksModel.count
     readonly property int contentWidth: Math.max(168, preferredCellCount * cellSize + 16
                                                 + (tasksModel.count > tasksModel.launcherCount ? 8 : 0))
     readonly property int contextMenuHeight: 56 + contextActions.reduce((height, item) => height + (item.separator ? 9 : 40), 0)
-    property string representationMode: "applications"
     property int selectedTaskIndex: -1
     property string selectedAppName: ""
     property string selectedLauncherUrl: ""
-    property bool selectedIsLauncher: false
     property bool selectedIsActive: false
     property int selectedWindowCount: 0
 
@@ -41,19 +38,12 @@ PlasmoidItem {
     Layout.preferredHeight: 48
     Layout.maximumHeight: 48
 
-    function openApplications() {
-        representationMode = "applications"
-        root.expanded = true
-    }
-
     function openTaskMenu(index, task) {
         selectedTaskIndex = index
         selectedAppName = String(task.AppName || task.display || qsTr("Приложение"))
         selectedLauncherUrl = task.LauncherUrlWithoutIcon ? String(task.LauncherUrlWithoutIcon) : ""
-        selectedIsLauncher = Boolean(task.IsLauncher)
         selectedIsActive = Boolean(task.IsActive)
         selectedWindowCount = task.IsGroupParent ? Math.max(2, Number(task.ChildCount)) : (task.IsLauncher ? 0 : 1)
-        representationMode = "context"
         root.expanded = true
     }
 
@@ -82,11 +72,6 @@ PlasmoidItem {
             tasksModel.requestClose(index)
             break
         }
-        root.expanded = false
-    }
-
-    function activateApplication(index) {
-        applicationsModel.trigger(index, "", null)
         root.expanded = false
     }
 
@@ -124,21 +109,6 @@ PlasmoidItem {
         onLauncherListChanged: Plasmoid.configuration.launchers = launcherList
     }
 
-    Kicker.RootModel {
-        id: applicationsModel
-        appletInterface: root
-        autoPopulate: true
-        flat: true
-        sorted: true
-        showSeparators: false
-        showAllApps: true
-        showAllAppsCategorized: false
-        showRecentApps: false
-        showRecentDocs: false
-        showRecentFolders: false
-        showPowerSession: false
-    }
-
     compactRepresentation: Item {
         implicitWidth: root.contentWidth
         implicitHeight: root.cellSize
@@ -146,14 +116,6 @@ PlasmoidItem {
         Row {
             anchors.centerIn: parent
             spacing: 0
-
-            AppButton {
-                cellSize: root.cellSize
-                iconSize: root.iconSize
-                label: qsTr("Launchpad")
-                iconSource: "view-app-grid-symbolic"
-                onActivated: root.openApplications()
-            }
 
             Repeater {
                 model: tasksModel
@@ -180,8 +142,8 @@ PlasmoidItem {
 
     fullRepresentation: Item {
         id: fullView
-        readonly property int popupWidth: root.representationMode === "applications" ? 600 : 248
-        readonly property int popupHeight: root.representationMode === "applications" ? 424 : root.contextMenuHeight
+        readonly property int popupWidth: 248
+        readonly property int popupHeight: root.contextMenuHeight
         implicitWidth: popupWidth
         implicitHeight: popupHeight
         width: implicitWidth
@@ -189,16 +151,7 @@ PlasmoidItem {
 
         Loader {
             anchors.fill: parent
-            sourceComponent: root.representationMode === "applications" ? applicationsGrid : taskContextMenu
-        }
-    }
-
-    Component {
-        id: applicationsGrid
-        ApplicationsGrid {
-            appModel: applicationsModel
-            onActivated: index => root.activateApplication(index)
-            onDismissed: root.expanded = false
+            sourceComponent: taskContextMenu
         }
     }
 

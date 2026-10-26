@@ -13,16 +13,57 @@ FocusScope {
 
     property string appName
     property var actions: []
+    property int selectedActionIndex: 0
     signal triggered(string action)
     signal dismissed
 
     implicitWidth: 248
     implicitHeight: 56 + actions.reduce((height, item) => height + (item.separator ? 9 : 40), 0)
     focus: true
+    Component.onCompleted: root.forceActiveFocus()
 
     Keys.onEscapePressed: event => {
         root.dismissed()
         event.accepted = true
+    }
+    Keys.onUpPressed: event => {
+        root.moveSelection(-1)
+        event.accepted = true
+    }
+    Keys.onDownPressed: event => {
+        root.moveSelection(1)
+        event.accepted = true
+    }
+    Keys.onReturnPressed: event => {
+        root.triggerSelectedAction()
+        event.accepted = true
+    }
+    Keys.onEnterPressed: event => {
+        root.triggerSelectedAction()
+        event.accepted = true
+    }
+
+    function isAction(index) {
+        return index >= 0 && index < actions.length && !Boolean(actions[index].separator)
+    }
+
+    function moveSelection(direction) {
+        if (actions.length === 0)
+            return
+
+        let index = selectedActionIndex
+        for (let step = 0; step < actions.length; ++step) {
+            index = (index + direction + actions.length) % actions.length
+            if (isAction(index)) {
+                selectedActionIndex = index
+                return
+            }
+        }
+    }
+
+    function triggerSelectedAction() {
+        if (isAction(selectedActionIndex))
+            root.triggered(actions[selectedActionIndex].action)
     }
 
     Rectangle {
@@ -59,6 +100,7 @@ FocusScope {
                 model: root.actions
                 delegate: Item {
                     id: actionDelegate
+                    required property int index
                     required property var modelData
                     width: parent.width
                     height: modelData.separator ? 9 : 40
@@ -75,7 +117,7 @@ FocusScope {
                         visible: !Boolean(actionDelegate.modelData.separator)
                         anchors.fill: parent
                         radius: 9
-                        color: rowMouse.containsMouse
+                        color: rowMouse.containsMouse || root.selectedActionIndex === index
                                ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.09)
                                : "transparent"
 
@@ -93,7 +135,12 @@ FocusScope {
                         MouseArea {
                             id: rowMouse
                             anchors.fill: parent
+                            enabled: !Boolean(actionDelegate.modelData.separator)
                             hoverEnabled: true
+                            onEntered: {
+                                if (!Boolean(actionDelegate.modelData.separator))
+                                    root.selectedActionIndex = index
+                            }
                             onClicked: root.triggered(actionDelegate.modelData.action)
                         }
                     }

@@ -177,15 +177,13 @@ ContainmentItem {
         }
 
         readonly property var systemIslandAppletNames: [
-            "org.kde.plasma.systemtray",
-            "org.kde.plasma.digitalclock",
-            "org.kde.plasma.showdesktop"
+            "KdeControlStation"
         ]
         readonly property var systemIslandMembers: currentLayout.visibleChildren.filter(item =>
             item.isAppletContainer
                 && systemIslandAppletNames.indexOf(item.applet?.plasmoid?.pluginName) !== -1)
         readonly property bool hasSharedSystemIsland: {
-            if (!root.isHorizontal || systemIslandMembers.length < 2) {
+            if (!root.isHorizontal || systemIslandMembers.length === 0) {
                 return false;
             }
 
@@ -235,7 +233,7 @@ ContainmentItem {
             return value;
         }
 
-        // Draw one shared surface behind the tray, clock, and show-desktop applets.
+        // Draw the system controls applet inside one panel surface.
         Rectangle {
             id: sharedSystemIsland
             visible: dropArea.hasSharedSystemIsland

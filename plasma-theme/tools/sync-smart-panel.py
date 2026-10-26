@@ -24,6 +24,7 @@ for name in packages:
     outputs[ui / 'SmartPanelIcon.qml'] = (root / 'shared/SmartPanelIcon.qml').read_bytes()
     if name in ['sbermenu', 'filesearch', 'controlcenter', 'clockcalendar']:
         outputs[ui / 'SmartPopupPlacement.qml'] = (root / 'shared/SmartPopupPlacement.qml').read_bytes()
+        outputs[ui.parent / 'assets/smart-panel/popup-frame.svg'] = (root / 'shared/SmartPopupFrame.svg').read_bytes()
     if name in ['applications', 'filesearch']:
         outputs[ui / 'OskaAvatar.qml'] = (root / 'shared/OskaAvatar.qml').read_bytes()
 icons = {

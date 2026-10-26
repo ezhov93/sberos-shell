@@ -1,0 +1,21 @@
+[
+  {
+    "label": "quick",
+    "x": 2056,
+    "y": 812,
+    "width": 488,
+    "height": 540,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  }
+]

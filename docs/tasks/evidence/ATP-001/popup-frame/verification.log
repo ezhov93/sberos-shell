@@ -1,0 +1,14 @@
+qml: POPUP_FRAME {"width":488,"height":540,"left":0.001,"top":0.001,"right":0.001,"bottom":0.001}
+qml: CAPTURE {"label":"quick","x":2056,"y":812,"width":488,"height":540,"thickness":88,"screen":{"x":0,"y":0,"width":2560,"height":1440,"left":0,"right":2560,"top":0,"bottom":1440},"dpi":1}
+POPUP_CURSOR QPoint(0,0) Qt::ArrowCursor
+POPUP_CURSOR QPoint(1,1) Qt::ArrowCursor
+POPUP_CURSOR QPoint(24,1) Qt::ArrowCursor
+POPUP_CURSOR QPoint(1,270) Qt::ArrowCursor
+POPUP_CURSOR QPoint(487,1) Qt::ArrowCursor
+POPUP_CURSOR QPoint(487,539) Qt::ArrowCursor
+POPUP_CURSOR QPoint(244,539) Qt::ArrowCursor
+POPUP_CURSOR QPoint(244,1) Qt::ArrowCursor
+POPUP_TAB Battery_QMLTYPE_611(0x563664460820, id="batteryWidget", parent=0x56366445af40, geometry=0,0 104x56)
+POPUP_BACKTAB QuickSettingsTile_QMLTYPE_597(0x56366451ec70, parent=0x56366445e640, geometry=232,192 224x56)
+POPUP_ESCAPE_VISIBLE false
+POPUP_INPUT_OK true

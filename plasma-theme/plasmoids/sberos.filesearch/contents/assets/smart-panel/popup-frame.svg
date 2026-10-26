@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+  <!-- Nine segments preserve the 24 px radius at the popup's native size. -->
+  <g id="center" fill="white"><rect x="24" y="24" width="24" height="24"/></g>
+  <g id="top" fill="white"><rect x="24" y="0" width="24" height="24"/></g>
+  <g id="bottom" fill="white"><rect x="24" y="48" width="24" height="24"/></g>
+  <g id="left" fill="white"><rect x="0" y="24" width="24" height="24"/></g>
+  <g id="right" fill="white"><rect x="48" y="24" width="24" height="24"/></g>
+  <g id="topleft" fill="white"><path d="M24 0 A24 24 0 0 0 0 24 H24 Z"/></g>
+  <g id="topright" fill="white"><path d="M48 0 A24 24 0 0 1 72 24 H48 Z"/></g>
+  <g id="bottomleft" fill="white"><path d="M0 48 A24 24 0 0 0 24 72 V48 Z"/></g>
+  <g id="bottomright" fill="white"><path d="M72 48 A24 24 0 0 1 48 72 V48 Z"/></g>
+  <!-- KSvg ignores zero-sized hints; these round to zero in Plasma's QMargins. -->
+  <rect id="hint-left-margin" width="0.001" height="0.001"/>
+  <rect id="hint-top-margin" width="0.001" height="0.001"/>
+  <rect id="hint-right-margin" width="0.001" height="0.001"/>
+  <rect id="hint-bottom-margin" width="0.001" height="0.001"/>
+</svg>

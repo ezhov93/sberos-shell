@@ -121,3 +121,15 @@ python3 plasma-theme/tests/capture-smart-panel.py --source plasma-theme \
 Для дальнейшего интерактивного редактирования QML можно подключить QML Preview
 MCP; он требует Qt 6.12 или новее. В этом окружении использован фактический
 Plasma/QML runtime Qt 6.11.2.
+
+## Нативная рамка popup
+
+Общий `SmartPopupPlacement.qml` подставляет в DialogBackground Plasma 6.7
+`shared/SmartPopupFrame.svg`: радиус 24 px, нулевые после округления поля.
+Это убирает внешнюю область contrast/blur и зоны resize вокруг содержимого.
+Native shadow tiles отключены отдельно; все углы маски остаются включёнными.
+SVG доставляется в четыре KPackage тем же `sync-smart-panel.py`.
+Размеры и координаты содержимого сохранены. Доступ к вложенному FrameSvgItem
+зависит от внутреннего устройства libplasma 6.7; после обновления Plasma
+повторять целевую проверку рамки, маски и курсора.
+[Снимки KWin до/после и результаты](../docs/tasks/evidence/ATP-001/popup-frame/).

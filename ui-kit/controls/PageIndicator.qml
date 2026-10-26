@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.PageIndicator {
     id: control
 
@@ -33,23 +32,17 @@ T.PageIndicator {
         Rectangle {
             id: indicator
             anchors.centerIn: parent
-            property int size: index === control.currentIndex ||
-                               control.currentIndex === 0 && index === 1 ||
-                               control.currentIndex === control.count - 1 && index === control.count - 2
-                                   ? control.indicatorSize :
-                               (index === 0 || index === control.count - 1)
-                                   ? 6 :
-                               control.lineHeight >= Theme.Sizes.LineHeight.M &&
-                               (index === 1 || index === control.count - 2)
-                                   ? 8 :
-                                   control.indicatorSize
+            property int size: index === control.currentIndex || control.currentIndex === 0 && index === 1 || control.currentIndex === control.count - 1 && index === control.count - 2 ? control.indicatorSize : (index === 0 || index === control.count - 1) ? 6 : control.lineHeight >= Theme.Sizes.LineHeight.M && (index === 1 || index === control.count - 2) ? 8 : control.indicatorSize
             width: size
             height: size
             radius: height / 2
             color: index === control.currentIndex ? control.activeColor : control.color
 
             Behavior on size {
-                PropertyAnimation { duration: 300; easing.type: Easing.InOutQuint }
+                PropertyAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuint
+                }
             }
         }
         MouseArea {
@@ -84,7 +77,6 @@ T.PageIndicator {
     }
 
     onCurrentIndexChanged: {
-        contentArea.contentX = Math.max((Math.min(control.currentIndex - 2, control.count - control.visibleCount)) *
-            (control.indicatorSize + control.spacing), 0)
+        contentArea.contentX = Math.max((Math.min(control.currentIndex - 2, control.count - control.visibleCount)) * (control.indicatorSize + control.spacing), 0);
     }
 }

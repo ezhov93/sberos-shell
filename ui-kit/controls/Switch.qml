@@ -7,21 +7,16 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.Switch {
     id: control
 
     property alias captionText: captionLabel.text
     property alias fontColor: textLabel.color
     property int lineHeight: Core.Settings.LineHeight
-    property int indicatorHeight: lineHeight <= Theme.Sizes.LineHeight.S ? 20 :
-                                  lineHeight == Theme.Sizes.LineHeight.M ? 24 :
-                                                                           28
-    property int indicatorWidth: lineHeight <= Theme.Sizes.LineHeight.S ? 32 :
-                                 lineHeight == Theme.Sizes.LineHeight.M ? 38 :
-                                                                          44
+    property int indicatorHeight: lineHeight <= Theme.Sizes.LineHeight.S ? 20 : lineHeight == Theme.Sizes.LineHeight.M ? 24 : 28
+    property int indicatorWidth: lineHeight <= Theme.Sizes.LineHeight.S ? 32 : lineHeight == Theme.Sizes.LineHeight.M ? 38 : 44
 
-    implicitWidth: bg.width + spacing + textLabel.implicitWidth
+    implicitWidth: bg.width + spacing + textItem.implicitWidth
     width: implicitWidth
     implicitHeight: Math.max(bg.height, textItem.implicitHeight)
     height: implicitHeight
@@ -34,8 +29,7 @@ T.Switch {
         id: colorizer
         defaultColor: Theme.Palette.Surface.Default.TransparentSecondary
         hovered: control.enabled && control.hovered
-        hoverColor: control.checked ? Theme.Palette.Surface.Default.AccentHover :
-                                      Theme.Palette.Surface.Default.TransparentSecondaryHover
+        hoverColor: control.checked ? Theme.Palette.Surface.Default.AccentHover : Theme.Palette.Surface.Default.TransparentSecondaryHover
         activated: control.checked
         activeColor: Theme.Palette.Surface.Default.Accent
     }
@@ -45,8 +39,7 @@ T.Switch {
         anchors.left: parent.left
         anchors.top: parent.top
         implicitWidth: Math.max(textLabel.implicitWidth, captionLabel.implicitWidth)
-        implicitHeight: (textLabel.text ? textLabel.implicitHeight : 0) +
-                        (captionLabel.text ? captionLabel.implicitHeight + captionLabel.anchors.topMargin : 0)
+        implicitHeight: (textLabel.text ? textLabel.implicitHeight : 0) + (captionLabel.text ? captionLabel.implicitHeight + captionLabel.anchors.topMargin : 0)
         opacity: control.enabled ? 1 : 0.4
 
         Label {
@@ -80,15 +73,14 @@ T.Switch {
     FocusItem {}
 
     Rectangle {
-        id: button  
+        id: button
         anchors.verticalCenter: bg.verticalCenter
         width: control.indicatorHeight - control.verticalPadding * 2
         height: button.width
         radius: button.width / 2
         color: Theme.Palette.Background.Light.Secondary
 
-        state: control.checked ? "checked" :
-                                 "unchecked"
+        state: control.checked ? "checked" : "unchecked"
         states: [
             State {
                 name: "checked"

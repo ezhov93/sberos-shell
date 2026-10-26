@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: control
 
@@ -30,18 +29,12 @@ Item {
 
         anchors.fill: parent
         color: Theme.Palette.Background.Default.Quaternary
-        radius: lineHeight <= Theme.Sizes.LineHeight.Xs ? Theme.Sizes.BorderRadius.Xs :
-                lineHeight <= Theme.Sizes.LineHeight.S  ? Theme.Sizes.BorderRadius.S :
-                lineHeight <= Theme.Sizes.LineHeight.M  ? Theme.Sizes.BorderRadius.M :
-                                                          Theme.Sizes.BorderRadius.L
+        radius: lineHeight <= Theme.Sizes.LineHeight.Xs ? Theme.Sizes.BorderRadius.Xs : lineHeight <= Theme.Sizes.LineHeight.S ? Theme.Sizes.BorderRadius.S : lineHeight <= Theme.Sizes.LineHeight.M ? Theme.Sizes.BorderRadius.M : Theme.Sizes.BorderRadius.L
         DashedBorder {
             anchors.fill: parent
             lineWidth: 2
             radius: dropZone.radius
-            color: dropArea.containsDrag ?
-                       dropZone.acceptDrag ? Theme.Palette.Outline.Default.AccentActive :
-                                             Theme.Palette.Outline.Default.NegativeActive :
-                       Theme.Palette.Outline.Default.SolidPrimary
+            color: dropArea.containsDrag ? dropZone.acceptDrag ? Theme.Palette.Outline.Default.AccentActive : Theme.Palette.Outline.Default.NegativeActive : Theme.Palette.Outline.Default.SolidPrimary
         }
 
         Column {
@@ -53,10 +46,7 @@ Item {
             Icon {
                 anchors.horizontalCenter: parent.horizontalCenter
                 name: "ArrowBarDown"
-                size: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 18 :
-                      control.lineHeight <= Theme.Sizes.LineHeight.S  ? 20 :
-                      control.lineHeight <= Theme.Sizes.LineHeight.M  ? 22 :
-                                                                        24
+                size: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 18 : control.lineHeight <= Theme.Sizes.LineHeight.S ? 20 : control.lineHeight <= Theme.Sizes.LineHeight.M ? 22 : 24
             }
 
             Label {
@@ -97,7 +87,7 @@ Item {
         DropArea {
             id: dropArea
             anchors.fill: parent
-            onEntered: (drag) => {
+            onEntered: drag => {
                 if (fileDialog.nameFilters.length != 0) {
                     if (!control.selectMultiple && drag.urls.length > 1) {
                         dropZone.acceptDrag = false;
@@ -123,7 +113,7 @@ Item {
                 dropZone.acceptDrag = true;
                 drag.accepted = true;
             }
-            onDropped: (drop) => {
+            onDropped: drop => {
                 if (dropZone.acceptDrag) {
                     drop.accept(Qt.LinkAction);
                     for (var i = 0; i < drop.urls.length; i++) {
@@ -134,4 +124,3 @@ Item {
         }
     }
 }
-

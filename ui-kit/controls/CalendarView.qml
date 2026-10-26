@@ -5,7 +5,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Rectangle {
     id: root
 
@@ -18,8 +17,7 @@ Rectangle {
     state: selectType
 
     property alias lineHeight: backgroundConfig.lineHeight
-    property int spacing: lineHeight <= Theme.Sizes.LineHeight.Xs ? 6 :
-                                                                    8
+    property int spacing: lineHeight <= Theme.Sizes.LineHeight.Xs ? 6 : 8
     color: Theme.Palette.Background.Default.Secondary
     radius: backgroundConfig.radius
 
@@ -52,14 +50,8 @@ Rectangle {
         lineHeight: Core.Settings.LineHeight
     }
 
-    property int cellWidth:  lineHeight <= Theme.Sizes.LineHeight.Xs ? 40 :
-                             lineHeight <= Theme.Sizes.LineHeight.S  ? 40 :
-                             lineHeight <= Theme.Sizes.LineHeight.M  ? 48 :
-                                                                       56
-    property int cellHeight: lineHeight <= Theme.Sizes.LineHeight.Xs ? 30 :
-                             lineHeight <= Theme.Sizes.LineHeight.S  ? 32 :
-                             lineHeight <= Theme.Sizes.LineHeight.M  ? 40 :
-                                                                       48
+    property int cellWidth: lineHeight <= Theme.Sizes.LineHeight.Xs ? 40 : lineHeight <= Theme.Sizes.LineHeight.S ? 40 : lineHeight <= Theme.Sizes.LineHeight.M ? 48 : 56
+    property int cellHeight: lineHeight <= Theme.Sizes.LineHeight.Xs ? 30 : lineHeight <= Theme.Sizes.LineHeight.S ? 32 : lineHeight <= Theme.Sizes.LineHeight.M ? 40 : 48
 
     property Component dateViewLeft: DateView {
         id: dateViewLeft
@@ -108,13 +100,14 @@ Rectangle {
             backgroundType: Widget.Clear
             iconItem.name: "ChevronLeft"
             enabled: root.visibleYear > currentDate.getFullYear() - 100
-            onClicked: { header.decrement(); }
+            onClicked: {
+                header.decrement();
+            }
         }
 
         Button {
             id: headerButtonLeft
-            x: doubled ? contentLeft.x + (contentLeft.width - width - iconItem.size) / 2 :
-                         root.padding
+            x: doubled ? contentLeft.x + (contentLeft.width - width - iconItem.size) / 2 : root.padding
             horizontalPadding: 0
             height: parent.height
             backgroundType: Widget.Clear
@@ -124,7 +117,9 @@ Rectangle {
             textItem.iconOnRight: true
             iconItem.name: "DisclosureDownFill"
             iconItem.size: 24
-            onClicked: { root.nextState(); }
+            onClicked: {
+                root.nextState();
+            }
         }
         Button {
             id: headerButtonRight
@@ -139,7 +134,9 @@ Rectangle {
             textItem.iconOnRight: true
             iconItem.name: "DisclosureDownFill"
             iconItem.size: 24
-            onClicked: { root.nextState(); }
+            onClicked: {
+                root.nextState();
+            }
         }
         Button {
             id: incrementButton
@@ -149,7 +146,9 @@ Rectangle {
             backgroundType: Widget.Clear
             iconItem.name: "ChevronRight"
             enabled: root.visibleYear < currentDate.getFullYear() + 100
-            onClicked: { header.increment(); }
+            onClicked: {
+                header.increment();
+            }
         }
 
         function getLabelText(isRight) {
@@ -198,7 +197,7 @@ Rectangle {
     }
 
     function loadView() {
-        switch(Number(root.state)) {
+        switch (Number(root.state)) {
         case CalendarView.SelectType.Month:
             contentLeft.sourceComponent = monthViewLeft;
             contentRight.sourceComponent = monthViewRight;
@@ -218,11 +217,13 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        Qt.callLater(() => {Qt.callLater(root.loadView)});
+        Qt.callLater(() => {
+            Qt.callLater(root.loadView);
+        });
     }
 
     onStateChanged: {
-        if(contentLeft.item)
+        if (contentLeft.item)
             loadView();
     }
 

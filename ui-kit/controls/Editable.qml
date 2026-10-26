@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.TextField {
     id: control
 
@@ -45,8 +44,12 @@ T.TextField {
             contextMenu.showContextMenu(event.x, event.y);
         }
     }
-    onReleased: (event) => { onMenuToggled(event); }
-    onPressAndHold: (event) => { onMenuToggled(event); }
+    onReleased: event => {
+        onMenuToggled(event);
+    }
+    onPressAndHold: event => {
+        onMenuToggled(event);
+    }
 
     function closeEvent(event) {
         if (event)
@@ -55,7 +58,13 @@ T.TextField {
         control.accepted();
     }
 
-    Keys.onReturnPressed: function(event) { closeEvent(event); }
-    Keys.onEnterPressed:  function(event) { closeEvent(event); }
-    Keys.onEscapePressed: function(event) { closeEvent(event); }
+    Keys.onReturnPressed: function (event) {
+        closeEvent(event);
+    }
+    Keys.onEnterPressed: function (event) {
+        closeEvent(event);
+    }
+    Keys.onEscapePressed: function (event) {
+        closeEvent(event);
+    }
 }

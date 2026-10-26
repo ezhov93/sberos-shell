@@ -66,7 +66,7 @@ Rectangle {
                     color: ST.Theme.Palette.Background.Inverse.Basic
                 }
 
-                onPressed: (mouse) => {
+                onPressed: mouse => {
                     if (mouse.button === Qt.RightButton) {
                         mouse.accepted = true;
                     } else if (mouse.button === Qt.LeftButton && mouse.accepted) {
@@ -74,12 +74,16 @@ Rectangle {
                     }
                 }
 
-                onClicked: (mouse) => {
+                onClicked: mouse => {
                     if (mouse.button === Qt.RightButton) {
                         dbus.set("ShowWindowMenu", [
-                            {[TypesProvider.Int]: mouse.x},
-                            {[TypesProvider.Int]: mouse.y}
-                        ])
+                            {
+                                [TypesProvider.Int]: mouse.x
+                            },
+                            {
+                                [TypesProvider.Int]: mouse.y
+                            }
+                        ]);
                         mouse.accepted = true;
                     }
                 }
@@ -93,19 +97,31 @@ Rectangle {
                 if (!root.appWindow)
                     return;
 
-                const minBtn = buttonComponent.createObject(row, {"icon.name": "WindowMinimize", "visible": (root.controls & Settings.Minimize) !== 0, "focusPolicy": root.buttonsFocusPolicy});
-                minBtn.clicked.connect(function() {
+                const minBtn = buttonComponent.createObject(row, {
+                    "icon.name": "WindowMinimize",
+                    "visible": (root.controls & Settings.Minimize) !== 0,
+                    "focusPolicy": root.buttonsFocusPolicy
+                });
+                minBtn.clicked.connect(function () {
                     root.appWindow.visibility = Window.Minimized;
                 });
-                let maxBtn = buttonComponent.createObject(row, {"icon.name": "WindowMaximizeSimple", "visible": (root.controls & Settings.Maximize) !== 0,  "focusPolicy": root.buttonsFocusPolicy});
-                maxBtn.clicked.connect(function() {
+                let maxBtn = buttonComponent.createObject(row, {
+                    "icon.name": "WindowMaximizeSimple",
+                    "visible": (root.controls & Settings.Maximize) !== 0,
+                    "focusPolicy": root.buttonsFocusPolicy
+                });
+                maxBtn.clicked.connect(function () {
                     root.maximizeWindow();
                 });
-                root.appWindow.onVisibilityChanged.connect(function() {
+                root.appWindow.onVisibilityChanged.connect(function () {
                     root.setWindowMaximizeIcon(root.appWindow.visibility, maxBtn);
                 });
-                const closeBtn = buttonComponent.createObject(row, {"icon.name": "Close", "visible": (root.controls & Settings.Close) !== 0,  "focusPolicy": root.buttonsFocusPolicy});
-                closeBtn.clicked.connect(function() {
+                const closeBtn = buttonComponent.createObject(row, {
+                    "icon.name": "Close",
+                    "visible": (root.controls & Settings.Close) !== 0,
+                    "focusPolicy": root.buttonsFocusPolicy
+                });
+                closeBtn.clicked.connect(function () {
                     root.appWindow.close();
                 });
             }
@@ -169,10 +185,25 @@ Rectangle {
         const vResizeable = root.appWindow.minimumHeight !== root.appWindow.maximumHeight;
         const hResizeable = root.appWindow.minimumWidth !== root.appWindow.maximumWidth;
 
-        resizeComponent.createObject(headArea, {"height": root.resizeBorderWidth, "resizeable": vResizeable});
-        resizeComponent.createObject(root.appWindow, {"height": root.resizeBorderWidth, "edge": Qt.BottomEdge, "resizeable": vResizeable});
-        resizeComponent.createObject(root.appWindow, {"width": root.resizeBorderWidth, "edge": Qt.LeftEdge, "resizeable": hResizeable});
-        resizeComponent.createObject(root.appWindow, {"width": root.resizeBorderWidth, "edge": Qt.RightEdge, "resizeable": hResizeable});
+        resizeComponent.createObject(headArea, {
+            "height": root.resizeBorderWidth,
+            "resizeable": vResizeable
+        });
+        resizeComponent.createObject(root.appWindow, {
+            "height": root.resizeBorderWidth,
+            "edge": Qt.BottomEdge,
+            "resizeable": vResizeable
+        });
+        resizeComponent.createObject(root.appWindow, {
+            "width": root.resizeBorderWidth,
+            "edge": Qt.LeftEdge,
+            "resizeable": hResizeable
+        });
+        resizeComponent.createObject(root.appWindow, {
+            "width": root.resizeBorderWidth,
+            "edge": Qt.RightEdge,
+            "resizeable": hResizeable
+        });
     }
 
     function maximizeWindow() {
@@ -182,7 +213,7 @@ Rectangle {
         if (root.appWindow.visibility === Window.Maximized)
             root.appWindow.visibility = Window.AutomaticVisibility;
         else
-           root.appWindow.visibility = Window.Maximized;
+            root.appWindow.visibility = Window.Maximized;
     }
 
     function setWindowMaximizeIcon(wVisibility, btn) {
@@ -193,10 +224,6 @@ Rectangle {
     }
 
     function getRadiusValue() {
-        return Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.Xxs ? ST.Theme.Sizes.BorderRadius.Xxs :
-               Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.Xs  ? ST.Theme.Sizes.BorderRadius.Xs :
-               Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.S   ? ST.Theme.Sizes.BorderRadius.S :
-               Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.M   ? ST.Theme.Sizes.BorderRadius.M :
-               ST.Theme.Sizes.BorderRadius.L
+        return Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.Xxs ? ST.Theme.Sizes.BorderRadius.Xxs : Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.Xs ? ST.Theme.Sizes.BorderRadius.Xs : Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.S ? ST.Theme.Sizes.BorderRadius.S : Core.Settings.LineHeight <= ST.Theme.Sizes.LineHeight.M ? ST.Theme.Sizes.BorderRadius.M : ST.Theme.Sizes.BorderRadius.L;
     }
 }

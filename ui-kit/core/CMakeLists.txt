@@ -27,6 +27,7 @@ qt6_add_qml_module(${PLUGIN_NAME}
 
 target_include_directories(${PLUGIN_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/cmake>
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/utils>
 )
 target_link_libraries(${PLUGIN_NAME} PRIVATE

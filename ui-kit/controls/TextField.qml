@@ -8,7 +8,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.TextField {
     id: control
 
@@ -31,14 +30,12 @@ T.TextField {
     property int requiredPlacement: Widget.Left
     property int textLimit: 0
 
-    property int verticalSpacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 :
-                                  lineHeight <= Theme.Sizes.LineHeight.M ? 10 :
-                                                                           12
+    property int verticalSpacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 : lineHeight <= Theme.Sizes.LineHeight.M ? 10 : 12
     property int horizontalSpacing: 6
     property alias lineHeight: backgroundConfig.lineHeight
     property alias radius: bg.radius
     property alias border: bg.border
-    
+
     property alias centerBackgroundColor: bg.color
 
     opacity: enabled ? 1 : 0.4
@@ -59,7 +56,7 @@ T.TextField {
         backgroundType: Widget.Outline
     }
     property Colorizer colorizer: Colorizer {
-        id: colorizer        
+        id: colorizer
         defaultColor: backgroundConfig.defaultColor
         hovered: control.enabled && control.hovered
         hoverColor: backgroundConfig.hoverColor
@@ -133,22 +130,15 @@ T.TextField {
     }
     Indicator {
         id: requiredIndicator
-        x: control.requiredPlacement == Widget.Left ?
-               label.visible ? label.x - width - 4:
-                                   bg.x :
-               label.visible ? label.x + label.width + 4 :
-                                   bg.x + bg.width - width
-        y: label.visible ? label.y + 4 :
-                               bg.y
+        x: control.requiredPlacement == Widget.Left ? label.visible ? label.x - width - 4 : bg.x : label.visible ? label.x + label.width + 4 : bg.x + bg.width - width
+        y: label.visible ? label.y + 4 : bg.y
         status: Widget.Error
         visible: false
         lineHeight: Theme.Sizes.LineHeight.S
     }
 
     // Bottom
-    bottomInset: caption.visible || counter.visible ?
-                     Math.max(caption.implicitHeight, counter.implicitHeight) + verticalSpacing :
-                     0
+    bottomInset: caption.visible || counter.visible ? Math.max(caption.implicitHeight, counter.implicitHeight) + verticalSpacing : 0
     Label {
         id: caption
         visible: caption.text != ""
@@ -170,17 +160,16 @@ T.TextField {
         lineHeight: control.lineHeight
     }
 
-
-    onTextChanged: (text) => {
+    onTextChanged: text => {
         if (control.textLimit) {
-            control.status = control.text.length > control.textLimit ?
-                             Widget.Error :
-                             Widget.None;
+            control.status = control.text.length > control.textLimit ? Widget.Error : Widget.None;
         }
     }
 
     cursorDelegate: CursorDelegate {}
-    property FocusItem focusItem: FocusItem { parent: control }
+    property FocusItem focusItem: FocusItem {
+        parent: control
+    }
     property Menu contextMenu
     Component {
         id: defaultMenu
@@ -188,23 +177,38 @@ T.TextField {
     }
     function onMenuToggled(event) {
         if (!control.contextMenu) {
-            contextMenu = defaultMenu.createObject(control)
+            contextMenu = defaultMenu.createObject(control);
         }
         if (event.button == Qt.RightButton) {
-            control.contextMenu.showContextMenu(event.x, event.y);
+            var menu = control.contextMenu;
+            var showContextMenu = menu["showContextMenu"];
+            if (typeof showContextMenu === "function")
+                showContextMenu.call(menu, event.x, event.y);
+            else
+                menu.popup(event.x, event.y);
         }
     }
-    onReleased: (event) => { onMenuToggled(event); }
-    onPressAndHold: (event) => { onMenuToggled(event); }
+    onReleased: event => {
+        onMenuToggled(event);
+    }
+    onPressAndHold: event => {
+        onMenuToggled(event);
+    }
 
     function closeEvent(event) {
         if (event)
-            event.accept = true;
+            event.accepted = true;
         control.focus = false;
         control.accepted();
     }
 
-    Keys.onReturnPressed: function(event) { closeEvent(event); }
-    Keys.onEnterPressed:  function(event) { closeEvent(event); }
-    Keys.onEscapePressed: function(event) { closeEvent(event); }
+    Keys.onReturnPressed: function (event) {
+        closeEvent(event);
+    }
+    Keys.onEnterPressed: function (event) {
+        closeEvent(event);
+    }
+    Keys.onEscapePressed: function (event) {
+        closeEvent(event);
+    }
 }

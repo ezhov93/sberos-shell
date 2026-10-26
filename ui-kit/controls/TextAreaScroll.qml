@@ -4,7 +4,6 @@ import QtQuick.Controls
 import Sber.Controls
 import Sber.Theme
 
-
 ScrollView {
     id: sv
 

@@ -4,7 +4,6 @@ import QtQuick.Controls
 import Sber.Controls
 import Sber.Theme
 
-
 Rectangle {
     id: cursor
 
@@ -15,8 +14,8 @@ Rectangle {
     Connections {
         target: cursor.parent
         function onCursorPositionChanged() {
-            cursor.opacity = 1
-            timer.restart()
+            cursor.opacity = 1;
+            timer.restart();
         }
     }
 

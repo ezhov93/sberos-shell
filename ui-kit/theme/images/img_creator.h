@@ -8,6 +8,6 @@ class Image;
 
 class ImgCreator {
 public:
-  virtual ~ImgCreator() = default;
-  virtual QImage GetImage(const Image& svg) const = 0;
+    virtual ~ImgCreator() = default;
+    virtual QImage GetImage(const Image &svg) const = 0;
 };

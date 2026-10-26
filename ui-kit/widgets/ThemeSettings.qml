@@ -5,7 +5,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 GridLayout {
     property bool reloadVisible: false
     property bool modeVisible: true
@@ -16,7 +15,7 @@ GridLayout {
 
     Label {
         visible: reloadVisible
-        text: qsTr("Theme");
+        text: qsTr("Theme")
     }
     IconButton {
         visible: reloadVisible
@@ -28,7 +27,7 @@ GridLayout {
 
     Label {
         visible: modeVisible
-        text: qsTr("Mode");
+        text: qsTr("Mode")
     }
     ComboBox {
         visible: modeVisible
@@ -37,9 +36,18 @@ GridLayout {
             Core.Settings.setThemeMode(currentValue);
         }
         Component.onCompleted: {
-            model.append({"text": qsTr("Light"), "value": Settings.Light})
-            model.append({"text": qsTr("Dark"), "value": Settings.Dark})
-            model.append({"text": qsTr("System"), "value": Settings.System})
+            model.append({
+                "text": qsTr("Light"),
+                "value": Settings.Light
+            });
+            model.append({
+                "text": qsTr("Dark"),
+                "value": Settings.Dark
+            });
+            model.append({
+                "text": qsTr("System"),
+                "value": Settings.System
+            });
             for (let i = 0; i < model.count; i++) {
                 if (valueAt(i) === Core.Settings.getThemeMode()) {
                     currentIndex = i;
@@ -52,7 +60,7 @@ GridLayout {
 
     Label {
         visible: heightVisible
-        text: qsTr("Size");
+        text: qsTr("Size")
     }
     ComboBox {
         visible: heightVisible
@@ -62,10 +70,22 @@ GridLayout {
                 Core.Settings.LineHeight = currentValue;
         }
         Component.onCompleted: {
-            model.append({"text": ("Xs"), "value": Theme.Sizes.LineHeight.Xs})
-            model.append({"text": ("S"), "value": Theme.Sizes.LineHeight.S})
-            model.append({"text": ("M"), "value": Theme.Sizes.LineHeight.M})
-            model.append({"text": ("L"), "value": Theme.Sizes.LineHeight.L})
+            model.append({
+                "text": ("Xs"),
+                "value": Theme.Sizes.LineHeight.Xs
+            });
+            model.append({
+                "text": ("S"),
+                "value": Theme.Sizes.LineHeight.S
+            });
+            model.append({
+                "text": ("M"),
+                "value": Theme.Sizes.LineHeight.M
+            });
+            model.append({
+                "text": ("L"),
+                "value": Theme.Sizes.LineHeight.L
+            });
 
             for (let i = 0; i < model.count; i++) {
                 if (valueAt(i) === Core.Settings.LineHeight) {

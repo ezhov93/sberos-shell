@@ -3,13 +3,10 @@ import QtQuick
 import Sber.Controls
 import Sber.Theme
 
-
 Rectangle {
     id: control
 
-    property QtObject target: parent.handle ? parent.handle :
-                              parent.indicator ? parent.indicator :
-                              parent.background
+    property QtObject target: parent.handle ? parent.handle : parent.indicator ? parent.indicator : parent.background
 
     property int margin: 4
     property int delta: margin + border.width / 2

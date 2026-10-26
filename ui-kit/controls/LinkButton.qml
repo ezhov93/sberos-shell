@@ -6,7 +6,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Button {
     id: control
     implicitWidth: contentItem.width

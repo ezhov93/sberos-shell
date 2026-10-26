@@ -8,7 +8,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.Control {
     id: control
 
@@ -74,9 +73,7 @@ T.Control {
         visible: control.status != Widget.None
         z: 2
 
-        color: control.status === Widget.Online ? Theme.Palette.Surface.Default.Positive :
-               control.status === Widget.Afk    ? Theme.Palette.Surface.Default.Warning :
-                                                  Theme.Palette.Surface.Default.Negative
+        color: control.status === Widget.Online ? Theme.Palette.Surface.Default.Positive : control.status === Widget.Afk ? Theme.Palette.Surface.Default.Warning : Theme.Palette.Surface.Default.Negative
         border.color: Theme.Palette.Background.Default.Primary
         border.width: 2
     }

@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.MenuItem {
     id: control
 
@@ -16,25 +15,12 @@ T.MenuItem {
     property int checkState: Qt.Unchecked
     property bool highlight: true
 
-    implicitWidth: Math.max(contentItem.implicitWidth + leftPadding + rightPadding +
-                            (arrow.visible ? arrow.width + spacing : 0),
-                            ListView.view.width)
+    implicitWidth: Math.max(contentItem.implicitWidth + leftPadding + rightPadding + (arrow.visible ? arrow.width + spacing : 0), ListView.view.width)
     implicitHeight: contentItem.implicitHeight + topPadding + bottomPadding
 
     property bool tight: false
-    verticalPadding: tight ?
-                         lineHeight <= Theme.Sizes.LineHeight.Xs ? 5 :
-                         lineHeight <= Theme.Sizes.LineHeight.S  ? 7 :
-                         lineHeight <= Theme.Sizes.LineHeight.M  ? 10 :
-                                                                   13 :
-                         lineHeight <= Theme.Sizes.LineHeight.Xs ? 9 :
-                         lineHeight <= Theme.Sizes.LineHeight.S  ? 11 :
-                         lineHeight <= Theme.Sizes.LineHeight.M  ? 14 :
-                                                                   17
-    horizontalPadding: lineHeight <= Theme.Sizes.LineHeight.Xs ? 8 :
-                       lineHeight <= Theme.Sizes.LineHeight.S  ? 12 :
-                       lineHeight <= Theme.Sizes.LineHeight.M  ? 14 :
-                                                                 16
+    verticalPadding: tight ? lineHeight <= Theme.Sizes.LineHeight.Xs ? 5 : lineHeight <= Theme.Sizes.LineHeight.S ? 7 : lineHeight <= Theme.Sizes.LineHeight.M ? 10 : 13 : lineHeight <= Theme.Sizes.LineHeight.Xs ? 9 : lineHeight <= Theme.Sizes.LineHeight.S ? 11 : lineHeight <= Theme.Sizes.LineHeight.M ? 14 : 17
+    horizontalPadding: lineHeight <= Theme.Sizes.LineHeight.Xs ? 8 : lineHeight <= Theme.Sizes.LineHeight.S ? 12 : lineHeight <= Theme.Sizes.LineHeight.M ? 14 : 16
     leftPadding: horizontalPadding + (indicator.visible ? indicator.width + spacing : 0)
     rightPadding: horizontalPadding
     topPadding: verticalPadding
@@ -58,28 +44,18 @@ T.MenuItem {
         height: size
         opacity: name != "" ? 1 : 0
 
-        name: control.checkable ?
-                  control.checkState == Qt.Checked ? "DoneSquareFill" :
-                  control.checkState == Qt.PartiallyChecked ? "MinusSquareFill" :
-                  "SquareOutline" :
-              control.highlight && control.highlighted ?
-                  "Done" :
-              ""
+        name: control.checkable ? control.checkState == Qt.Checked ? "DoneSquareFill" : control.checkState == Qt.PartiallyChecked ? "MinusSquareFill" : "SquareOutline" : control.highlight && control.highlighted ? "Done" : ""
 
         lineHeight: control.lineHeight
-        size: control.lineHeight <= Theme.Sizes.LineHeight.S ? 22 :
-              control.lineHeight == Theme.Sizes.LineHeight.M ? 26 :
-                                                               30
+        size: control.lineHeight <= Theme.Sizes.LineHeight.S ? 22 : control.lineHeight == Theme.Sizes.LineHeight.M ? 26 : 30
         color: control.checkable ? colorizerIcon.currentColor : Theme.Palette.Surface.Default.Accent
 
         Colorizer {
             id: colorizerIcon
-            defaultColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.Accent :
-                                                               Theme.Palette.Text.Default.Secondary
+            defaultColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.Accent : Theme.Palette.Text.Default.Secondary
 
             hovered: control.enabled && control.hovered
-            hoverColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.AccentHover :
-                                                             Theme.Palette.Text.Default.Secondary
+            hoverColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.AccentHover : Theme.Palette.Text.Default.Secondary
             activated: control.checkState != Qt.Unchecked
             activeColor: Theme.Palette.Surface.Default.Accent
         }
@@ -87,8 +63,7 @@ T.MenuItem {
 
     contentItem: Item {
         implicitWidth: Math.max(textLabel.width, captionLabel.width)
-        implicitHeight: textLabel.height +
-                        (captionLabel.visible ? captionLabel.height + captionLabel.anchors.topMargin : 0)
+        implicitHeight: textLabel.height + (captionLabel.visible ? captionLabel.height + captionLabel.anchors.topMargin : 0)
         IconLabel {
             id: textLabel
             anchors.top: parent.top
@@ -125,7 +100,7 @@ T.MenuItem {
         acceptedButtons: control.checkable ? Qt.LeftButton : Qt.NoButton
         onClicked: control.triggered()
     }
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (checkable && event.key == Qt.Key_Space) {
             control.triggered();
             event.accepted = true;

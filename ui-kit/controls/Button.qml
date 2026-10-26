@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.Button {
     id: control
 
@@ -69,8 +68,7 @@ T.Button {
             id: controlText
             anchors.centerIn: parent
             visible: !loadingIndicator.visible
-            opacity: (control.backgroundType != Widget.Solid || control.type == Widget.Secondary || control.type == Widget.White)
-                     && !control.enabled ? 0.4 : 1
+            opacity: (control.backgroundType != Widget.Solid || control.type == Widget.Secondary || control.type == Widget.White) && !control.enabled ? 0.4 : 1
             text: control.text
             status: control.status
             type: control.type
@@ -87,7 +85,7 @@ T.Button {
                 hovered: control.enabled && control.hovered
                 hoverColor: controlText.textConfig.hoverColor
                 activated: control.pressed
-                activeColor:  controlText.textConfig.activeColor
+                activeColor: controlText.textConfig.activeColor
             }
         }
     }
@@ -100,34 +98,17 @@ T.Button {
         border.color: control.backgroundType == Widget.Outline ? textColorizer.currentColor : "transparent"
         opacity: control.enabled ? 1 : 0.4
         visible: control.backgroundType != Widget.Clear
-        topLeftRadius: control.topLeftRadius !== -1  ? control.topLeftRadius :
-                       control.radius !== -1 ? control.radius :
-                       control.leftCornersType == Widget.Flat   ? 0 :
-                       control.leftCornersType == Widget.Square ? backgroundConfig.radius :
-                                                                  height / 2;
-        bottomLeftRadius: control.bottomLeftRadius !== -1 ? control.bottomLeftRadius :
-                          control.radius !== -1 ? control.radius :
-                          control.leftCornersType == Widget.Flat   ? 0 :
-                          control.leftCornersType == Widget.Square ? backgroundConfig.radius :
-                                                                      height / 2;
-        topRightRadius: control.topRightRadius !== -1 ? control.topRightRadius :
-                        control.radius !== -1 ? control.radius :
-                        control.rightCornersType == Widget.Flat   ? 0 :
-                        control.rightCornersType == Widget.Square ? backgroundConfig.radius :
-                                                                    height / 2;
-        bottomRightRadius: control.bottomRightRadius !== -1 ? control.bottomRightRadius :
-                           control.radius !== -1 ? control.radius :
-                           control.rightCornersType == Widget.Flat   ? 0 :
-                           control.rightCornersType == Widget.Square ? backgroundConfig.radius :
-                                                                       height / 2;
+        topLeftRadius: control.topLeftRadius !== -1 ? control.topLeftRadius : control.radius !== -1 ? control.radius : control.leftCornersType == Widget.Flat ? 0 : control.leftCornersType == Widget.Square ? backgroundConfig.radius : height / 2
+        bottomLeftRadius: control.bottomLeftRadius !== -1 ? control.bottomLeftRadius : control.radius !== -1 ? control.radius : control.leftCornersType == Widget.Flat ? 0 : control.leftCornersType == Widget.Square ? backgroundConfig.radius : height / 2
+        topRightRadius: control.topRightRadius !== -1 ? control.topRightRadius : control.radius !== -1 ? control.radius : control.rightCornersType == Widget.Flat ? 0 : control.rightCornersType == Widget.Square ? backgroundConfig.radius : height / 2
+        bottomRightRadius: control.bottomRightRadius !== -1 ? control.bottomRightRadius : control.radius !== -1 ? control.radius : control.rightCornersType == Widget.Flat ? 0 : control.rightCornersType == Widget.Square ? backgroundConfig.radius : height / 2
     }
 
     FocusItem {}
 
     onClicked: {
         try {
-            Core.ClickTracker.registerClick(control)
-        }
-        catch(e) { }
+            Core.ClickTracker.registerClick(control);
+        } catch (e) {}
     }
 }

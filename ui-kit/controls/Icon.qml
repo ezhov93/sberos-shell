@@ -5,7 +5,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: control
     property int lineHeight: Core.Settings.LineHeight
@@ -23,8 +22,7 @@ Item {
     Image {
         id: image
         anchors.fill: parent
-        source: control.name   != "" ? `image://${control.imageProvider}/${control.name}/${control.color}` :
-                control.source != "" ? control.source : ""
+        source: control.name != "" ? `image://${control.imageProvider}/${control.name}/${control.color}` : control.source != "" ? control.source : ""
 
         sourceSize.width: width
         sourceSize.height: height

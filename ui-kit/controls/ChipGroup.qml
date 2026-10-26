@@ -4,7 +4,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: chipGroup
     property list<Chip> chips: []
@@ -35,7 +34,7 @@ Item {
 
     function remove(idx: string) {
         var removed = false;
-        for (var i = 0; i < chips.length;) {
+        for (var i = 0; i < chips.length; ) {
             if (chips[i].idx == idx) {
                 chips[i].destroy();
                 internal.removeItem(i);
@@ -49,7 +48,7 @@ Item {
     }
     function removeByText(text: string) {
         var arr = [];
-        for (var i = 0; i < chips.length;) {
+        for (var i = 0; i < chips.length; ) {
             if (chips[i].text == text) {
                 arr.push(chips[i].idx);
                 chips[i].destroy();
@@ -145,6 +144,6 @@ Item {
         internal.updateProperties();
         internal.updateChipsPosition();
     }
-    onTypeChanged: internal.updateProperties();
-    onCircleChanged: internal.updateProperties();
+    onTypeChanged: internal.updateProperties()
+    onCircleChanged: internal.updateProperties()
 }

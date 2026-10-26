@@ -3,20 +3,17 @@ import QtQuick.Controls
 
 import Sber.Controls
 
-
 Menu {
     id: contextMenu
 
     Action {
         text: qsTr("Copy")
-        enabled: contextMenu.parent.selectionStart >= 0 &&
-                 contextMenu.parent.selectionStart != contextMenu.parent.selectionEnd
+        enabled: contextMenu.parent.selectionStart >= 0 && contextMenu.parent.selectionStart != contextMenu.parent.selectionEnd
         onTriggered: contextMenu.parent.copy()
     }
     Action {
         text: qsTr("Cut")
-        enabled: contextMenu.parent.selectionStart >= 0 &&
-                 contextMenu.parent.selectionStart != contextMenu.parent.selectionEnd
+        enabled: contextMenu.parent.selectionStart >= 0 && contextMenu.parent.selectionStart != contextMenu.parent.selectionEnd
         onTriggered: contextMenu.parent.cut()
     }
     Action {

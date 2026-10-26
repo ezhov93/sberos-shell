@@ -36,7 +36,7 @@ Rectangle {
         interval: 10000
         running: !closable
         repeat: false
-        onTriggered: destroyAnimation.start();
+        onTriggered: destroyAnimation.start()
     }
 
     RowLayout {
@@ -80,7 +80,7 @@ Rectangle {
             icon.name: "Close"
             iconItem.color: Theme.Palette.Text.Inverse.Primary
             visible: false
-            onReleased: destroyAnimation.start();
+            onReleased: destroyAnimation.start()
         }
     }
 
@@ -114,4 +114,3 @@ Rectangle {
         }
     }
 }
-

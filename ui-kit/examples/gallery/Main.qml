@@ -18,45 +18,98 @@ QQC.ApplicationWindow {
     color: Theme.Palette.Background.Default.Primary
 
     Component.onCompleted: {
-        Core.Settings.LineHeight = 40
-        Core.Settings.setThemeMode(darkTheme ? Settings.Dark : Settings.Light)
+        Core.Settings.LineHeight = 40;
+        Core.Settings.setThemeMode(darkTheme ? Settings.Dark : Settings.Light);
     }
 
     ListModel {
         id: optionsModel
-        ListElement { text: "Профиль"; value: "profile" }
-        ListElement { text: "Уведомления"; value: "notifications" }
-        ListElement { text: "Безопасность"; value: "security" }
+        ListElement {
+            text: "Профиль"
+            value: "profile"
+        }
+        ListElement {
+            text: "Уведомления"
+            value: "notifications"
+        }
+        ListElement {
+            text: "Безопасность"
+            value: "security"
+        }
     }
 
     ListModel {
         id: componentModel
-        ListElement { name: "Button" }
-        ListElement { name: "Accordion" }
-        ListElement { name: "CalendarView" }
-        ListElement { name: "CheckBox" }
-        ListElement { name: "Chip" }
-        ListElement { name: "ChipGroup" }
-        ListElement { name: "ComboBox" }
-        ListElement { name: "DateEdit" }
-        ListElement { name: "DateRangeEdit" }
-        ListElement { name: "IconButton" }
-        ListElement { name: "LinkButton" }
-        ListElement { name: "NumberInput" }
-        ListElement { name: "Pagination" }
-        ListElement { name: "RadioButton" }
-        ListElement { name: "Slider" }
-        ListElement { name: "SpinBox" }
-        ListElement { name: "Steps" }
-        ListElement { name: "Switch" }
-        ListElement { name: "TabBar" }
-        ListElement { name: "TextArea" }
-        ListElement { name: "TextField" }
-        ListElement { name: "TimePicker" }
+        ListElement {
+            name: "Button"
+        }
+        ListElement {
+            name: "Accordion"
+        }
+        ListElement {
+            name: "CalendarView"
+        }
+        ListElement {
+            name: "CheckBox"
+        }
+        ListElement {
+            name: "Chip"
+        }
+        ListElement {
+            name: "ChipGroup"
+        }
+        ListElement {
+            name: "ComboBox"
+        }
+        ListElement {
+            name: "DateEdit"
+        }
+        ListElement {
+            name: "DateRangeEdit"
+        }
+        ListElement {
+            name: "IconButton"
+        }
+        ListElement {
+            name: "LinkButton"
+        }
+        ListElement {
+            name: "NumberInput"
+        }
+        ListElement {
+            name: "Pagination"
+        }
+        ListElement {
+            name: "RadioButton"
+        }
+        ListElement {
+            name: "Slider"
+        }
+        ListElement {
+            name: "SpinBox"
+        }
+        ListElement {
+            name: "Steps"
+        }
+        ListElement {
+            name: "Switch"
+        }
+        ListElement {
+            name: "TabBar"
+        }
+        ListElement {
+            name: "TextArea"
+        }
+        ListElement {
+            name: "TextField"
+        }
+        ListElement {
+            name: "TimePicker"
+        }
     }
 
     function openComponent(name) {
-        activeComponent = name
+        activeComponent = name;
     }
 
     RowLayout {
@@ -86,8 +139,8 @@ QQC.ApplicationWindow {
                     text: window.darkTheme ? qsTr("Светлая тема") : qsTr("Тёмная тема")
                     type: Sber.Widget.Secondary
                     onClicked: {
-                        window.darkTheme = !window.darkTheme
-                        Core.Settings.setThemeMode(window.darkTheme ? Settings.Dark : Settings.Light)
+                        window.darkTheme = !window.darkTheme;
+                        Core.Settings.setThemeMode(window.darkTheme ? Settings.Dark : Settings.Light);
                     }
                 }
             }

@@ -6,7 +6,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: control
 
@@ -30,15 +29,14 @@ Item {
     property alias captionColor: captionLabel.color
     property alias captionFont: captionLabel.font
     property alias icon: icon
-    property alias required: requiredIndicator.visible;
+    property alias required: requiredIndicator.visible
     property int requiredPlacement: Widget.Left
     property alias type: button.type
     property alias backgroundType: button.backgroundType
     opacity: enabled ? 1 : 0.4
 
     implicitWidth: Math.max(button.implicitWidth, titleRow.implicitWidth, captionLabel.implicitWidth)
-    implicitHeight: titleRow.implicitHeight + button.anchors.topMargin + button.implicitHeight +
-                    (captionLabel.text != "" ? captionLabel.height + 5 : 0)
+    implicitHeight: titleRow.implicitHeight + button.anchors.topMargin + button.implicitHeight + (captionLabel.text != "" ? captionLabel.height + 5 : 0)
     width: implicitWidth
     height: implicitHeight
 
@@ -68,11 +66,7 @@ Item {
     Button {
         id: button
         anchors.top: titleRow.bottom
-        anchors.topMargin: titleRow.implicitHeight == 0 ? 0 :
-                           control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 6 :
-                           control.lineHeight <= Theme.Sizes.LineHeight.M  ? 8 :
-                           control.lineHeight <= Theme.Sizes.LineHeight.L  ? 10 :
-                                                                             12
+        anchors.topMargin: titleRow.implicitHeight == 0 ? 0 : control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 6 : control.lineHeight <= Theme.Sizes.LineHeight.M ? 8 : control.lineHeight <= Theme.Sizes.LineHeight.L ? 10 : 12
         text: qsTr("Upload file")
         onReleased: {
             fileDialog.visible = true;
@@ -101,16 +95,10 @@ Item {
 
     Indicator {
         id: requiredIndicator
-        x: control.requiredPlacement == Widget.Left ?
-               titleRow.implicitHeight != 0 ? -width - 4 :
-                                              0 :
-               titleRow.implicitHeight != 0 ? titleRow.width + 4 :
-                                              button.width - requiredIndicator.width
-        y: titleRow.implicitHeight != 0 ? titleRow.y + 4 :
-                                          button.y
+        x: control.requiredPlacement == Widget.Left ? titleRow.implicitHeight != 0 ? -width - 4 : 0 : titleRow.implicitHeight != 0 ? titleRow.width + 4 : button.width - requiredIndicator.width
+        y: titleRow.implicitHeight != 0 ? titleRow.y + 4 : button.y
         status: Widget.Error
         visible: false
         lineHeight: Theme.Sizes.LineHeight.S
     }
 }
-

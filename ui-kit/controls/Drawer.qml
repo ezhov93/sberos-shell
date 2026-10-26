@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.Drawer {
     id: control
     modal: true
@@ -33,8 +32,16 @@ T.Drawer {
     T.Overlay.modal: DefaultOverlay {}
     T.Overlay.modeless: DefaultOverlay {}
 
-    enter: Transition { SmoothedAnimation { velocity: 5 } }
-    exit: Transition { SmoothedAnimation { velocity: 5 } }
+    enter: Transition {
+        SmoothedAnimation {
+            velocity: 5
+        }
+    }
+    exit: Transition {
+        SmoothedAnimation {
+            velocity: 5
+        }
+    }
 
     background: Item {
         z: contentItem.z
@@ -66,7 +73,7 @@ T.Drawer {
             backgroundType: Widget.Clear
             iconItem.name: "Close"
             iconItem.size: 24
-            onReleased: control.close();
+            onReleased: control.close()
         }
     }
 }

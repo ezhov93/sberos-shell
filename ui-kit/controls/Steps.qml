@@ -5,7 +5,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 RowLayout {
     id: control
     property int lineHeight: Core.Settings.LineHeight
@@ -16,14 +15,14 @@ RowLayout {
 
     spacing: lineHeight
 
-    onChildrenChanged: updateItems();
-    onLineHeightChanged: updateItems();
+    onChildrenChanged: updateItems()
+    onLineHeightChanged: updateItems()
     function updateItems() {
         for (var i = 0; i < control.data.length; i++) {
             var step = control.data[i];
             step.lineHeight = control.lineHeight;
             step.index = i;
-            step.rightStep = i + 1 < control.data.length ? control.data[i + 1] : undefined
+            step.rightStep = i + 1 < control.data.length ? control.data[i + 1] : undefined;
         }
     }
 

@@ -6,7 +6,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Control {
     id: control
     objectName: "Range"
@@ -46,17 +45,24 @@ Control {
     spacing: 6
     implicitHeight: inputFrom.implicitHeight
     height: implicitHeight
-    implicitWidth: Math.max(150, inputFrom.implicitWidth, inputTo.implicitWidth) * 2 +
-                   (icon.visible ? icon.implicitWidth + spacing * 2 : 0)
+    implicitWidth: Math.max(150, inputFrom.implicitWidth, inputTo.implicitWidth) * 2 + (icon.visible ? icon.implicitWidth + spacing * 2 : 0)
     width: implicitWidth
 
-    function valueFrom() { return inputFrom.value(); }
-    function setValueFrom(value) { return inputFrom.setValue(value); }
-    signal valueFromChanged(real value);
+    function valueFrom() {
+        return inputFrom.value();
+    }
+    function setValueFrom(value) {
+        return inputFrom.setValue(value);
+    }
+    signal valueFromChanged(real value)
 
-    function valueTo() { return inputTo.value(); }
-    function setValueTo(value) { return inputTo.setValue(value); }
-    signal valueToChanged(real value);
+    function valueTo() {
+        return inputTo.value();
+    }
+    function setValueTo(value) {
+        return inputTo.setValue(value);
+    }
+    signal valueToChanged(real value)
 
     property BackgroundConfig backgroundConfig: BackgroundConfig {
         id: backgroundConfig
@@ -88,8 +94,7 @@ Control {
     }
 
     FocusItem {
-        visible: inputFrom.focus && (inputFrom.focusReason == Qt.TabFocus || inputFrom.focusReason == Qt.BacktabFocusReason) ||
-                 inputTo.focus && (inputTo.focusReason == Qt.TabFocus || inputTo.focusReason == Qt.BacktabFocusReason)
+        visible: inputFrom.focus && (inputFrom.focusReason == Qt.TabFocus || inputFrom.focusReason == Qt.BacktabFocusReason) || inputTo.focus && (inputTo.focusReason == Qt.TabFocus || inputTo.focusReason == Qt.BacktabFocusReason)
     }
 
     NumberInput {
@@ -101,7 +106,9 @@ Control {
         anchors.bottom: parent.bottom
         lineHeight: control.lineHeight
         locale: control.locale
-        onValueChanged: (v) => { control.valueFromChanged(v) }
+        onValueChanged: v => {
+            control.valueFromChanged(v);
+        }
         to: inputTo.to
         background.visible: false
         z: 100
@@ -111,9 +118,7 @@ Control {
     Icon {
         id: icon
         anchors.centerIn: bg
-        name: control.delimiter == Widget.Arrow ? "ArrowRight" :
-              control.delimiter == Widget.Minus ? "Minus" :
-                                                  ""
+        name: control.delimiter == Widget.Arrow ? "ArrowRight" : control.delimiter == Widget.Minus ? "Minus" : ""
         size: 24
         visible: control.delimiter != Widget.NoDelimiter
         opacity: enabled ? 1 : 0.4
@@ -128,7 +133,9 @@ Control {
         lineHeight: control.lineHeight
         font: inputFrom.font
         locale: control.locale
-        onValueChanged: (v) => { control.valueToChanged(v) }
+        onValueChanged: v => {
+            control.valueToChanged(v);
+        }
         from: inputFrom.from
 
         prefixText: inputFrom.prefixText

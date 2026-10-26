@@ -8,31 +8,31 @@
 #include <settings.h>
 
 class Core : public QObject {
-  Q_OBJECT
-  QML_SINGLETON
-  QML_ELEMENT
-  QML_UNCREATABLE("Core is for C++ instantiation only")
+    Q_OBJECT
+    QML_SINGLETON
+    QML_ELEMENT
+    QML_UNCREATABLE("Core is for C++ instantiation only")
 
 public:
-  Q_PROPERTY(Settings *Settings READ GetSettings CONSTANT)
-  Q_PROPERTY(Notifier *Notifier READ GetNotifier CONSTANT)
-  Q_PROPERTY(ClickTracker *ClickTracker READ GetClickTracker CONSTANT)
+    Q_PROPERTY(Settings *Settings READ GetSettings CONSTANT)
+    Q_PROPERTY(Notifier *Notifier READ GetNotifier CONSTANT)
+    Q_PROPERTY(ClickTracker *ClickTracker READ GetClickTracker CONSTANT)
 
 public:
-  static Core *Get();
-  static Settings *GetSettings();
-  static Notifier *GetNotifier();
-  static ClickTracker *GetClickTracker();
+    static Core *Get();
+    static Settings *GetSettings();
+    static Notifier *GetNotifier();
+    static ClickTracker *GetClickTracker();
 
 private:
-  Core();
-  ~Core() = default;
+    Core();
+    ~Core() = default;
 
-  void setTranslation();
+    void setTranslation();
 
-  Settings *SettingsInst;
-  Notifier *NotifierInst;
-  ClickTracker *ClickTrackerInst;
+    Settings *SettingsInst;
+    Notifier *NotifierInst;
+    ClickTracker *ClickTrackerInst;
 };
 Q_DECLARE_METATYPE(Core *)
 Q_DECLARE_METATYPE(Core)

@@ -2,7 +2,6 @@ import QtQuick
 
 import Sber.Theme
 
-
 Rectangle {
     property bool vertical: false
     implicitWidth: vertical ? 1 : parent.width

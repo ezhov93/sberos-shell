@@ -6,19 +6,12 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.Dialog {
     id: control
     modal: true
 
-    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
-                            contentWidth + leftPadding + rightPadding,
-                            implicitHeaderWidth,
-                            implicitFooterWidth)
-    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
-                             contentHeight + topPadding + bottomPadding
-                             + (implicitHeaderHeight > 0 ? implicitHeaderHeight + spacing : 0)
-                             + (implicitFooterHeight > 0 ? implicitFooterHeight + spacing : 0))
+    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset, contentWidth + leftPadding + rightPadding, implicitHeaderWidth, implicitFooterWidth)
+    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset, contentHeight + topPadding + bottomPadding + (implicitHeaderHeight > 0 ? implicitHeaderHeight + spacing : 0) + (implicitFooterHeight > 0 ? implicitFooterHeight + spacing : 0))
     padding: 20
     spacing: 20
 
@@ -27,9 +20,7 @@ T.Dialog {
     y: (Overlay.overlay.height - height) / 2
 
     property alias closeButtonVisible: closeButton.visible
-    closePolicy: closeButton.visible ?
-                     Popup.CloseOnEscape | Popup.CloseOnPressOutside :
-                     Popup.NoAutoClose
+    closePolicy: closeButton.visible ? Popup.CloseOnEscape | Popup.CloseOnPressOutside : Popup.NoAutoClose
 
     background: Item {
         z: contentItem.z
@@ -54,7 +45,7 @@ T.Dialog {
             backgroundType: Widget.Clear
             icon.name: "Close"
             iconItem.size: 24
-            onReleased: control.close();
+            onReleased: control.close()
         }
     }
 

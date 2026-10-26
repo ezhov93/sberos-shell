@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.ScrollView {
     id: sv
     leftPadding: 2

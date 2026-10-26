@@ -3,7 +3,6 @@ import QtQuick
 import Sber.Controls
 import Sber.Theme
 
-
 Badge {
     id: control
 

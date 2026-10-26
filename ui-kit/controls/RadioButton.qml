@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.RadioButton {
     id: control
 
@@ -21,19 +20,15 @@ T.RadioButton {
     implicitHeight: Math.max(indicator.height, textItem.implicitHeight)
     height: implicitHeight
 
-    spacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 :
-             lineHeight == Theme.Sizes.LineHeight.M ? 14 :
-                                                      18
+    spacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 : lineHeight == Theme.Sizes.LineHeight.M ? 14 : 18
     opacity: control.enabled ? 1 : 0.4
     focusPolicy: Qt.TabFocus
 
     Colorizer {
         id: colorizer
-        defaultColor: control.checked ? Theme.Palette.Surface.Default.Accent :
-                                        Theme.Palette.Text.Default.Secondary
+        defaultColor: control.checked ? Theme.Palette.Surface.Default.Accent : Theme.Palette.Text.Default.Secondary
         hovered: control.enabled && control.hovered
-        hoverColor: control.checked ? Theme.Palette.Surface.Default.AccentHover :
-                                      Theme.Palette.Text.Default.SecondaryHover
+        hoverColor: control.checked ? Theme.Palette.Surface.Default.AccentHover : Theme.Palette.Text.Default.SecondaryHover
     }
 
     contentItem: Item {
@@ -42,8 +37,7 @@ T.RadioButton {
         anchors.leftMargin: control.spacing
         anchors.top: parent.top
         implicitWidth: Math.max(textLabel.implicitWidth, captionLabel.implicitWidth)
-        implicitHeight: (textLabel.text ? textLabel.implicitHeight : 0) +
-                        (captionLabel.text ? captionLabel.implicitHeight + captionLabel.anchors.topMargin : 0)
+        implicitHeight: (textLabel.text ? textLabel.implicitHeight : 0) + (captionLabel.text ? captionLabel.implicitHeight + captionLabel.anchors.topMargin : 0)
 
         Label {
             id: textLabel
@@ -67,23 +61,18 @@ T.RadioButton {
         id: indicator
         anchors.top: control.top
         anchors.left: control.left
-        width: lineHeight <= Theme.Sizes.LineHeight.S ? 16 :
-               lineHeight == Theme.Sizes.LineHeight.M ? 20 :
-                                                        24
+        width: lineHeight <= Theme.Sizes.LineHeight.S ? 16 : lineHeight == Theme.Sizes.LineHeight.M ? 20 : 24
         height: width
         radius: width / 2
         border.color: colorizer.currentColor
         color: control.checked ? Theme.Palette.Background.Default.Primary : "transparent"
-        state: control.checked ? "checked" :
-                                 "unchecked"
+        state: control.checked ? "checked" : "unchecked"
         states: [
             State {
                 name: "checked"
                 PropertyChanges {
                     target: indicator
-                    border.width: lineHeight <= Theme.Sizes.LineHeight.S ? 3 :
-                                  lineHeight <= Theme.Sizes.LineHeight.M ? 4 :
-                                                                           6
+                    border.width: lineHeight <= Theme.Sizes.LineHeight.S ? 3 : lineHeight <= Theme.Sizes.LineHeight.M ? 4 : 6
                 }
             },
             State {

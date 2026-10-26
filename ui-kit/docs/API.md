@@ -1,6 +1,6 @@
 # API-контракт SberOS UI Kit
 
-Редакция контракта: **2**, 2026-10-22. Статус: принят как основной справочник для потребителей UI Kit. Описывает текущий API исходного снимка, а не завершённую интеграцию с оболочкой. Версия `version.txt` — **1.7.2**; `Sber.Controls` отдельно объявляет **1.4.0**. Редакция документа не является версией бинарного ABI.
+Редакция контракта: **3**, 2026-10-22. Статус: принят как основной справочник для потребителей UI Kit. Описывает текущий API исходного снимка, а не завершённую интеграцию с оболочкой. Версия `version.txt` — **1.7.2**; `Sber.Controls` отдельно объявляет **1.4.0**. Редакция документа не является версией бинарного ABI.
 
 ## Как пользоваться контрактом
 
@@ -38,7 +38,7 @@ import Sber.Theme
 
 Текущий проверочный стек галереи: Qt **6.11.2**, Linux, `offscreen`, программный рендеринг. Минимальная версия Qt для всего API не подтверждена: некоторые компоненты используют отдельные радиусы углов Rectangle. Требование Qt 6.6 в Sirca не доказывает совместимость с UI Kit.
 
-Для хоста нужен `QApplication` и `QQmlApplicationEngine`, как в галерее. До загрузки QML добавить каталог `<сборка-ui-kit>/qml` через `engine.addImportPath(...)`. Доступность плагинов, их разделяемых библиотек и ресурсов требуется и при запуске установленного приложения. Оболочка собирается отдельно: её CMake-параметр `SBER_QML_IMPORT_PATH` указывает на этот каталог (по умолчанию `ui-kit/_build/qml`); путь добавляется во все QML-движки оболочки, включая проверки. Исходный проект UI Kit использует `CMAKE_SOURCE_DIR`, поэтому поддержку `add_subdirectory` не предполагать.
+Для хоста нужен `QApplication` и `QQmlApplicationEngine`, как в галерее. До загрузки QML добавить каталог `<сборка-ui-kit>/qml` через `engine.addImportPath(...)`. В Quickshell-копии `kosctl build` собирает UI Kit в `.build/kosctl/ui-kit`, а `kosctl install` доставляет его QML-модули в `$KOS_PREFIX/share/kos/qml`; `kos-settings` и Shell добавляют этот каталог при установленном запуске. Во время разработки `kosctl dev` и `kosctl settings` добавляют QML-каталог сборки. Ресурсы темы устанавливаются в `$KOS_PREFIX/share/kos/SberComponents` и передаются через `SBER_COMPONENTS_DATA_DIR`. Исходный проект UI Kit использует `CMAKE_SOURCE_DIR`, поэтому поддержку `add_subdirectory` не предполагать.
 
 ```sh
 cmake -S ui-kit -B ui-kit/_build -DBUILD_WITH_CTEST=OFF
@@ -46,7 +46,7 @@ cmake --build ui-kit/_build -j 4
 ./ui-kit/_build/examples/gallery/sber-components-gallery
 ```
 
-`THEME_RESOURCES_PATH` задаётся при сборке библиотеки и по умолчанию указывает на `ui-kit/resources`. Нужны `theme/sdds_os.json`, `theme/sizes_os.json`, `theme/font_styles.json`, связанные палитры и `icons/`. Один `addImportPath` не переопределяет путь ресурсов. Фирменные шрифты устанавливаются отдельно; возможна подстановка Qt.
+UI Kit ищет ресурсы в `SBER_COMPONENTS_DATA_DIR`, затем в существующем `THEME_RESOURCES_PATH` (для сборки из исходников, по умолчанию `ui-kit/resources`), затем в стандартных каталогах данных как `SberComponents/`. При установке CMake размещает их в `share/SberComponents`; стандартные префиксы доступны через `QStandardPaths`. Для нестандартного префикса задайте `SBER_COMPONENTS_DATA_DIR` процессу, который загружает UI Kit. Нужны `theme/sdds_os.json`, `theme/sizes_os.json`, `font_styles.json`, связанные палитры и `icons/`. Один `addImportPath` не переопределяет путь ресурсов. Фирменные шрифты устанавливаются отдельно; возможна подстановка Qt.
 
 ## Тема, размеры и шрифты
 
@@ -148,13 +148,24 @@ Sber.Button {
 
 ### Поля ввода и выбор
 
-`TextField.textLimit` показывает счётчик и выставляет `status = Widget.Error` при превышении; ввод не обрезает. Признак `required` показывает индикатор обязательности и сам по себе не валидирует значение. В текущей реализации Return, Enter **и Escape** вызывают `accepted()` и снимают фокус. Не считать Escape отменой ввода без отдельной обработки и проверки.
+`TextField.textLimit` показывает счётчик и выставляет `status = Widget.Error` при превышении; ввод не обрезает. Признак `required` показывает индикатор обязательности и сам по себе не валидирует значение. Return, Enter **и Escape** вызывают `accepted()` и снимают фокус; событие помечается обработанным, чтобы избежать повторной обработки базовым контролом. Не считать Escape отменой ввода без отдельной обработки и проверки.
+
+`TextField.contextMenu` и `TextArea.contextMenu` принимают `Menu`. Если меню
+предоставляет `showContextMenu(x, y)`, UI Kit вызывает его; для обычного Qt Quick
+`Menu` без этого метода используется `popup(x, y)`. Стандартный
+`DefaultTextMenu` сохраняет выделение и позицию курсора при открытии.
+
+`Sber.RadioDelegate` размещать только в `ListView`: его расчёт ширины и обработчик
+выбора используют `ListView.view` и индекс делегата. Отмеченная радиокнопка следует
+за текущей строкой списка. Для одиночной радиокнопки вне списка использовать
+`Sber.RadioButton`.
 
 `ComboBox` по умолчанию: `textRole = "text"`, `valueRole = "value"`, `captionRole = "caption"`, `checkStateRole = "checkState"`, `currentIndex = -1`, `multiselect = false`. Для обычного выбора использовать `ListModel` с ролями `text` и `value`. Для многовыбора поддержаны `ListModel` и массив объектов с ролями, указанными выше; `checkState` хранит `Qt.Checked` или `Qt.Unchecked`. Другие реализации модели требуют отдельной проверки.
 
 `Range.setValueFrom(value)` и `Range.setValueTo(value)` задают значения полей начала и конца независимо.
 
 `Colorizer.selected` задаёт активное оформление (`activeColor`, ширина границы 2), как и `activated`.
+
 
 ### Слайдер: пользовательское изменение и завершение
 

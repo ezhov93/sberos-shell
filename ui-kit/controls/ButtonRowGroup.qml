@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 Row {
     id: row
     property int cornersType: Widget.Square
@@ -27,4 +26,3 @@ Row {
         }
     }
 }
-

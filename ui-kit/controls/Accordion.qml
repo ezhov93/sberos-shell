@@ -6,7 +6,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: control
 
@@ -25,14 +24,9 @@ Item {
     property int lineHeight: Core.Settings.LineHeight
     implicitHeight: mouseArea.height + (opened ? container.height : 0)
     height: implicitHeight
-    implicitWidth: Math.max(titleLayout.implicitWidth,
-                            itemContainer.implicitWidth + itemContainer.anchors.leftMargin
-                                                        + itemContainer.anchors.rightMargin)
+    implicitWidth: Math.max(titleLayout.implicitWidth, itemContainer.implicitWidth + itemContainer.anchors.leftMargin + itemContainer.anchors.rightMargin)
     width: implicitWidth
-    property int horizontalPadding: control.lineHeight <= Theme.Sizes.LineHeight.S ? 12 :
-                                    control.lineHeight <= Theme.Sizes.LineHeight.M ? 14 :
-                                    control.lineHeight <= Theme.Sizes.LineHeight.L ? 18 :
-                                                                                     20
+    property int horizontalPadding: control.lineHeight <= Theme.Sizes.LineHeight.S ? 12 : control.lineHeight <= Theme.Sizes.LineHeight.M ? 14 : control.lineHeight <= Theme.Sizes.LineHeight.L ? 18 : 20
     clip: true
     opacity: enabled ? 1 : 0.4
 
@@ -51,10 +45,7 @@ Item {
         border.width: colorizer.borderWidth
         border.color: colorizer.currentColor
         visible: control.hasBackground
-        radius: control.lineHeight <= Theme.Sizes.LineHeight.S ? 8 :
-                control.lineHeight <= Theme.Sizes.LineHeight.M ? 10 :
-                control.lineHeight <= Theme.Sizes.LineHeight.L ? 12 :
-                                                                 14
+        radius: control.lineHeight <= Theme.Sizes.LineHeight.S ? 8 : control.lineHeight <= Theme.Sizes.LineHeight.M ? 10 : control.lineHeight <= Theme.Sizes.LineHeight.L ? 12 : 14
         z: -1
     }
 
@@ -68,7 +59,7 @@ Item {
         hoverEnabled: true
 
         onPressed: {
-            control.opened = !control.opened
+            control.opened = !control.opened;
         }
 
         RowLayout {
@@ -87,13 +78,9 @@ Item {
             }
             Icon {
                 id: arrowIcon
-                name: arrow ? opened ? "DisclosureUpFill" : "DisclosureDownFill" :
-                              opened ? "Minus" : "Plus"
+                name: arrow ? opened ? "DisclosureUpFill" : "DisclosureDownFill" : opened ? "Minus" : "Plus"
                 lineHeight: control.lineHeight
-                size: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 12 :
-                      control.lineHeight <= Theme.Sizes.LineHeight.S  ? 14 :
-                      control.lineHeight <= Theme.Sizes.LineHeight.M  ? 16 :
-                                                                        22
+                size: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 12 : control.lineHeight <= Theme.Sizes.LineHeight.S ? 14 : control.lineHeight <= Theme.Sizes.LineHeight.M ? 16 : 22
                 color: Theme.Palette.Text.Default.Primary
                 Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
             }
@@ -120,8 +107,7 @@ Item {
         }
     }
 
-    state: control.opened ? "opened" :
-                            "closed"
+    state: control.opened ? "opened" : "closed"
     states: [
         State {
             name: "opened"

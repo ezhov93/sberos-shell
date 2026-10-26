@@ -5,7 +5,6 @@ import Sber.Controls as SberControls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: root
 
@@ -58,7 +57,8 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: if(root.isNeedDropDown)popup.open()
+            onClicked: if (root.isNeedDropDown)
+                popup.open()
         }
     }
     SberControls.IconButton {

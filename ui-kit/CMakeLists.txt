@@ -9,9 +9,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/sosc_include.cmake)
 sosc_set_qt_install_qml_qt6()
 include(GNUInstallDirs)
 
-set(INCLUDES_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/SberComponents)
-set(CMAKE_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake)
-set(BINARIES_INSTALL_DIR ${QT_INSTALL_QML})
+set(INCLUDES_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR}/SberComponents)
+set(CMAKE_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake)
+file(RELATIVE_PATH QT_QML_INSTALL_SUBDIR "${QT_INSTALL_PREFIX}" "${QT_INSTALL_QML}")
+set(BINARIES_INSTALL_DIR ${QT_QML_INSTALL_SUBDIR})
 set(THEME_RESOURCES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/resources" CACHE PATH "Theme, font and icon resource directory")
 add_definitions(-DTHEME_RESOURCES_PATH="${THEME_RESOURCES_PATH}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
@@ -53,15 +54,21 @@ install(
   DESTINATION
     ${INCLUDES_INSTALL_DIR}
 )
-install(CODE "execute_process(COMMAND /bin/chmod -R 755 ${INCLUDES_INSTALL_DIR})")
 install(
   DIRECTORY
     ${CMAKE_BINARY_DIR}/qml/
   DESTINATION
     ${BINARIES_INSTALL_DIR}
 )
-install(CODE "execute_process(COMMAND /bin/chmod -R 755 ${BINARIES_INSTALL_DIR}/Sber)")
-
-
+install(TARGETS SberCorePlugin
+  LIBRARY DESTINATION ${BINARIES_INSTALL_DIR}/Sber/Core)
+install(TARGETS SberControlsPlugin
+  LIBRARY DESTINATION ${BINARIES_INSTALL_DIR}/Sber/Controls)
+install(TARGETS SberThemePlugin
+  LIBRARY DESTINATION ${BINARIES_INSTALL_DIR}/Sber/Theme)
+install(TARGETS SberUtilsPlugin
+  LIBRARY DESTINATION ${BINARIES_INSTALL_DIR}/Sber/Utils)
+install(TARGETS SberWidgetsPlugin
+  LIBRARY DESTINATION ${BINARIES_INSTALL_DIR}/Sber/Widgets)
 install(DIRECTORY resources/theme resources/icons
     DESTINATION ${CMAKE_INSTALL_DATADIR}/SberComponents)

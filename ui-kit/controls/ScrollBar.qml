@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.ScrollBar {
     id: control
 
@@ -53,28 +52,36 @@ T.ScrollBar {
         }
     }
 
-    state: (control.policy === T.ScrollBar.AlwaysOn ||
-            control.policy === T.ScrollBar.AsNeeded &&
-            (hoverHandler.hovered || control.active && control.size < 1.0)) ?
-        "active" :
-        "default"
+    state: (control.policy === T.ScrollBar.AlwaysOn || control.policy === T.ScrollBar.AsNeeded && (hoverHandler.hovered || control.active && control.size < 1.0)) ? "active" : "default"
 
     states: [
         State {
             name: "default"
-            PropertyChanges { target: control; opacity: 0; }
+            PropertyChanges {
+                target: control
+                opacity: 0
+            }
         },
         State {
             name: "active"
-            PropertyChanges { target: control; opacity: 1; }
+            PropertyChanges {
+                target: control
+                opacity: 1
+            }
         }
     ]
 
     transitions: Transition {
         from: "active"
         SequentialAnimation {
-            PauseAnimation { duration: 3000 }
-            NumberAnimation { target: control; duration: 200; property: "opacity"; }
+            PauseAnimation {
+                duration: 3000
+            }
+            NumberAnimation {
+                target: control
+                duration: 200
+                property: "opacity"
+            }
         }
     }
 }

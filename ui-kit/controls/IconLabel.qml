@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 Label {
     id: label
 
@@ -15,8 +14,8 @@ Label {
 
     property bool iconOnRight: false
     property int spacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 : 10
-    leftPadding: icon.visible && !iconOnRight ? icon.width + (text != "" ? spacing: 0) : 0
-    rightPadding: icon.visible && iconOnRight ? icon.width + (text != "" ? spacing: 0) : 0
+    leftPadding: icon.visible && !iconOnRight ? icon.width + (text != "" ? spacing : 0) : 0
+    rightPadding: icon.visible && iconOnRight ? icon.width + (text != "" ? spacing : 0) : 0
     height: Math.max(implicitHeight, icon.height)
     visible: icon.source != "" || icon.name != "" || text
 

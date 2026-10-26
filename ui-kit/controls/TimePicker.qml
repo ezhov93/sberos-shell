@@ -4,7 +4,6 @@ import QtQuick.Controls
 import Sber.Controls as SberControls
 import Sber.Theme
 
-
 Item {
     id: control
 
@@ -14,11 +13,11 @@ Item {
     property string labelText
     property var locale: Qt.locale()
     property string iconName: "ArrowRight"
-    signal accepted()
+    signal accepted
 
     Column {
         spacing: 10
-        
+
         SberControls.Label {
             font: Theme.Fonts.BodyM
             text: labelText
@@ -37,8 +36,7 @@ Item {
             activeFocusOnTab: true
 
             validator: RegularExpressionValidator {
-                regularExpression: control.isNeedSeconds ? /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/
-                                                                : /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/
+                regularExpression: control.isNeedSeconds ? /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/ : /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/
             }
 
             onTextEdited: {
@@ -77,7 +75,7 @@ Item {
 
                 TimePickerView {
                     id: timePickerView
-                    
+
                     lineHeight: textField.lineHeight
 
                     onTimeChanged: {
@@ -97,10 +95,8 @@ Item {
 
             onTimeChanged: {
                 const convertedDate = CalendarFunctions.textToTime(textField.time);
-                if (CalendarFunctions.isValid(convertedDate)) {             
-                    textField.text = control.isNeedSeconds ? textField.time 
-                                                           : textField.time.length > 5 ? textField.time.slice(0, -3)
-                                                                                         : textField.time
+                if (CalendarFunctions.isValid(convertedDate)) {
+                    textField.text = control.isNeedSeconds ? textField.time : textField.time.length > 5 ? textField.time.slice(0, -3) : textField.time;
 
                     if (!CalendarFunctions.timeIsEqual(convertedDate, timePickerView.currentTime)) {
                         timePickerView.currentTime = convertedDate;

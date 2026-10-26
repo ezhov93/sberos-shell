@@ -4,7 +4,6 @@ import QtQuick.Controls
 import Sber.Controls
 import Sber.Theme
 
-
 Control {
     id: control
 
@@ -28,12 +27,12 @@ Control {
     property alias required: inputFrom.required
     property alias requiredPlacement: inputFrom.requiredPlacement
     property alias status: backgroundConfig.status
-    property int   delimiter: Widget.Arrow
+    property int delimiter: Widget.Arrow
 
     property alias textFrom: inputFrom.text
     property alias textTo: inputTo.text
-    property var   dateFrom
-    property var   dateTo
+    property var dateFrom
+    property var dateTo
     property alias selectType: calendar.selectType
     property alias currentDate: calendar.currentDate
     property alias visibleMonth: calendar.visibleMonth
@@ -42,12 +41,11 @@ Control {
     property alias dateMax: calendar.dateMax
     property alias doubled: calendar.doubled
 
-    implicitWidth: Math.max(150, inputFrom.implicitWidth, inputTo.implicitWidth) * 2 +
-                   (icon.visible ? icon.implicitWidth + spacing * 2 : 0)
+    implicitWidth: Math.max(150, inputFrom.implicitWidth, inputTo.implicitWidth) * 2 + (icon.visible ? icon.implicitWidth + spacing * 2 : 0)
     implicitHeight: inputFrom.implicitHeight
     spacing: 6
 
-    signal accepted()
+    signal accepted
 
     property BackgroundConfig backgroundConfig: BackgroundConfig {
         id: backgroundConfig
@@ -74,8 +72,7 @@ Control {
         z: 0
     }
     FocusItem {
-        visible: inputFrom.focus && (inputFrom.focusReason == Qt.TabFocus || inputFrom.focusReason == Qt.BacktabFocusReason) ||
-                 inputTo.focus && (inputTo.focusReason == Qt.TabFocus || inputTo.focusReason == Qt.BacktabFocusReason)
+        visible: inputFrom.focus && (inputFrom.focusReason == Qt.TabFocus || inputFrom.focusReason == Qt.BacktabFocusReason) || inputTo.focus && (inputTo.focusReason == Qt.TabFocus || inputTo.focusReason == Qt.BacktabFocusReason)
     }
 
     TextField {
@@ -134,9 +131,7 @@ Control {
     Icon {
         id: icon
         anchors.centerIn: bg
-        name: control.delimiter == Widget.Arrow ? "ArrowRight" :
-              control.delimiter == Widget.Minus ? "Minus" :
-                                                  ""
+        name: control.delimiter == Widget.Arrow ? "ArrowRight" : control.delimiter == Widget.Minus ? "Minus" : ""
         size: 24
         visible: control.delimiter != Widget.NoDelimiter
         opacity: enabled ? 1 : 0.4

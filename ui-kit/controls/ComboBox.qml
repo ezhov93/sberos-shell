@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.ComboBox {
     id: control
 
@@ -62,9 +61,7 @@ T.ComboBox {
 
     Flickable {
         id: chipsArea
-        x: textField.iconLeft.visible ?
-               textField.leftPadding :
-               (textField.background.height - height) / 2
+        x: textField.iconLeft.visible ? textField.leftPadding : (textField.background.height - height) / 2
         y: textField.background.y + (textField.background.height - height) / 2
         width: indicator.x - x
         height: chipsGroup.implicitHeight
@@ -90,7 +87,10 @@ T.ComboBox {
                 var selected = [];
                 for (var i = 0; i < modelCount(); i++) {
                     if (roleValue(i, control.checkStateRole) === Qt.Checked)
-                        selected.push({ index: i, caption: roleValue(i, control.captionRole) });
+                        selected.push({
+                            index: i,
+                            caption: roleValue(i, control.captionRole)
+                        });
                 }
 
                 for (var i = 0; i < selected.length; i++) {
@@ -121,8 +121,7 @@ T.ComboBox {
 
             function roleValue(index, role) {
                 var sourceModel = control.model;
-                var row = sourceModel && typeof sourceModel.get === "function" ?
-                              sourceModel.get(index) : sourceModel ? sourceModel[index] : null;
+                var row = sourceModel && typeof sourceModel.get === "function" ? sourceModel.get(index) : sourceModel ? sourceModel[index] : null;
                 return row ? row[role] : undefined;
             }
 
@@ -138,27 +137,27 @@ T.ComboBox {
             }
 
             function isArrayModel() {
-                return Array.isArray(control.model) ||
-                       control.model && typeof control.model.length === "number";
+                return Array.isArray(control.model) || control.model && typeof control.model.length === "number";
             }
-            onClosed: (idx) => {
+            onClosed: idx => {
                 if (idx >= 0 && idx < chipsGroup.modelCount()) {
                     chipsGroup.setRoleValue(idx, control.checkStateRole, Qt.Unchecked);
                 }
             }
 
-            Component.onCompleted: {
-                Qt.callLater(() => {Qt.callLater(chipsGroup.update)});
+            Timer {
+                id: initialChipSync
+                interval: 0
+                repeat: false
+                onTriggered: chipsGroup.update()
             }
 
+            Component.onCompleted: initialChipSync.start()
         }
-
     }
 
     indicator: Icon {
-        x: control.width - width - (textField.iconRight.visible ?
-               textField.rightPadding :
-               textField.backgroundConfig.horizontalPadding / 2)
+        x: control.width - width - (textField.iconRight.visible ? textField.rightPadding : textField.backgroundConfig.horizontalPadding / 2)
         y: textField.background.y + (textField.background.height - height) / 2
         size: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 16 : 24
         color: control.hovered ? Theme.Palette.Text.Default.Primary : Theme.Palette.Text.Default.Secondary
@@ -195,26 +194,10 @@ T.ComboBox {
         indicator.visible: true
         highlighted: index == control.currentIndex
 
-        text: control.textRole ?
-                  (chipsGroup.isArrayModel() ? modelData[control.textRole] : model[control.textRole]) :
-                  modelData
-        property var value: control.valueRole ?
-                                (chipsGroup.isArrayModel() ?
-                                     modelData[control.valueRole] ? modelData[control.valueRole] : "" :
-                                     model[control.valueRole] ? model[control.valueRole] : "") :
-                                ""
-        captionText: control.captionRole ?
-                         (chipsGroup.isArrayModel() ?
-                              modelData[control.captionRole] ? modelData[control.captionRole] : "" :
-                              model[control.captionRole] ? model[control.captionRole] : "") :
-                         ""
-        checkState: control.multiselect ?
-                        control.checkStateRole ?
-                             (chipsGroup.isArrayModel() ?
-                                  modelData[control.checkStateRole] ? modelData[control.checkStateRole] : Qt.Unchecked :
-                                  model[control.checkStateRole] ? model[control.checkStateRole] : Qt.Unchecked) :
-                             Qt.Unchecked :
-                        Qt.Unchecked
+        text: control.textRole ? (chipsGroup.isArrayModel() ? modelData[control.textRole] : model[control.textRole]) : modelData
+        property var value: control.valueRole ? (chipsGroup.isArrayModel() ? modelData[control.valueRole] ? modelData[control.valueRole] : "" : model[control.valueRole] ? model[control.valueRole] : "") : ""
+        captionText: control.captionRole ? (chipsGroup.isArrayModel() ? modelData[control.captionRole] ? modelData[control.captionRole] : "" : model[control.captionRole] ? model[control.captionRole] : "") : ""
+        checkState: control.multiselect ? control.checkStateRole ? (chipsGroup.isArrayModel() ? modelData[control.checkStateRole] ? modelData[control.checkStateRole] : Qt.Unchecked : model[control.checkStateRole] ? model[control.checkStateRole] : Qt.Unchecked) : Qt.Unchecked : Qt.Unchecked
         onCheckStateChanged: {
             if (control.multiselect) {
                 if (chipsGroup.isArrayModel()) {

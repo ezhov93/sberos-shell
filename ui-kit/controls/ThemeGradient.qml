@@ -16,25 +16,30 @@ Gradient {
     onSourceChanged: updateStops()
     Component.onCompleted: updateStops()
     function updateStops() {
+        var old_points = [];
+        for (var i = 0; i < gradient.stops.length; i++)
+            old_points.push(gradient.stops[i]);
+
+        var new_points = [];
         if (gradient.source) {
             var gradientJson = JSON.parse(gradient.source);
             var colors = gradientJson.colors;
             var locations = gradientJson.locations;
             gradient.angle = gradientJson.angle;
 
-            var new_points = [];
             for (var i = 0; i < locations.length; i++) {
                 var point = stopComponent.createObject(gradient);
                 point.position = locations[i];
                 var color = String(colors[i]);
                 if (color.length == 9)
-                    color = color[0] + color[7] + color[8] + color.substring(1, 7)
+                    color = color[0] + color[7] + color[8] + color.substring(1, 7);
                 point.color = color;
                 new_points.push(point);
             }
-            gradient.stops = new_points;
         }
+
+        gradient.stops = new_points;
+        for (var i = 0; i < old_points.length; i++)
+            old_points[i].destroy();
     }
 }
-
-

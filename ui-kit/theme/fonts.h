@@ -7,22 +7,21 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-
 class FontsClass : public FontsBase {
-  Q_OBJECT
-  QML_ELEMENT
-  QML_SINGLETON
-  QML_UNCREATABLE("FontsClass is for C++ instantiation only")
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+    QML_UNCREATABLE("FontsClass is for C++ instantiation only")
 
 public:
-  static FontsClass* Get();
-  Q_INVOKABLE QFont GetFont(const QString& tag) const;
+    static FontsClass *Get();
+    Q_INVOKABLE QFont GetFont(const QString &tag) const;
 
 protected:
-  FontsClass();
-  ~FontsClass() = default;
+    FontsClass();
+    ~FontsClass() = default;
 
-  QMap<QString, QFont> FontsMap;
+    QMap<QString, QFont> FontsMap;
 };
-Q_DECLARE_METATYPE(FontsClass*)
+Q_DECLARE_METATYPE(FontsClass *)
 Q_DECLARE_METATYPE(FontsClass)

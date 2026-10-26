@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.ItemDelegate {
     id: control
 
@@ -17,24 +16,12 @@ T.ItemDelegate {
     property bool highlightCurrent: true
     highlighted: highlightCurrent && ListView ? ListView.isCurrentItem : false
 
-    implicitWidth: Math.max(contentItem.implicitWidth + leftPadding + rightPadding,
-                            ListView.view.width)
+    implicitWidth: Math.max(contentItem.implicitWidth + leftPadding + rightPadding, ListView.view.width)
     implicitHeight: contentItem.implicitHeight + topPadding + bottomPadding
 
     property bool tight: false
-    verticalPadding: tight ?
-                         lineHeight <= Theme.Sizes.LineHeight.Xs ? 5 :
-                         lineHeight <= Theme.Sizes.LineHeight.S  ? 7 :
-                         lineHeight <= Theme.Sizes.LineHeight.M  ? 10 :
-                                                                   13 :
-                         lineHeight <= Theme.Sizes.LineHeight.Xs ? 9 :
-                         lineHeight <= Theme.Sizes.LineHeight.S  ? 11 :
-                         lineHeight <= Theme.Sizes.LineHeight.M  ? 14 :
-                                                                   17
-    horizontalPadding: lineHeight <= Theme.Sizes.LineHeight.Xs ? 8 :
-                       lineHeight <= Theme.Sizes.LineHeight.S  ? 12 :
-                       lineHeight <= Theme.Sizes.LineHeight.M  ? 14 :
-                                                                 16
+    verticalPadding: tight ? lineHeight <= Theme.Sizes.LineHeight.Xs ? 5 : lineHeight <= Theme.Sizes.LineHeight.S ? 7 : lineHeight <= Theme.Sizes.LineHeight.M ? 10 : 13 : lineHeight <= Theme.Sizes.LineHeight.Xs ? 9 : lineHeight <= Theme.Sizes.LineHeight.S ? 11 : lineHeight <= Theme.Sizes.LineHeight.M ? 14 : 17
+    horizontalPadding: lineHeight <= Theme.Sizes.LineHeight.Xs ? 8 : lineHeight <= Theme.Sizes.LineHeight.S ? 12 : lineHeight <= Theme.Sizes.LineHeight.M ? 14 : 16
     leftPadding: horizontalPadding
     rightPadding: horizontalPadding
     topPadding: verticalPadding
@@ -42,8 +29,7 @@ T.ItemDelegate {
 
     contentItem: Item {
         implicitWidth: Math.max(textLabel.width, captionLabel.width)
-        implicitHeight: textLabel.height + (captionLabel.visible ?
-                            captionLabel.height + captionLabel.anchors.topMargin : 0)
+        implicitHeight: textLabel.height + (captionLabel.visible ? captionLabel.height + captionLabel.anchors.topMargin : 0)
         IconLabel {
             id: textLabel
             anchors.top: parent.top
@@ -74,6 +60,6 @@ T.ItemDelegate {
     onHoveredChanged: focus = hovered
 
     onClicked: {
-        ListView.view.currentIndex = index
+        ListView.view.currentIndex = index;
     }
 }

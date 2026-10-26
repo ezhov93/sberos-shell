@@ -11,7 +11,7 @@ T.ApplicationWindow {
 
     property int controls: Settings.Close | Settings.Maximize | Settings.Minimize
     property color backgroundColor: Theme.Palette.Background.Default.Primary
-    property int backgroundRadius: root.getBackgroundRadius();
+    property int backgroundRadius: root.getBackgroundRadius()
     property int headerButtonsFocusPolicy: Qt.ClickFocus
 
     visible: true
@@ -73,7 +73,9 @@ T.ApplicationWindow {
         const isCustomHeader = (root.flags & Qt.CustomizeWindowHint) !== 0;
 
         if (isCustomHeader && !root.header) {
-            const newHeader = headerComponent.createObject(root, {"controls": root.controls});
+            const newHeader = headerComponent.createObject(root, {
+                "controls": root.controls
+            });
             if (newHeader) {
                 root.header = newHeader;
             }
@@ -88,10 +90,6 @@ T.ApplicationWindow {
 
     function getBackgroundRadius() {
         const lineHeight = Core.Settings.LineHeight;
-        return lineHeight <= Theme.Sizes.LineHeight.Xxs ? Theme.Sizes.BorderRadius.Xxs :
-               lineHeight <= Theme.Sizes.LineHeight.Xs  ? Theme.Sizes.BorderRadius.Xs :
-               lineHeight <= Theme.Sizes.LineHeight.S   ? Theme.Sizes.BorderRadius.S :
-               lineHeight <= Theme.Sizes.LineHeight.M   ? Theme.Sizes.BorderRadius.M :
-               Theme.Sizes.BorderRadius.L
+        return lineHeight <= Theme.Sizes.LineHeight.Xxs ? Theme.Sizes.BorderRadius.Xxs : lineHeight <= Theme.Sizes.LineHeight.Xs ? Theme.Sizes.BorderRadius.Xs : lineHeight <= Theme.Sizes.LineHeight.S ? Theme.Sizes.BorderRadius.S : lineHeight <= Theme.Sizes.LineHeight.M ? Theme.Sizes.BorderRadius.M : Theme.Sizes.BorderRadius.L;
     }
 }

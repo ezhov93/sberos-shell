@@ -34,6 +34,7 @@ target_include_directories(${PLUGIN_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/core/generated>
 )
 add_dependencies(${PLUGIN_NAME} SberControlsPlugin)
+set_target_properties(${PLUGIN_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../Core")
 target_link_directories(${PLUGIN_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/qml/Sber/Core>
   ${QT_INSTALL_QML}/Sber/Core/

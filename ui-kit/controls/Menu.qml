@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.Menu {
     id: control
 
@@ -21,7 +20,9 @@ T.Menu {
     transformOrigin: Item.Top
     closePolicy: Popup.CloseOnReleaseOutsideParent | Popup.CloseOnEscape
 
-    delegate: MenuItem { highlight: false }
+    delegate: MenuItem {
+        highlight: false
+    }
 
     contentItem: ListView {
         implicitHeight: contentHeight

@@ -4,7 +4,6 @@ import QtQuick.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Rectangle {
     id: root
     property var currentTime: new Date()
@@ -23,14 +22,13 @@ Rectangle {
     readonly property int cellHeight: 214
     readonly property int delimiterWidth: 24
 
-    signal timeChanged()
+    signal timeChanged
 
     clip: true
     color: Theme.Palette.Background.Default.Basic
     radius: backgroundConfig.radius
 
-    implicitWidth: root.isNeedSeconds ? cellWidth * 3 + delimiterWidth * 2 + padding * 2
-                                      : cellWidth * 2 + delimiterWidth + padding * 2
+    implicitWidth: root.isNeedSeconds ? cellWidth * 3 + delimiterWidth * 2 + padding * 2 : cellWidth * 2 + delimiterWidth + padding * 2
     width: implicitWidth
     implicitHeight: cellHeight
     height: implicitHeight
@@ -46,13 +44,13 @@ Rectangle {
             isNeedDropDown: root.isNeedDropDown
             x: 0
             y: 0
-            
+
             width: root.cellWidth
             height: parent.height
             lineHeight: root.lineHeight
             maxValue: 24
-            onTimePartDataChanged: function(value) {
-                if(CalendarFunctions.isHourValid(value)) {
+            onTimePartDataChanged: function (value) {
+                if (CalendarFunctions.isHourValid(value)) {
                     root.currentTime.setHours(value);
                     timeData = value;
                     root.timeChanged();
@@ -75,8 +73,8 @@ Rectangle {
             y: 0
             width: root.cellWidth
             height: parent.height
-            onTimePartDataChanged: function(value){
-                if(CalendarFunctions.isMinuteValid(value)) {
+            onTimePartDataChanged: function (value) {
+                if (CalendarFunctions.isMinuteValid(value)) {
                     root.currentTime.setMinutes(value);
                     timeData = value;
                     root.timeChanged();
@@ -94,7 +92,7 @@ Rectangle {
         }
         TimePart {
             id: secondCell
-            
+
             isNeedDropDown: root.isNeedDropDown
             x: secondDelimiter.x + secondDelimiter.width
             y: 0
@@ -102,8 +100,8 @@ Rectangle {
             width: root.cellWidth
             height: parent.height
             visible: isNeedSeconds
-            onTimePartDataChanged: function(value) {
-                if(CalendarFunctions.isSecondsValid(value)) {
+            onTimePartDataChanged: function (value) {
+                if (CalendarFunctions.isSecondsValid(value)) {
                     root.currentTime.setSeconds(value);
                     timeData = value;
                     root.timeChanged();

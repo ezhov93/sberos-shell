@@ -6,7 +6,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Control {
     id: control
     objectName: "SpinBox"
@@ -49,9 +48,13 @@ Control {
     leftInset: indicatorDown.width + (control.editorType == SpinBox.Type.Solid ? 0 : spacing)
     rightInset: indicatorUp.width + (control.editorType == SpinBox.Type.Solid ? 0 : spacing)
 
-    function value() { return input.value(); }
-    function setValue(val) { input.setValue(val); }
-    signal valueChanged(real value);
+    function value() {
+        return input.value();
+    }
+    function setValue(val) {
+        input.setValue(val);
+    }
+    signal valueChanged(real value)
 
     IconButton {
         id: indicatorDown
@@ -62,29 +65,23 @@ Control {
         enabled: control.value() > control.from
         onClicked: input.decrease()
         leftCornersType: control.cornersType
-        rightCornersType: control.editorType == SpinBox.Type.Default ?
-                              control.cornersType :
-                              Widget.Flat
+        rightCornersType: control.editorType == SpinBox.Type.Default ? control.cornersType : Widget.Flat
     }
 
     contentItem: NumberInput {
         id: input
         anchors.fill: control
-        anchors.leftMargin: indicatorDown.visible
-                                ? indicatorDown.width + (control.editorType == SpinBox.Type.Solid ? 0 : control.spacing)
-                                : 0
-        anchors.rightMargin: indicatorUp.visible
-                                 ? indicatorUp.width + (control.editorType == SpinBox.Type.Solid ? 0 : control.spacing)
-                                 : 0
+        anchors.leftMargin: indicatorDown.visible ? indicatorDown.width + (control.editorType == SpinBox.Type.Solid ? 0 : control.spacing) : 0
+        anchors.rightMargin: indicatorUp.visible ? indicatorUp.width + (control.editorType == SpinBox.Type.Solid ? 0 : control.spacing) : 0
         z: 100
         lineHeight: control.lineHeight
         visible: !control.loading
         readOnly: !control.editable
         locale: control.locale
-        onValueChanged: (v) => { control.valueChanged(v) }
-        radius: control.editorType == SpinBox.Type.Default ?
-                    input.backgroundConfig.radius :
-                    0
+        onValueChanged: v => {
+            control.valueChanged(v);
+        }
+        radius: control.editorType == SpinBox.Type.Default ? input.backgroundConfig.radius : 0
         backgroundConfig.type: control.type
     }
 
@@ -118,8 +115,6 @@ Control {
         enabled: control.value() < control.to
         onClicked: input.increase()
         rightCornersType: control.cornersType
-        leftCornersType: control.editorType == SpinBox.Type.Default ?
-                             control.cornersType :
-                             Widget.Flat
+        leftCornersType: control.editorType == SpinBox.Type.Default ? control.cornersType : Widget.Flat
     }
 }

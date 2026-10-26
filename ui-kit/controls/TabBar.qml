@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.TabBar {
     id: control
 
@@ -18,10 +17,7 @@ T.TabBar {
     implicitHeight: implicitContentHeight + topPadding + bottomPadding
 
     spacing: 14
-    padding: lineHeight <= Theme.Sizes.LineHeight.Xs ? 10 :
-             lineHeight == Theme.Sizes.LineHeight.S  ? 14 :
-             lineHeight == Theme.Sizes.LineHeight.M  ? 18 :
-                                                       22
+    padding: lineHeight <= Theme.Sizes.LineHeight.Xs ? 10 : lineHeight == Theme.Sizes.LineHeight.S ? 14 : lineHeight == Theme.Sizes.LineHeight.M ? 18 : 22
     leftPadding: decrementIcon.visible ? decrementIcon.width : 0
     rightPadding: leftPadding
     topPadding: padding
@@ -43,7 +39,9 @@ T.TabBar {
         icon.name: "ChevronLeft"
         iconItem.size: control.arrowSize - 8
 
-        onPressed: { control.decrementCurrentIndex(); }
+        onPressed: {
+            control.decrementCurrentIndex();
+        }
     }
 
     contentItem: ListView {
@@ -51,6 +49,7 @@ T.TabBar {
         parent: control
         model: control.contentModel
         currentIndex: control.currentIndex
+        implicitHeight: contentHeight
 
         spacing: control.spacing * 2
         orientation: ListView.Horizontal
@@ -86,7 +85,7 @@ T.TabBar {
                 var it = itemAtIndex(i);
                 if (it) {
                     if (stretch) {
-                        it.width = Math.max(maxItemWidth, it.implicitWidth)
+                        it.width = Math.max(maxItemWidth, it.implicitWidth);
                     } else {
                         it.width = it.implicitWidth;
                     }
@@ -94,12 +93,17 @@ T.TabBar {
                 }
             }
             decrementIcon.visible = control.arrowsVisible && (control.width < minimalWidth + control.spacing * 2 * tabView.count);
-            tabView.implicitHeight = minimalWidth;
             tabView.positionViewAtIndex(tabView.currentIndex, ListView.Contain);
         }
-        onWidthChanged: { updateContentSize(); }
-        onHeightChanged: { updateContentSize(); }
-        Component.onCompleted: { updateContentSize(); }
+        onWidthChanged: {
+            updateContentSize();
+        }
+        onHeightChanged: {
+            updateContentSize();
+        }
+        Component.onCompleted: {
+            updateContentSize();
+        }
     }
 
     background: Rectangle {
@@ -124,6 +128,8 @@ T.TabBar {
         icon.name: "ChevronRight"
         iconItem.size: control.arrowSize - 8
 
-        onPressed: { control.incrementCurrentIndex(); }
+        onPressed: {
+            control.incrementCurrentIndex();
+        }
     }
 }

@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 Item {
     id: control
     default property alias data: row.data
@@ -22,9 +21,7 @@ Item {
     clip: true
 
     implicitWidth: itemWidth * 3
-    implicitHeight: itemHeight +
-                    (indicatorVisible ? 4 + indicator.height : 0) +
-                    (buttonsVisible ? spacing * 2 + buttonsRow.height : 0)
+    implicitHeight: itemHeight + (indicatorVisible ? 4 + indicator.height : 0) + (buttonsVisible ? spacing * 2 + buttonsRow.height : 0)
     width: implicitWidth
     height: implicitHeight
 
@@ -48,15 +45,20 @@ Item {
 
         onContentXChanged: updatePosition()
         Behavior on contentX {
-            PropertyAnimation { duration: 500; easing.type: Easing.InOutQuint }
+            PropertyAnimation {
+                duration: 500
+                easing.type: Easing.InOutQuint
+            }
         }
         function updatePosition() {
             if (!view.moving)
                 contentX = control.currentIndex * (control.itemWidth + control.spacing);
         }
         function updateIndex() {
-            control.currentIndex = Math.max(0, Math.min(control.data.length - 1,
-                Math.floor((view.contentX + control.itemWidth / 2 + control.spacing) / control.itemWidth)));
+            var pageStep = control.itemWidth + control.spacing;
+            if (pageStep <= 0)
+                return;
+            control.currentIndex = Math.max(0, Math.min(control.data.length - 1, Math.round(view.contentX / pageStep)));
             updatePosition();
         }
         onMovementEnded: updateIndex()
@@ -82,23 +84,22 @@ Item {
         Button {
             lineHeight: control.lineHeight
             text: qsTr("Prev")
-            onReleased: decrementCurrentIndex();
+            onReleased: decrementCurrentIndex()
         }
         Label {
             anchors.verticalCenter: parent.verticalCenter
             text: control.currentIndex + 1
-            font: control.lineHeight <= Theme.Sizes.LineHeight.S ? Theme.Fonts.TextMB :
-                                                                   Theme.Fonts.TextLB
+            font: control.lineHeight <= Theme.Sizes.LineHeight.S ? Theme.Fonts.TextMB : Theme.Fonts.TextLB
         }
         Button {
             lineHeight: control.lineHeight
             text: qsTr("Next")
-            onReleased: incrementCurrentIndex();
+            onReleased: incrementCurrentIndex()
         }
     }
 
-    onCurrentIndexChanged: view.updatePosition();
-    Component.onCompleted: view.updatePosition();
+    onCurrentIndexChanged: view.updatePosition()
+    Component.onCompleted: view.updatePosition()
 
     Keys.onLeftPressed: decrementCurrentIndex()
     Keys.onRightPressed: incrementCurrentIndex()

@@ -11,6 +11,11 @@ set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS
 
 macro(sosc_set_qt_install_qml_qt6)
   execute_process(
+    COMMAND qmake6 -query QT_INSTALL_PREFIX
+    OUTPUT_VARIABLE QT_INSTALL_PREFIX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  execute_process(
     COMMAND qmake6 -query QT_INSTALL_QML
     OUTPUT_VARIABLE QT_INSTALL_QML
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -111,5 +116,4 @@ function(sosc_install_plugin TARGET_NAME TARGET_VERSION)
         ${CMAKE_CONFIG_INSTALL_DIR}/${TARGET_NAME}
       COMPONENT Devel
   )
-  install(CODE "execute_process(COMMAND /bin/chmod -R 755 ${CMAKE_CONFIG_INSTALL_DIR}/${TARGET_NAME})")
 endfunction()

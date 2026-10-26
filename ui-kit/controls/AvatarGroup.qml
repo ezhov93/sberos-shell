@@ -5,7 +5,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 RowLayout {
     id: control
 
@@ -19,13 +18,11 @@ RowLayout {
         property var connectedAvatars: []
     }
 
-    onChildrenChanged: updateItems();
-    onLineHeightChanged: updateItems();
+    onChildrenChanged: updateItems()
+    onLineHeightChanged: updateItems()
 
     function updateItems() {
-        const avatars = control.data.filter((item) => item &&
-                                              item.inGroup !== undefined &&
-                                              item.hoveredChanged !== undefined);
+        const avatars = control.data.filter(item => item && item.inGroup !== undefined && item.hoveredChanged !== undefined);
 
         for (const avatar of internal.connectedAvatars) {
             if (avatars.indexOf(avatar) === -1)

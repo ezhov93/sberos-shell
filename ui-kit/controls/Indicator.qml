@@ -3,7 +3,6 @@ import QtQuick
 import Sber.Controls
 import Sber.Theme
 
-
 Rectangle {
     id: control
 
@@ -11,9 +10,7 @@ Rectangle {
     property alias type: backgroundConfig.type
     property alias status: backgroundConfig.status
 
-    implicitWidth: lineHeight <= Theme.Sizes.LineHeight.S  ? 8 :
-                   lineHeight <= Theme.Sizes.LineHeight.M  ? 10 :
-                                                             14
+    implicitWidth: lineHeight <= Theme.Sizes.LineHeight.S ? 8 : lineHeight <= Theme.Sizes.LineHeight.M ? 10 : 14
     width: implicitWidth
     implicitHeight: implicitWidth
     height: implicitHeight

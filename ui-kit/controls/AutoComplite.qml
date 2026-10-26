@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import Sber.Controls
 import Sber.Theme
 
-
 TextField {
     id: control
 
@@ -40,6 +39,10 @@ TextField {
     onAccepted: {
         control.focus = false;
         popup.close();
+        if (loader.status !== Loader.Ready || !loader.item) {
+            currentIndex = -1;
+            return;
+        }
         currentIndex = loader.item.currentIndex;
         var cur = loader.item.itemAtIndex(loader.item.currentIndex);
         if (cur)
@@ -51,7 +54,7 @@ TextField {
         else if (!loader.focus)
             popup.close();
     }
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
             popup.toggle(true);
             if (loader.status === Loader.Ready)
@@ -61,9 +64,7 @@ TextField {
 
     Icon {
         id: indicator
-        x: control.width - width - (control.iconRight.visible ?
-               control.rightPadding :
-               control.backgroundConfig.horizontalPadding / 2)
+        x: control.width - width - (control.iconRight.visible ? control.rightPadding : control.backgroundConfig.horizontalPadding / 2)
         y: control.background.y + (control.background.height - height) / 2
         size: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 16 : 24
         color: control.hovered ? Theme.Palette.Text.Default.Primary : Theme.Palette.Text.Default.Secondary
@@ -94,17 +95,9 @@ TextField {
         delegate: MenuItem {
             id: listItem
             lineHeight: control.lineHeight
-            text: control.textRole ?
-                      (Array.isArray(control.model) ? modelData[control.textRole] : model[control.textRole]) :
-                      modelData
-            property var value: control.valueRole ?
-                                    (Array.isArray(control.model) ?
-                                         modelData[control.valueRole] ? modelData[control.valueRole] : "" :
-                                         model[control.valueRole] ? model[control.valueRole] : "") :
-                                    ""
-            captionText: control.captionRole ?
-                             (Array.isArray(control.model) ? modelData[control.captionRole] : model[control.captionRole]) :
-                             ""
+            text: control.textRole ? (Array.isArray(control.model) ? modelData[control.textRole] : model[control.textRole]) : modelData
+            property var value: control.valueRole ? (Array.isArray(control.model) ? modelData[control.valueRole] ? modelData[control.valueRole] : "" : model[control.valueRole] ? model[control.valueRole] : "") : ""
+            captionText: control.captionRole ? (Array.isArray(control.model) ? modelData[control.captionRole] : model[control.captionRole]) : ""
             tight: control.tight
             indicator.visible: true
             highlighted: index === control.currentIndex
@@ -119,7 +112,7 @@ TextField {
             }
         }
 
-        Keys.onPressed: (event) => {
+        Keys.onPressed: event => {
             if (event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
                 event.accepted = true;
 
@@ -158,11 +151,14 @@ TextField {
         property real timestamp: 0
 
         function hasVisibleItems() {
+            if (loader.status !== Loader.Ready || !loader.item)
+                return false;
+
             var count = 0;
             for (var i = 0; i < internal.modelCount(); i++) {
                 var item = loader.item.itemAtIndex(i);
                 if (item) {
-                    item.active = control.text == "" || item.text.indexOf(control.text) === 0
+                    item.active = control.text == "" || item.text.indexOf(control.text) === 0;
                     if (item.active)
                         count++;
                 }
@@ -174,11 +170,10 @@ TextField {
             if (!open || open && loader.sourceComponent == loadComponent && !hasVisibleItems()) {
                 popup.close();
             } else if (open && !popup.opened) {
-                if(loader.sourceComponent != loadComponent)
+                if (loader.sourceComponent != loadComponent)
                     loader.sourceComponent = loadComponent;
                 popup.open();
             }
         }
-
     }
 }

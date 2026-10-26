@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.CheckBox {
     id: control
 
@@ -25,22 +24,17 @@ T.CheckBox {
     implicitHeight: Math.max(indicator.height, textItem.implicitHeight)
     height: implicitHeight
 
-    spacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 :
-             lineHeight == Theme.Sizes.LineHeight.M ? 14 :
-                                                      18
+    spacing: lineHeight <= Theme.Sizes.LineHeight.S ? 8 : lineHeight == Theme.Sizes.LineHeight.M ? 14 : 18
     opacity: enabled ? 1 : 0.4
     focusPolicy: Qt.TabFocus
 
     Colorizer {
         id: colorizer
-        defaultColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.Accent :
-                                                           Theme.Palette.Text.Default.Secondary
+        defaultColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.Accent : Theme.Palette.Text.Default.Secondary
         hovered: control.enabled && control.hovered
-        hoverColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.AccentHover :
-                                                         Theme.Palette.Text.Default.SecondaryHover
+        hoverColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.AccentHover : Theme.Palette.Text.Default.SecondaryHover
         activated: control.pressed
-        activeColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.AccentActive :
-                                                          Theme.Palette.Text.Default.SecondaryActive
+        activeColor: control.checkState != Qt.Unchecked ? Theme.Palette.Surface.Default.AccentActive : Theme.Palette.Text.Default.SecondaryActive
     }
 
     contentItem: Item {
@@ -49,8 +43,7 @@ T.CheckBox {
         anchors.leftMargin: control.spacing - 3
         anchors.top: parent.top
         implicitWidth: Math.max(textLabel.implicitWidth, captionLabel.implicitWidth)
-        implicitHeight: (textLabel.text ? textLabel.implicitHeight : 0) +
-                        (captionLabel.text ? captionLabel.implicitHeight + captionLabel.anchors.topMargin : 0)
+        implicitHeight: (textLabel.text ? textLabel.implicitHeight : 0) + (captionLabel.text ? captionLabel.implicitHeight + captionLabel.anchors.topMargin : 0)
 
         Label {
             id: textLabel
@@ -76,12 +69,8 @@ T.CheckBox {
         anchors.left: control.left
         anchors.leftMargin: -3
 
-        name: control.checkState === Qt.Checked ? control.iconChecked :
-              control.checkState === Qt.PartiallyChecked ? control.iconPartiallyChecked :
-              control.iconUnchecked
-        size: control.lineHeight <= Theme.Sizes.LineHeight.S ? 22 :
-              control.lineHeight == Theme.Sizes.LineHeight.M ? 26 :
-                                                               30
+        name: control.checkState === Qt.Checked ? control.iconChecked : control.checkState === Qt.PartiallyChecked ? control.iconPartiallyChecked : control.iconUnchecked
+        size: control.lineHeight <= Theme.Sizes.LineHeight.S ? 22 : control.lineHeight == Theme.Sizes.LineHeight.M ? 26 : 30
         color: colorizer.currentColor
     }
     FocusItem {

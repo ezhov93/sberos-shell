@@ -7,7 +7,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.ToolTip {
     id: control
 
@@ -22,25 +21,29 @@ T.ToolTip {
     width: implicitWidth
     height: implicitHeight
 
-    x: control.arrowPosition & ArrowRectangle.Edge.Left      ? -width - arrowSize :
-       control.arrowPosition & ArrowRectangle.Edge.Right     ? parent.width + arrowSize :
-       control.arrowPosition & ArrowRectangle.Position.Start ? 0 :
-       control.arrowPosition & ArrowRectangle.Position.End   ? parent.width - width :
-                                                        parent ? (parent.width - width) / 2 : 0
-    y: control.arrowPosition & ArrowRectangle.Edge.Top       ? -height - arrowSize :
-       control.arrowPosition & ArrowRectangle.Edge.Bottom    ? parent.height + arrowSize :
-       control.arrowPosition & ArrowRectangle.Position.Start ? 0 :
-       control.arrowPosition & ArrowRectangle.Position.End   ? parent.height - height :
-                                                               (control.height - height) / 2
+    x: control.arrowPosition & ArrowRectangle.Edge.Left ? -width - arrowSize : control.arrowPosition & ArrowRectangle.Edge.Right ? parent.width + arrowSize : control.arrowPosition & ArrowRectangle.Position.Start ? 0 : control.arrowPosition & ArrowRectangle.Position.End ? parent.width - width : parent ? (parent.width - width) / 2 : 0
+    y: control.arrowPosition & ArrowRectangle.Edge.Top ? -height - arrowSize : control.arrowPosition & ArrowRectangle.Edge.Bottom ? parent.height + arrowSize : control.arrowPosition & ArrowRectangle.Position.Start ? 0 : control.arrowPosition & ArrowRectangle.Position.End ? parent.height - height : (control.height - height) / 2
 
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside | Popup.CloseOnReleaseOutside
     delay: 1000
 
     enter: Transition {
-        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.OutQuad; duration: 500 }
+        NumberAnimation {
+            property: "opacity"
+            from: 0.0
+            to: 1.0
+            easing.type: Easing.OutQuad
+            duration: 500
+        }
     }
     exit: Transition {
-        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.InQuad; duration: 500 }
+        NumberAnimation {
+            property: "opacity"
+            from: 1.0
+            to: 0.0
+            easing.type: Easing.InQuad
+            duration: 500
+        }
     }
 
     background: ArrowRectangle {

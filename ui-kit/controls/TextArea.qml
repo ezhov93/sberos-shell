@@ -7,7 +7,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.TextArea {
     id: control
 
@@ -47,9 +46,7 @@ T.TextArea {
 
     topInset: label.visible ? label.implicitHeight + verticalSpacing : 0
     topPadding: topInset + backgroundConfig.horizontalPadding
-    bottomPadding: backgroundConfig.horizontalPadding + ((caption.visible || counter.visible) ?
-        Math.max(caption.implicitHeight, counter.implicitHeight) + verticalSpacing :
-        0)
+    bottomPadding: backgroundConfig.horizontalPadding + ((caption.visible || counter.visible) ? Math.max(caption.implicitHeight, counter.implicitHeight) + verticalSpacing : 0)
     leftPadding: backgroundConfig.horizontalPadding + (iconLeft.visible ? iconLeft.width + horizontalSpacing : 0)
     rightPadding: backgroundConfig.horizontalPadding + (iconRight.visible ? iconRight.width + horizontalSpacing : 0)
 
@@ -113,14 +110,14 @@ T.TextArea {
 
         Label {
             id: placeholder
-            
+
             anchors {
                 top: parent.top
                 topMargin: backgroundConfig.horizontalPadding
                 left: parent.left
                 leftMargin: control.leftPadding
             }
-            
+
             width: parent.width - control.leftPadding - control.rightPadding
             wrapMode: Text.WordWrap
             visible: control.placeholderText != "" && control.text == "" && !control.focus
@@ -164,27 +161,21 @@ T.TextArea {
 
         Indicator {
             id: requiredIndicator
-            x: control.requiredPlacement == Widget.Left ?
-                   label.visible ? label.x - width - 4:
-                                       bg.x :
-                   label.visible ? label.x + label.width + 4 :
-                                       bg.x + bg.width - width
-            y: label.visible ? label.y + 4 :
-                                   bg.y
+            x: control.requiredPlacement == Widget.Left ? label.visible ? label.x - width - 4 : bg.x : label.visible ? label.x + label.width + 4 : bg.x + bg.width - width
+            y: label.visible ? label.y + 4 : bg.y
             status: Widget.Error
             visible: false
             lineHeight: Theme.Sizes.LineHeight.S
         }
     }
 
-
-    onTextChanged: (text) => {
-        control.status = control.textLimit && (control.text.length > control.textLimit) ?
-            Widget.Error :
-            Widget.None;
+    onTextChanged: text => {
+        control.status = control.textLimit && (control.text.length > control.textLimit) ? Widget.Error : Widget.None;
     }
 
-    property FocusItem focusItem: FocusItem { parent: control }
+    property FocusItem focusItem: FocusItem {
+        parent: control
+    }
     property Menu contextMenu
     Component {
         id: defaultMenu
@@ -192,19 +183,30 @@ T.TextArea {
     }
     function onMenuToggled(event) {
         if (!control.contextMenu) {
-            control.contextMenu = defaultMenu.createObject(control)
+            control.contextMenu = defaultMenu.createObject(control);
         }
         if (event.button == Qt.RightButton) {
-            control.contextMenu.showContextMenu(event.x, event.y);
+            var menu = control.contextMenu;
+            var showContextMenu = menu["showContextMenu"];
+            if (typeof showContextMenu === "function")
+                showContextMenu.call(menu, event.x, event.y);
+            else
+                menu.popup(event.x, event.y);
         }
     }
-    onReleased: (event) => { onMenuToggled(event); }
-    onPressAndHold: (event) => { onMenuToggled(event); }
+    onReleased: event => {
+        onMenuToggled(event);
+    }
+    onPressAndHold: event => {
+        onMenuToggled(event);
+    }
 
     function closeEvent(event) {
         if (event)
             event.accept = true;
         control.focus = false;
     }
-    Keys.onEscapePressed: function(event) { closeEvent(event); }
+    Keys.onEscapePressed: function (event) {
+        closeEvent(event);
+    }
 }

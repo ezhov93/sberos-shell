@@ -8,7 +8,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.Control {
     id: control
 
@@ -69,8 +68,7 @@ T.Control {
                     border.color: button.colorizer.currentColor
                     opacity: control.enabled ? 1 : 0.4
                 }
-                textItem.color: text - 1 == control.currentIndex ? Theme.Palette.Text.Inverse.Primary :
-                                                                   Theme.Palette.Text.Default.Primary
+                textItem.color: text - 1 == control.currentIndex ? Theme.Palette.Text.Inverse.Primary : Theme.Palette.Text.Default.Primary
                 onReleased: {
                     control.currentIndex = text - 1;
                 }
@@ -118,14 +116,14 @@ T.Control {
             to: control.count
             visible: control.goToVisible
             onAccepted: {
-                control.currentIndex = Math.max(Math.min(goToField.text - 1, control.count), 0)
+                control.currentIndex = Math.max(Math.min(goToField.text - 1, control.count), 0);
             }
         }
     }
-    Component.onCompleted: updatePagination();
-    onCurrentIndexChanged: updatePagination();
-    onVisibleCountChanged: updatePagination();
-    onCountChanged: updatePagination();
+    Component.onCompleted: updatePagination()
+    onCurrentIndexChanged: updatePagination()
+    onVisibleCountChanged: updatePagination()
+    onCountChanged: updatePagination()
 
     function updatePagination() {
         if (control.count == 0 || control.visibleCount == 0)
@@ -139,8 +137,7 @@ T.Control {
             for (var i = 0; i < control.count; i++)
                 pages.push(i + 1);
         } else if (visibleCount < 5) {
-            var start = Math.max(0, Math.min(currentIndex - Math.floor(visibleCount / 2),
-                                             control.count - visibleCount));
+            var start = Math.max(0, Math.min(currentIndex - Math.floor(visibleCount / 2), control.count - visibleCount));
             for (var i = 0; i < visibleCount; i++)
                 pages.push(start + i + 1);
         } else {

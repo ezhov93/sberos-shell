@@ -4,7 +4,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 MouseArea {
     id: control
 
@@ -17,9 +16,7 @@ MouseArea {
     property int lineHeight: Core.Settings.LineHeight
     property var rightStep
 
-    implicitWidth: Math.max(indicator.width,
-                            titleLabel.width + titleLabel.anchors.leftMargin,
-                            textLabel.width + textLabel.anchors.leftMargin)
+    implicitWidth: Math.max(indicator.width, titleLabel.width + titleLabel.anchors.leftMargin, textLabel.width + textLabel.anchors.leftMargin)
     width: implicitWidth
     implicitHeight: textLabel.y + textLabel.height
     height: implicitHeight
@@ -34,39 +31,28 @@ MouseArea {
         height: width
 
         property bool isCurrent: control.parent.currentIndex == control.index
-        property color bgColor: isCurrent       ? "transparent" :
-                                control.checked ? Theme.Palette.Surface.Default.SolidPrimary :
-                                                  Theme.Palette.Surface.Default.TransparentSecondary
-        property color textColor: isCurrent       ? Theme.Palette.Text.Default.Primary :
-                                  control.checked ? Theme.Palette.Text.Inverse.Primary :
-                                                    Theme.Palette.Text.Default.Secondary
+        property color bgColor: isCurrent ? "transparent" : control.checked ? Theme.Palette.Surface.Default.SolidPrimary : Theme.Palette.Surface.Default.TransparentSecondary
+        property color textColor: isCurrent ? Theme.Palette.Text.Default.Primary : control.checked ? Theme.Palette.Text.Inverse.Primary : Theme.Palette.Text.Default.Secondary
 
         Rectangle {
             id: background
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left
-            width: !control.parent.bullet ? indicator.isCurrent ? indicator.width :
-                                                                  24 :
-                                            indicator.isCurrent ? 16 :
-                                                                  8
+            width: !control.parent.bullet ? indicator.isCurrent ? indicator.width : 24 : indicator.isCurrent ? 16 : 8
             height: width
             color: indicator.bgColor
             radius: width / 2
             border.width: control.parent.bullet || indicator.isCurrent ? 2 : 0
-            border.color: control.checked ? Theme.Palette.Surface.Default.SolidPrimary :
-                                            Theme.Palette.Surface.Default.TransparentSecondary
+            border.color: control.checked ? Theme.Palette.Surface.Default.SolidPrimary : Theme.Palette.Surface.Default.TransparentSecondary
         }
         Rectangle {
             id: line
             anchors.verticalCenter: background.verticalCenter
             anchors.left: background.right
-            width: control.rightStep ? control.rightStep.x - control.x - background.width :
-                                       0
+            width: control.rightStep ? control.rightStep.x - control.x - background.width : 0
             height: 2
             visible: control.parent.linesVisible
-            color: control.checked && control.rightStep &&
-                   control.rightStep.checked ? Theme.Palette.Surface.Default.SolidPrimary :
-                                               Theme.Palette.Surface.Default.TransparentSecondary
+            color: control.checked && control.rightStep && control.rightStep.checked ? Theme.Palette.Surface.Default.SolidPrimary : Theme.Palette.Surface.Default.TransparentSecondary
         }
 
         Label {
@@ -91,22 +77,17 @@ MouseArea {
         id: titleLabel
         anchors.left: parent.left
         anchors.top: indicator.bottom
-        anchors.topMargin: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 6 :
-                           control.lineHeight <= Theme.Sizes.LineHeight.S  ? 8 :
-                           control.lineHeight <= Theme.Sizes.LineHeight.M  ? 10 :
-                                                                             12
+        anchors.topMargin: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 6 : control.lineHeight <= Theme.Sizes.LineHeight.S ? 8 : control.lineHeight <= Theme.Sizes.LineHeight.M ? 10 : 12
         lineHeight: control.lineHeight
         bold: true
-        color: control.parent.clickable && control.containsMouse ? Theme.Palette.Text.Default.Secondary :
-                                                                   Theme.Palette.Text.Default.Primary
+        color: control.parent.clickable && control.containsMouse ? Theme.Palette.Text.Default.Secondary : Theme.Palette.Text.Default.Primary
         height: text != "" ? implicitHeight : 0
     }
     Label {
         id: textLabel
         anchors.left: parent.left
         anchors.top: titleLabel.bottom
-        anchors.topMargin: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 4 :
-                                                                             6
+        anchors.topMargin: control.lineHeight <= Theme.Sizes.LineHeight.Xs ? 4 : 6
         lineHeight: control.lineHeight
         secondary: true
         height: text != "" ? implicitHeight : 0
@@ -119,9 +100,11 @@ MouseArea {
 
     Connections {
         target: control.parent
-        function onCurrentIndexChanged() { updateChecked(); }
+        function onCurrentIndexChanged() {
+            updateChecked();
+        }
     }
-    Component.onCompleted: updateChecked();
+    Component.onCompleted: updateChecked()
     function updateChecked() {
         if (indicator.isCurrent) {
             control.checked = true;

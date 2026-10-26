@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.TabButton {
     id: control
 
@@ -27,7 +26,7 @@ T.TabButton {
         hovered: control.enabled && control.hovered && !control.pressed
         hoverColor: Theme.Palette.Text.Default.SecondaryHover
         activated: control.ListView.isCurrentItem
-        activeColor:  Theme.Palette.Text.Default.Primary
+        activeColor: Theme.Palette.Text.Default.Primary
     }
     Colorizer {
         id: colorizerSecondary
@@ -35,10 +34,12 @@ T.TabButton {
         hovered: control.enabled && control.hovered && !control.pressed
         hoverColor: Theme.Palette.Text.Default.TertiaryHover
         activated: control.ListView.isCurrentItem
-        activeColor:  Theme.Palette.Text.Default.Secondary
+        activeColor: Theme.Palette.Text.Default.Secondary
     }
 
-    background: Rectangle { color: "transparent"; }
+    background: Rectangle {
+        color: "transparent"
+    }
 
     contentItem: Item {
         implicitWidth: content.implicitWidth
@@ -46,8 +47,7 @@ T.TabButton {
         Item {
             id: content
             anchors.centerIn: parent
-            implicitWidth: textLabel.width +
-                           (rightTextLabel.visible ? rightTextLabel.width + rightTextLabel.spacing : 0)
+            implicitWidth: textLabel.width + (rightTextLabel.visible ? rightTextLabel.width + rightTextLabel.spacing : 0)
             implicitHeight: Math.max(textLabel.height, rightTextLabel.height)
 
             IconLabel {

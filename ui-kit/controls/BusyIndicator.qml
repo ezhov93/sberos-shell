@@ -6,7 +6,6 @@ import QtQuick.Templates as T
 import Sber.Controls
 import Sber.Theme
 
-
 T.BusyIndicator {
     id: control
     visible: true
@@ -37,7 +36,10 @@ T.BusyIndicator {
             property real angle: loadingPercent / 100 * 2 * Math.PI
             property real angleOffset: -Math.PI / 2
 
-            onLoadingPercentChanged: { rotation = 0; requestPaint() }
+            onLoadingPercentChanged: {
+                rotation = 0;
+                requestPaint();
+            }
             onColorChanged: requestPaint()
             onAngleChanged: requestPaint()
 
@@ -48,24 +50,18 @@ T.BusyIndicator {
                 ctx.lineWidth = control.indicatorWidth;
                 var radius = control.lineHeight / 2.0;
                 var borderRadius = radius - control.indicatorWidth / 2.0;
-                var roundDelta = Math.asin(control.indicatorWidth / 4.0 / radius) * 2.0
+                var roundDelta = Math.asin(control.indicatorWidth / 4.0 / radius) * 2.0;
 
                 if (control.loadingPercent != 0) {
                     ctx.beginPath();
-                    ctx.strokeStyle = Theme.Palette.Surface.Default.SolidSecondary
-                    ctx.arc(radius, radius,
-                            radius - control.indicatorWidth / 2.0,
-                            0,
-                            2*Math.PI);
+                    ctx.strokeStyle = Theme.Palette.Surface.Default.SolidSecondary;
+                    ctx.arc(radius, radius, radius - control.indicatorWidth / 2.0, 0, 2 * Math.PI);
                     ctx.stroke();
 
                     ctx.beginPath();
                     ctx.strokeStyle = control.color;
-                    ctx.lineCap = "round"
-                    ctx.arc(radius, radius,
-                            borderRadius,
-                            angleOffset,
-                            angleOffset + angle);
+                    ctx.lineCap = "round";
+                    ctx.arc(radius, radius, borderRadius, angleOffset, angleOffset + angle);
                     ctx.stroke();
                 } else {
                     ctx.beginPath();
@@ -73,11 +69,8 @@ T.BusyIndicator {
                     grad.addColorStop(0, control.color);
                     grad.addColorStop(1, "transparent");
                     ctx.strokeStyle = grad;
-                    ctx.lineCap = "round"
-                    ctx.arc(radius, radius,
-                            borderRadius,
-                            angleOffset + roundDelta,
-                            angleOffset + 2*Math.PI - roundDelta);
+                    ctx.lineCap = "round";
+                    ctx.arc(radius, radius, borderRadius, angleOffset + roundDelta, angleOffset + 2 * Math.PI - roundDelta);
                     ctx.stroke();
                 }
                 ctx.restore();
@@ -88,10 +81,13 @@ T.BusyIndicator {
                 to: 360
                 running: control.visible && control.loadingPercent == 0
                 loops: Animation.Infinite
-                duration: 900;
+                duration: 900
             }
             Behavior on loadingPercent {
-                PropertyAnimation { duration: 300; easing.type: Easing.InOutQuint }
+                PropertyAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuint
+                }
             }
         }
     }

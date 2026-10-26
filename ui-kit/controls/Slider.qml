@@ -7,7 +7,6 @@ import Sber.Controls
 import Sber.Core
 import Sber.Theme
 
-
 T.Slider {
     id: control
 
@@ -20,10 +19,14 @@ T.Slider {
     // User-only events: model updates never emit these signals.
     signal valueEdited(real value)
     signal editingFinished(real value)
-    QtObject { id: interaction; property bool pointerActive: false }
+    QtObject {
+        id: interaction
+        property bool pointerActive: false
+    }
     onMoved: {
-        valueEdited(value)
-        if (!interaction.pointerActive) editingFinished(value)
+        valueEdited(value);
+        if (!interaction.pointerActive)
+            editingFinished(value);
     }
 
     property int view: Slider.View.Default
@@ -42,14 +45,9 @@ T.Slider {
     property int handleWidth: 16
 
     property int lineHeight: Core.Settings.LineHeight
-    implicitWidth: Math.max(100,
-                            contentItem.x + contentItem.implicitWidth,
-                            rangeItem.x + rangeItem.implicitWidth,
-                            label.x + label.width)
+    implicitWidth: Math.max(100, contentItem.x + contentItem.implicitWidth, rangeItem.x + rangeItem.implicitWidth, label.x + label.width)
     width: implicitWidth
-    implicitHeight: Math.max(contentItem.y + contentItem.height,
-                             rangeItem.y + rangeItem.implicitHeight,
-                             label.y + label.height)
+    implicitHeight: Math.max(contentItem.y + contentItem.height, rangeItem.y + rangeItem.implicitHeight, label.y + label.height)
     height: implicitHeight
     spacing: 6
     clip: false
@@ -66,15 +64,9 @@ T.Slider {
 
     Item {
         id: contentItem
-        anchors.top: labelPacement == Widget.Outer ?
-                         label.top :
-                         label.bottom
-        x: rangeValuesPlacement == Widget.Outer ?
-               rangeItem.x + textFrom.implicitWidth + 8 :
-               rangeItem.x
-        width: rangeValuesPlacement == Widget.Outer ?
-                   parent.width - x - textTo.implicitWidth - 8 :
-                   parent.width - x
+        anchors.top: labelPacement == Widget.Outer ? label.top : label.bottom
+        x: rangeValuesPlacement == Widget.Outer ? rangeItem.x + textFrom.implicitWidth + 8 : rangeItem.x
+        width: rangeValuesPlacement == Widget.Outer ? parent.width - x - textTo.implicitWidth - 8 : parent.width - x
         height: control.handleWidth
 
         Rectangle {
@@ -101,28 +93,37 @@ T.Slider {
             hoverEnabled: true
             preventStealing: true
             onPressed: mouse => {
-                interaction.pointerActive = true
-                control.pressed = true
-                control.forceActiveFocus(Qt.MouseFocusReason)
-                updateValue(mouse)
+                interaction.pointerActive = true;
+                control.pressed = true;
+                control.forceActiveFocus(Qt.MouseFocusReason);
+                updateValue(mouse);
             }
-            onMouseXChanged: mouse => { if (pressed) updateValue(mouse) }
-            onReleased: mouse => { updateValue(mouse); finish() }
+            onMouseXChanged: mouse => {
+                if (pressed)
+                    updateValue(mouse);
+            }
+            onReleased: mouse => {
+                updateValue(mouse);
+                finish();
+            }
             onCanceled: finish()
             function finish() {
-                if (!interaction.pointerActive) return
-                control.editingFinished(control.value)
-                interaction.pointerActive = false
-                control.pressed = false
+                if (!interaction.pointerActive)
+                    return;
+                control.editingFinished(control.value);
+                interaction.pointerActive = false;
+                control.pressed = false;
             }
             function updateValue(mouse) {
-                const position = Math.max(0, Math.min(1, mouse.x / Math.max(1, width)))
-                const raw = control.from + (control.to - control.from) * position
-                const snapped = control.stepSize > 0
-                    ? control.from + Math.round((raw - control.from) / control.stepSize) * control.stepSize : raw
-                const next = Math.max(Math.min(control.from, control.to), Math.min(Math.max(control.from, control.to), snapped))
-                if (control.value !== next) { control.value = next; control.moved() }
-                mouse.accepted = true
+                const position = Math.max(0, Math.min(1, mouse.x / Math.max(1, width)));
+                const raw = control.from + (control.to - control.from) * position;
+                const snapped = control.stepSize > 0 ? control.from + Math.round((raw - control.from) / control.stepSize) * control.stepSize : raw;
+                const next = Math.max(Math.min(control.from, control.to), Math.min(Math.max(control.from, control.to), snapped));
+                if (control.value !== next) {
+                    control.value = next;
+                    control.moved();
+                }
+                mouse.accepted = true;
             }
         }
     }
@@ -142,20 +143,17 @@ T.Slider {
 
         Colorizer {
             id: colorizer
-            defaultColor: control.view == Slider.View.Accient ?
-                              Theme.Palette.Surface.Default.Accent :
-                              Theme.Palette.Surface.Default.SolidPrimary
+            defaultColor: control.view == Slider.View.Accient ? Theme.Palette.Surface.Default.Accent : Theme.Palette.Surface.Default.SolidPrimary
             hovered: control.enabled && handleArea.containsMouse
-            hoverColor: control.view == Slider.View.Accient ?
-                            Theme.Palette.Surface.Default.AccentHover :
-                            Theme.Palette.Surface.Default.SolidPrimaryHover
+            hoverColor: control.view == Slider.View.Accient ? Theme.Palette.Surface.Default.AccentHover : Theme.Palette.Surface.Default.SolidPrimaryHover
             activated: control.pressed
-            activeColor: control.view == Slider.View.Accient ?
-                            Theme.Palette.Surface.Default.AccentActive :
-                            Theme.Palette.Surface.Default.SolidPrimaryActive
+            activeColor: control.view == Slider.View.Accient ? Theme.Palette.Surface.Default.AccentActive : Theme.Palette.Surface.Default.SolidPrimaryActive
         }
         Behavior on width {
-            PropertyAnimation { duration: 300; easing.type: Easing.InOutQuint }
+            PropertyAnimation {
+                duration: 300
+                easing.type: Easing.InOutQuint
+            }
         }
 
         MouseArea {
@@ -171,19 +169,11 @@ T.Slider {
 
     Item {
         id: rangeItem
-        anchors.left: labelPacement == Widget.Outer ?
-                          label.right :
-                          parent.left
-        anchors.leftMargin: labelPacement == Widget.Outer && label.width ?
-                                control.spacing :
-                                0
+        anchors.left: labelPacement == Widget.Outer ? label.right : parent.left
+        anchors.leftMargin: labelPacement == Widget.Outer && label.width ? control.spacing : 0
         anchors.right: parent.right
-        anchors.top: rangeValuesPlacement == Widget.Outer ?
-                         contentItem.top :
-                         contentItem.verticalCenter
-        anchors.topMargin: rangeValuesPlacement == Widget.Outer ?
-                               0 :
-                               control.spacing
+        anchors.top: rangeValuesPlacement == Widget.Outer ? contentItem.top : contentItem.verticalCenter
+        anchors.topMargin: rangeValuesPlacement == Widget.Outer ? 0 : control.spacing
         anchors.bottom: parent.bottom
         implicitHeight: Math.max(textFrom.height, textTo.height)
 

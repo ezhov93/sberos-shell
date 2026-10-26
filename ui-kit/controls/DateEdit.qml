@@ -4,11 +4,10 @@ import QtQuick.Controls
 import Sber.Controls
 import Sber.Theme
 
-
 TextField {
     id: control
 
-    property var   date
+    property var date
     property alias selectType: calendar.selectType
     property alias currentDate: calendar.currentDate
     property alias visibleMonth: calendar.visibleMonth
@@ -20,7 +19,6 @@ TextField {
 
     opacity: enabled ? 1 : 0.4
     activeFocusOnTab: true
-
 
     validator: RegularExpressionValidator {
         regularExpression: /(?:\d{1,2}(?:\.|\,|\\|\-)){2}\d{4}/

@@ -41,9 +41,9 @@ Q_PROPERTY(QImage image MEMBER image)
 Q_PROPERTY(bool closable MEMBER closable)
 Q_PROPERTY(int timeout MEMBER timeout)
 Q_INVOKABLE Notice createNotify() const
-Q_INVOKABLE void sendNotify(const Notice& message) const
-Q_INVOKABLE void sendSystemNotify(const Notice& message) const
-Q_INVOKABLE void sendSystemNotify(const QString& title, const QString& message) const
+Q_INVOKABLE void sendNotify(const Notice &message) const
+Q_INVOKABLE void sendSystemNotify(const Notice &message) const
+Q_INVOKABLE void sendSystemNotify(const QString &title, const QString &message) const
 ```
 
 ### C++: settings
@@ -115,8 +115,8 @@ function getBackgroundRadius()
 Базовый тип: `Item`. Источник: `controls/ArrowRectangle.qml`.
 
 ```qml
-enum Edge { None = 0x00000000, Left = 0x00000001, Top = 0x00000002, Right = 0x00000004, Bottom = 0x00000010 }
-enum Position { None = 0x00000000, Start = 0x00010000, End = 0x00020000 }
+enum Edge { None = 0, Left = 1, Top = 2, Right = 4, Bottom = 16 }
+enum Position { None = 0, Start = 65536, End = 131072 }
 property int arrowSize
 property int arrowPosition
 property alias lineHeight
@@ -543,7 +543,6 @@ property alias visibleYear
 property alias dateMin
 property alias dateMax
 property alias doubled
-signal accepted()
 property BackgroundConfig backgroundConfig
 property Colorizer colorizer
 ```
@@ -1208,7 +1207,6 @@ property alias time
 property string labelText
 property var locale
 property string iconName
-signal accepted()
 ```
 
 ### TimePickerView
@@ -1226,7 +1224,6 @@ readonly property int padding
 readonly property int cellWidth
 readonly property int cellHeight
 readonly property int delimiterWidth
-signal timeChanged()
 ```
 
 ### ToolTip
@@ -1277,7 +1274,7 @@ Q_ENUM_NS(Delimiter)
 Источник: `theme/fonts.h`.
 
 ```cpp
-Q_INVOKABLE QFont GetFont(const QString& tag) const
+Q_INVOKABLE QFont GetFont(const QString &tag) const
 ```
 
 ### C++: theme
@@ -1285,13 +1282,13 @@ Q_INVOKABLE QFont GetFont(const QString& tag) const
 Источник: `theme/theme.h`.
 
 ```cpp
-Q_PROPERTY(FontsClass* Fonts READ GetFonts CONSTANT)
-Q_PROPERTY(PaletteClass* Palette READ GetPalette NOTIFY ThemeChanged)
-Q_PROPERTY(SizesClass* Sizes READ GetSizes NOTIFY ThemeChanged)
+Q_PROPERTY(FontsClass *Fonts READ GetFonts CONSTANT)
+Q_PROPERTY(PaletteClass *Palette READ GetPalette NOTIFY ThemeChanged)
+Q_PROPERTY(SizesClass *Sizes READ GetSizes NOTIFY ThemeChanged)
 Q_INVOKABLE QStringList getAllImageNames() const
 Q_INVOKABLE QVariantMap getAvaliableThemes() const
 Q_INVOKABLE QList<QString> getAvaliableThemeNames() const
-Q_INVOKABLE void setTheme(const QString& name)
+Q_INVOKABLE void setTheme(const QString &name)
 Q_INVOKABLE void reloadTheme()
 ```
 
@@ -1302,7 +1299,7 @@ Q_INVOKABLE void reloadTheme()
 Источник: `utils/app_screen.h`.
 
 ```cpp
-Q_INVOKABLE void create(QObject* appWindow)
+Q_INVOKABLE void create(QObject *appWindow)
 ```
 
 ### C++: appargs
@@ -1311,9 +1308,9 @@ Q_INVOKABLE void create(QObject* appWindow)
 
 ```cpp
 Q_INVOKABLE QStringList getKeys() const
-Q_INVOKABLE bool hasKey(const QString& key) const
-Q_INVOKABLE QVariantList args(const QString& key) const
-Q_INVOKABLE QVariant arg(const QString& key) const
+Q_INVOKABLE bool hasKey(const QString &key) const
+Q_INVOKABLE QVariantList args(const QString &key) const
+Q_INVOKABLE QVariant arg(const QString &key) const
 ```
 
 ### C++: clipboard
@@ -1329,17 +1326,17 @@ Q_PROPERTY(QString text READ GetText WRITE SetText NOTIFY TextChanged)
 Источник: `utils/file.h`.
 
 ```cpp
-Q_INVOKABLE bool appendData(const QString& path, const QByteArray& data)
-Q_INVOKABLE bool copyFile(const QString& source, const QString& dest)
-Q_INVOKABLE bool exists(const QString& path)
-Q_INVOKABLE bool isDir(const QString& path)
-Q_INVOKABLE bool isFile(const QString& path)
-Q_INVOKABLE QStringList listFiles(const QString& path, const QStringList& formats = QStringList())
-Q_INVOKABLE QStringList listDirs(const QString& path)
-Q_INVOKABLE QByteArray readFile(const QString& path)
-Q_INVOKABLE bool removeFile(const QString& path)
-Q_INVOKABLE bool removeDir(const QString& path)
-Q_INVOKABLE bool writeFile(const QString& path, const QByteArray& data = QByteArray())
+Q_INVOKABLE bool appendData(const QString &path, const QByteArray &data)
+Q_INVOKABLE bool copyFile(const QString &source, const QString &dest)
+Q_INVOKABLE bool exists(const QString &path)
+Q_INVOKABLE bool isDir(const QString &path)
+Q_INVOKABLE bool isFile(const QString &path)
+Q_INVOKABLE QStringList listFiles(const QString &path, const QStringList &formats = QStringList())
+Q_INVOKABLE QStringList listDirs(const QString &path)
+Q_INVOKABLE QByteArray readFile(const QString &path)
+Q_INVOKABLE bool removeFile(const QString &path)
+Q_INVOKABLE bool removeDir(const QString &path)
+Q_INVOKABLE bool writeFile(const QString &path, const QByteArray &data = QByteArray())
 ```
 
 ### C++: process
@@ -1359,18 +1356,18 @@ Q_INVOKABLE int processId() const
 Q_INVOKABLE QString program() const
 Q_INVOKABLE QByteArray readAllStandardError()
 Q_INVOKABLE QByteArray readAllStandardOutput()
-Q_INVOKABLE void setArguments(const QVariantList& args)
-Q_INVOKABLE void setProgram(const QString& program)
-Q_INVOKABLE void setWorkingDirectory(const QString& dir)
-Q_INVOKABLE void start(const QString& program, const QVariantList& args)
+Q_INVOKABLE void setArguments(const QVariantList &args)
+Q_INVOKABLE void setProgram(const QString &program)
+Q_INVOKABLE void setWorkingDirectory(const QString &dir)
+Q_INVOKABLE void start(const QString &program, const QVariantList &args)
 Q_INVOKABLE void start()
-Q_INVOKABLE void startDetached(const QString& program, const QVariantList& args)
+Q_INVOKABLE void startDetached(const QString &program, const QVariantList &args)
 Q_INVOKABLE void startDetached()
 Q_INVOKABLE void terminate()
 Q_INVOKABLE void waitForFinished(const int msecs = 30000)
 Q_INVOKABLE void waitForStarted(const int msecs = 30000)
 Q_INVOKABLE QString workingDirectory() const
-Q_INVOKABLE void write(const QString& command)
+Q_INVOKABLE void write(const QString &command)
 Q_INVOKABLE void closeWriteChannel()
 ```
 
@@ -1379,7 +1376,7 @@ Q_INVOKABLE void closeWriteChannel()
 Источник: `utils/shell.h`.
 
 ```cpp
-Q_INVOKABLE QString run(const QString& command, const QStringList& args = QStringList()) const
+Q_INVOKABLE QString run(const QString &command, const QStringList &args = QStringList()) const
 ```
 
 ### C++: types_provider

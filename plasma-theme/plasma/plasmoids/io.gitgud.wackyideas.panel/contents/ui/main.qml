@@ -26,8 +26,6 @@ ContainmentItem {
     property var panel: null
 
     property int panelThickness: root.panel ? root.panel.thickness : Plasmoid.configuration.panelThickness
-    property bool panelFloating: root.panel ? root.panel.floating : Plasmoid.configuration.panelFloating
-    property bool panelFloatingApplets: root.panel ? root.panel.floatingApplets : Plasmoid.configuration.panelFloatingApplets
 
     Component.onCompleted: Plasmoid.backgroundHints = PlasmaCore.Types.NoBackground
 
@@ -39,27 +37,8 @@ ContainmentItem {
             }
         }
     }
-    onPanelFloatingChanged: {
-        if(root.panel) {
-            if(root.panel.userConfiguring) {
-                Plasmoid.configuration.panelFloating = root.panel.floating;
-                Plasmoid.configuration.writeConfig();
-            }
-        }
-    }
-    onPanelFloatingAppletsChanged: {
-        if(root.panel) {
-            if(root.panel.userConfiguring) {
-                Plasmoid.configuration.panelFloatingApplets = root.panel.floatingApplets;
-                Plasmoid.configuration.writeConfig();
-            }
-        }
-    }
-
     onPanelChanged: {
         if(root.panel) {
-            root.panel.floating = Plasmoid.configuration.panelFloating;
-            root.panel.floatingApplets = Plasmoid.configuration.panelFloatingApplets;
             root.panel.thickness = Plasmoid.configuration.panelThickness;
         }
     }
@@ -416,7 +395,7 @@ ContainmentItem {
                 Item {
                     id: marginHighlightElements
                     anchors.fill: parent
-                    // index -1 is for floating applets, which do not need a margin highlight
+                    // Unpositioned applets do not need a margin highlight.
                     opacity: Plasmoid.containment.corona.editMode && dropArea.marginAreasEnabled && !root.dragAndDropping && index != -1 ? 1 : 0
                     Behavior on opacity {
                         NumberAnimation {

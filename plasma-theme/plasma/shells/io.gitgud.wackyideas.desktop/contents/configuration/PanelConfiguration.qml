@@ -465,47 +465,6 @@ ColumnLayout {
             }
         }
 
-        ColumnLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: Kirigami.Units.mediumSpacing
-            Kirigami.Heading {
-                level: dialogRoot.headingLevel
-                Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
-                text: i18ndc("plasma_shell_org.kde.plasma.desktop","@title:group Degree of floatingness of panel and applets",  "Floating")
-                textFormat: Text.PlainText
-            }
-            PanelRepresentation {
-                Layout.alignment: Qt.AlignHCenter
-                floatingGap: Kirigami.Units.smallSpacing * (floatingBox.previewIndex === 2)
-                onClicked: floatingBox.popup.visible = true
-                isVertical: dialogRoot.vertical
-                alignment: positionRepresentation.alignment
-            }
-            PC3.ComboBox {
-                id: floatingBox
-                readonly property int previewIndex: popup.visible ? highlightedIndex : currentIndex
-                model: [
-                    i18ndc("plasma_shell_org.kde.plasma.desktop", "@item:inlistbox Option to disable floating panels or applets", "Disabled"),
-                    i18ndc("plasma_shell_org.kde.plasma.desktop", "@item:inlistbox Option to make only panel applets always float", "Applets only"),
-                    i18ndc("plasma_shell_org.kde.plasma.desktop", "@item:inlistbox Option to make panel and applets floating", "Panel and applets")
-                ]
-                Layout.alignment: Qt.AlignHCenter
-                Layout.minimumHeight: transparencyBox.height
-                Layout.minimumWidth: opacityRepresentation.width
-                currentIndex: (panel.floating ? 2 : panel.floatingApplets ? 1 : 0)
-                onActivated: (index) => {
-                    if (index === 0) {
-                        panel.floating = panel.floatingApplets = false
-                    } else if (index === 1) {
-                        panel.floating = false
-                        panel.floatingApplets = true
-                    } else {
-                        panel.floating = true
-                        panel.floatingApplets = true
-                    }
-                }
-            }
-        }
     }
 
 

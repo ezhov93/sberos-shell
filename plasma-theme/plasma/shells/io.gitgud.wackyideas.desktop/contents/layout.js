@@ -14,6 +14,7 @@ panel.location = "bottom"
 panel.height = 72
 // Keep one shared panel and strut; the panel containment paints the mock's islands.
 panel.floating = false
+panel.floatingApplets = false
 
 // Restrict horizontal panel to a maximum size of a 21:9 monitor
 const maximumAspectRatio = 21/9;

@@ -21,7 +21,27 @@ import org.kde.plasma.plasmoid 2.0
 Item {
     id: root
 
-    Component.onCompleted: Qt.callLater(() => panel.opacityMode = Panel.Global.Translucent)
+    Component.onCompleted: Qt.callLater(() => {
+        panel.floating = false
+        panel.floatingApplets = false
+        panel.opacityMode = Panel.Global.Translucent
+    })
+
+    Connections {
+        target: panel
+
+        function onFloatingChanged() {
+            if (panel.floating) {
+                panel.floating = false
+            }
+        }
+
+        function onFloatingAppletsChanged() {
+            if (panel.floatingApplets) {
+                panel.floatingApplets = false
+            }
+        }
+    }
 
     Connections {
         target: root
@@ -37,7 +57,6 @@ Item {
     property real dpi: root.Window.window ? root.Window.window.devicePixelRatio : 1.0
 
     property Item containment
-    property bool floatingPrefix: floatingPanelSvg.usedPrefix === "floating"
     readonly property bool verticalPanel: containment?.plasmoid?.formFactor === PlasmaCore.Types.Vertical
 
     readonly property real spacingAtMinSize: Math.round(Math.max(1, (verticalPanel ? root.width : root.height) - Kirigami.Units.iconSizes.smallMedium)/2)
@@ -47,12 +66,6 @@ Item {
         prefix: 'thick'
         imagePath: "widgets/panel-background"
     }
-    KSvg.FrameSvgItem {
-        id: floatingPanelSvg
-        prefix: ['floating', '']
-        imagePath: "widgets/panel-background"
-    }
-
     // NOTE: Many of the properties in this file are accessed directly in C++ PanelView!
     // If you change these, make sure to also correct the related code in panelview.cpp.
 
@@ -61,20 +74,20 @@ Item {
     readonly property bool rightEdge: containment?.plasmoid?.location === PlasmaCore.Types.RightEdge
     readonly property bool bottomEdge: containment?.plasmoid?.location === PlasmaCore.Types.BottomEdge
 
+    // PanelView keeps these values in its geometry contract; floating margins stay zero.
+    readonly property int fixedBottomFloatingPadding: 0
+    readonly property int fixedLeftFloatingPadding: 0
+    readonly property int fixedRightFloatingPadding: 0
+    readonly property int fixedTopFloatingPadding: 0
+    readonly property int bottomFloatingPadding: 0
+    readonly property int leftFloatingPadding: 0
+    readonly property int rightFloatingPadding: 0
+    readonly property int topFloatingPadding: 0
+
     readonly property int topPadding: Math.round(Math.min(thickPanelSvg.fixedMargins.top + Kirigami.Units.smallSpacing, spacingAtMinSize));
     readonly property int bottomPadding: Math.round(Math.min(thickPanelSvg.fixedMargins.bottom + Kirigami.Units.smallSpacing, spacingAtMinSize));
     readonly property int leftPadding: Math.round(Math.min(thickPanelSvg.fixedMargins.left + Kirigami.Units.smallSpacing, spacingAtMinSize));
     readonly property int rightPadding: Math.round(Math.min(thickPanelSvg.fixedMargins.right + Kirigami.Units.smallSpacing, spacingAtMinSize));
-
-    readonly property int fixedBottomFloatingPadding: floating && (floatingPrefix ? floatingPanelSvg.fixedMargins.bottom : 8)
-    readonly property int fixedLeftFloatingPadding: floating && (floatingPrefix ? floatingPanelSvg.fixedMargins.left   : 8)
-    readonly property int fixedRightFloatingPadding: floating && (floatingPrefix ? floatingPanelSvg.fixedMargins.right  : 8)
-    readonly property int fixedTopFloatingPadding: floating && (floatingPrefix ? floatingPanelSvg.fixedMargins.top    : 8)
-
-    readonly property int bottomFloatingPadding: Math.round(fixedBottomFloatingPadding * floatingness)
-    readonly property int leftFloatingPadding: Math.round(fixedLeftFloatingPadding * floatingness)
-    readonly property int rightFloatingPadding: Math.round(fixedRightFloatingPadding * floatingness)
-    readonly property int topFloatingPadding: Math.round(fixedTopFloatingPadding * floatingness)
 
     readonly property int minPanelHeight: translucentItem.minimumDrawingHeight
     readonly property int minPanelWidth: translucentItem.minimumDrawingWidth
@@ -136,9 +149,9 @@ Item {
         }
     }
 
-    // Floatingness is a value in [0, 1] that's multiplied to the floating margin; 0: not floating, 1: floating, between 0 and 1: animation between the two states
+    // PanelView reads these compatibility properties; floating mode is fixed off.
     readonly property int floatingnessAnimationDuration: Kirigami.Units.longDuration
-    property double floatingnessTarget: 0.0 // The animation is handled in panelview.cpp for efficiency
+    property double floatingnessTarget: 0.0
     property double floatingness: 0.0
 
     // PanelOpacity is a value in [0, 1] that's used as the opacity of the opaque elements over the transparent ones; values between 0 and 1 are used for animations
@@ -150,18 +163,18 @@ Item {
         }
     }
 
-    // This value is read from panelview.cpp and disables shadow for floating panels, as they'd be detached from the panel
-    property bool hasShadows: floatingness < 0.5
-    property var panelMask: floatingness === 0 ? (panelOpacity === 1 ? opaqueItem.mask : translucentItem.mask) : (panelOpacity === 1 ? floatingOpaqueItem.mask : floatingTranslucentItem.mask)
+    // PanelView reads these properties while the panel remains attached to its edge.
+    readonly property bool hasShadows: true
+    property var panelMask: panelOpacity === 1 ? opaqueItem.mask : translucentItem.mask
 
-    // The point is read from panelview.cpp and is used as an offset for the mask
-    readonly property point floatingTranslucentItemOffset: Qt.point(floatingTranslucentItem.x+(root.rightEdge && root.dpi != 1.0 ? 1 : 0), floatingTranslucentItem.y+(root.bottomEdge && root.dpi != 1.0 ? 1 : 0))
+    // PanelView reads the mask offset; an attached panel has no floating offset.
+    readonly property point floatingTranslucentItemOffset: Qt.point(0, 0)
 
     KSvg.FrameSvgItem {
         id: translucentItem
-        visible: floatingness === 0 && panelOpacity !== 1
+        visible: panelOpacity !== 1
         enabledBorders: panel.enabledBorders
-        anchors.fill: floatingTranslucentItem
+        anchors.fill: parent
         /*anchors.rightMargin: {
             if(containment) {
                 if(!containment.isHorizontal) return 0;
@@ -172,43 +185,12 @@ Item {
         imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "widgets/panel-background"
     }
     KSvg.FrameSvgItem {
-        id: floatingTranslucentItem
-        visible: floatingness !== 0 && panelOpacity !== 1
-        x: root.leftEdge ? fixedLeftFloatingPadding + fixedRightFloatingPadding * (1 - floatingness) : leftFloatingPadding
-        y: root.topEdge ? fixedTopFloatingPadding + fixedBottomFloatingPadding * (1 - floatingness) : topFloatingPadding
-        width: verticalPanel ? panel.thickness : parent.width - leftFloatingPadding - rightFloatingPadding
-        height: verticalPanel ? parent.height - topFloatingPadding - bottomFloatingPadding : panel.thickness
-
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "widgets/panel-background"
-    }
-    KSvg.FrameSvgItem {
-        id: floatingOpaqueItem
-        visible: floatingness !== 0 && panelOpacity !== 0
-        opacity: panelOpacity
-        anchors.fill: floatingTranslucentItem
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "solid/widgets/panel-background"
-    }
-    KSvg.FrameSvgItem {
         id: opaqueItem
-        visible: panelOpacity !== 0 && floatingness === 0
+        visible: panelOpacity !== 0
         opacity: panelOpacity
         enabledBorders: panel.enabledBorders
-        anchors.fill: floatingTranslucentItem
+        anchors.fill: parent
         imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "solid/widgets/panel-background"
-    }
-    KSvg.FrameSvgItem {
-        id: floatingShadow
-        visible: !hasShadows
-        z: -100
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "solid/widgets/panel-background"
-        prefix: "shadow"
-        anchors {
-            fill: floatingTranslucentItem
-            topMargin: -floatingShadow.margins.top
-            leftMargin: -floatingShadow.margins.left
-            rightMargin: -floatingShadow.margins.right
-            bottomMargin: -floatingShadow.margins.bottom
-        }
     }
 
     Keys.onEscapePressed: {
@@ -218,39 +200,16 @@ Item {
     property bool isOpaque: panel.opacityMode === Panel.Global.Opaque
     property bool isTransparent: panel.opacityMode === Panel.Global.Translucent
     property bool isAdaptive: panel.opacityMode === Panel.Global.Adaptive
-    property bool floating: panel.floating
     property bool hasCompositing: KWindowSystem.isPlatformX11 ? KX11Extras.compositingActive : true
     readonly property bool screenCovered: touchingWindow && panel.visibilityMode == Panel.Global.NormalPanel
-    property var stateTriggers: [floating, touchingWindow, isOpaque, isAdaptive, isTransparent, hasCompositing, containment, panel.floatingApplets]
+    property var stateTriggers: [touchingWindow, isOpaque, isAdaptive, isTransparent, hasCompositing, containment]
     onStateTriggersChanged: {
         let opaqueApplets = false
-        let floatingApplets = false
-        if ((!floating || touchingWindow) && (isOpaque || (touchingWindow && isAdaptive))) {
+        if (isOpaque || (touchingWindow && isAdaptive)) {
             panelOpacity = 1
             opaqueApplets = true
-            floatingnessTarget = 0
-            floatingApplets = (panel.floatingApplets && !floating)
-        } else if ((!floating || touchingWindow) && (isTransparent || (!touchingWindow && isAdaptive))) {
+        } else {
             panelOpacity = 0
-            floatingnessTarget = 0
-            floatingApplets = (panel.floatingApplets && !floating)
-        } else if ((floating && !touchingWindow) && (isTransparent || isAdaptive)) {
-            panelOpacity = 0
-            floatingnessTarget = 1
-            floatingApplets = true
-        } else if (floating && !touchingWindow && isOpaque) {
-            panelOpacity = 1
-            opaqueApplets = true
-            floatingnessTarget = 1
-            floatingApplets = true
-        }
-
-        // Exceptions: panels with not NormalPanel visibilityMode
-        // should never de-float, and we should not have transparent
-        // panels when on X11 with compositing not active.
-        if (panel.visibilityMode != Panel.Global.NormalPanel && floating) {
-            floatingnessTarget = 1
-            floatingApplets = true
         }
         if (!KWindowSystem.isPlatformWayland && !KX11Extras.compositingActive) {
             opaqueApplets = false
@@ -265,11 +224,7 @@ Item {
             } else {
                 containment.plasmoid.containmentDisplayHints &= ~PlasmaCore.Types.ContainmentPrefersOpaqueBackground
             }
-            if (floatingApplets) {
-                containment.plasmoid.containmentDisplayHints |= PlasmaCore.Types.ContainmentPrefersFloatingApplets
-            } else {
-                containment.plasmoid.containmentDisplayHints &= ~PlasmaCore.Types.ContainmentPrefersFloatingApplets
-            }
+            containment.plasmoid.containmentDisplayHints &= ~PlasmaCore.Types.ContainmentPrefersFloatingApplets
         }
     }
 
@@ -295,7 +250,7 @@ Item {
             pre = "";
             break;
         }
-        translucentItem.prefix = opaqueItem.prefix = floatingTranslucentItem.prefix = floatingOpaqueItem.prefix = [pre, ""];
+        translucentItem.prefix = opaqueItem.prefix = [pre, ""];
     }
 
     onContainmentChanged: {
@@ -387,9 +342,9 @@ Item {
     }
     Item {
         id: containmentParent
-        anchors.fill: isOpaque ? floatingOpaqueItem : floatingTranslucentItem
+        anchors.fill: isOpaque ? opaqueItem : translucentItem
         //anchors.leftMargin: root.verticalPanel ? 0 : -Kirigami.Units.mediumSpacing
-        width: root.verticalPanel ? panel.thickness : root.width - fixedLeftFloatingPadding - fixedRightFloatingPadding
-        height: root.verticalPanel ? root.height - fixedBottomFloatingPadding - fixedTopFloatingPadding : panel.thickness
+        width: root.verticalPanel ? panel.thickness : root.width
+        height: root.verticalPanel ? root.height : panel.thickness
     }
 }

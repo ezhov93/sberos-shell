@@ -4,6 +4,8 @@ loadTemplate("io.gitgud.wackyideas.taskbar")
 for (const id of panelIds) {
     const panel = panelById(id)
     if (panel && panel.type === "io.gitgud.wackyideas.panel") {
+        panel.floating = false
+        panel.floatingApplets = false
         panel.locked = true
     }
 }

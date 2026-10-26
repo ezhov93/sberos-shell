@@ -23,7 +23,6 @@ Item {
     property bool sunkenPanel: false
     property bool adaptivePanel: false
     property bool fillAvailable: false
-    property int floatingGap: 0
     property int windowZ: 0
     property var mainIconSource: null
     property int screenHeight: Math.round(screenRect.height / 2)
@@ -76,7 +75,7 @@ Item {
                     implicitWidth: root.isVertical ? Math.round(parent.width / 6) : Math.round(parent.width * (root.fillAvailable ? 1 : 0.8))
                     implicitHeight: root.isVertical ? Math.round(parent.height * (root.fillAvailable ? 1 : 0.8)) : Math.round(parent.height / 4)
                     Layout.alignment: root.alignment
-                    Layout.bottomMargin: root.sunkenPanel * -Math.round(height / 2) + root.floatingGap
+                    Layout.bottomMargin: root.sunkenPanel * -Math.round(height / 2)
                     color: root.translucentPanel ? screenRect.color : Kirigami.Theme.backgroundColor
                     opacity: root.translucentPanel ? 0.8 : 1.0
                     border.color: "transparent"

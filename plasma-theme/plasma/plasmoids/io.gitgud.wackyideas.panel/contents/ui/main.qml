@@ -320,10 +320,12 @@ ContainmentItem {
                 property Item dragging
                 property bool isAppletContainer: true
                 property bool isApplicationIsland: applet?.plasmoid?.pluginName === "io.gitgud.wackyideas.smarttasks"
+                property bool isOskaIsland: applet?.plasmoid?.pluginName === "com.mcc45tr.filesearch"
                 property bool isMarginSeparator: ((applet.plasmoid?.constraintHints & Plasmoid.MarginAreasSeparator) == Plasmoid.MarginAreasSeparator)
                 property int appletIndex: index // To make sure it's always readable even inside other models
                 property bool inThickArea: false
                 visible: applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus || (!Plasmoid.immutable && Plasmoid.userConfiguring) || Containment.corona.editMode;
+                z: isOskaIsland ? 1 : 0
 
                 Rectangle {
                     id: appletBackground
@@ -486,7 +488,14 @@ ContainmentItem {
                 property int oldY: 0
                 onXChanged: if (oldX) animateFrom(oldX, y)
                 onYChanged: if (oldY) animateFrom(x, oldY)
-                transform: Translate{id: translation}
+                transform: [
+                    Translate {
+                        x: container.isOskaIsland && root.isHorizontal
+                            ? root.width / 2 - currentLayout.x - container.x - container.width / 2
+                            : 0
+                    },
+                    Translate { id: translation }
+                ]
                 function animateFrom(xa, ya) {
                     if (isHorizontal) translation.x = xa - x
                     else translation.y = ya - y

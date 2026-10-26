@@ -16,14 +16,17 @@ Dock {
     readonly property real zoneGap: 8
     readonly property real oskaWidth: Math.min(456, screenW * 0.25)
     readonly property real systemZoneWidth: essential.implicitWidth + 16
-    readonly property real indicatorsAvailableWidth: Math.max(0, essentialRect.x - oskaRect.x - oskaRect.width - 2 * zoneGap)
+    readonly property real trayIslandWidth: nativeTray.implicitWidth > 0 ? Math.min(Math.max(64, screenW * 0.10) + 16, nativeTray.implicitWidth + 16) : 0
+    readonly property real trayGap: trayIslandWidth > 0 ? zoneGap : 0
+    readonly property rect trayRect: Qt.rect(essentialRect.x - trayGap - trayIslandWidth, barRect.y, trayIslandWidth, dockH)
+    readonly property real indicatorsAvailableWidth: Math.max(0, trayRect.x - oskaRect.x - oskaRect.width - trayGap)
     readonly property real indicatorsWidth: Math.min(indicatorsAvailableWidth, status.implicitWidth + 16)
     readonly property rect sberRect: Qt.rect(barRect.x, barRect.y, dockH, dockH)
     readonly property rect oskaRect: Qt.rect((width - oskaWidth) / 2, barRect.y, oskaWidth, dockH)
     readonly property rect essentialRect: Qt.rect(barRect.x + dockW - systemZoneWidth, barRect.y, systemZoneWidth, dockH)
-    readonly property rect indicatorsRect: Qt.rect(essentialRect.x - zoneGap - indicatorsWidth, barRect.y, indicatorsWidth, dockH)
+    readonly property rect indicatorsRect: Qt.rect(trayRect.x - trayGap - indicatorsWidth, barRect.y, indicatorsWidth, dockH)
     readonly property rect applicationsRect: Qt.rect(sberRect.x + sberRect.width + zoneGap, barRect.y, Math.max(Config.dockCell + 2 * pad, Math.min(contentW, oskaRect.x - sberRect.x - sberRect.width - 2 * zoneGap)), dockH)
-    panelZones: [sberRect, applicationsRect, oskaRect, indicatorsRect, essentialRect]
+    panelZones: [sberRect, applicationsRect, oskaRect, indicatorsRect, trayRect, essentialRect]
     leadingWidth: applicationsRect.x - barRect.x
     trailingWidth: dockW - leadingWidth - applicationsRect.width
     taskAreaX: applicationsRect.x + pad
@@ -425,32 +428,6 @@ Dock {
                 audio: volumeLoader.item
                 allowed: panel.placed("mic")
             }
-            Flickable {
-                width: Math.min(nativeTray.implicitWidth, Math.max(64, panel.screenW * 0.10))
-                height: panel.dockH
-                contentWidth: nativeTray.implicitWidth
-                contentHeight: height
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                Tray {
-                    id: nativeTray
-                    flat: true
-                    symbolicColor: Theme.Palette.Text.Default.Primary
-                    anchors.verticalCenter: parent.verticalCenter
-                    onMenuRequested: (item, centerX) => {
-                        panel.warm = true;
-                        Qt.callLater(() => {
-                            const menu = trayMenuLoader.item;
-                            if (!menu)
-                                return;
-                            panel.popupAnchor = nativeTray.mapToItem(panel.contentItem, centerX, 0).x;
-                            nativeTray.openItem = item;
-                            menu.show(item);
-                            panel.openLobe = "tray";
-                        });
-                    }
-                }
-            }
             PanelButton {
                 symbol: "media-removable-symbolic"
                 description: qsTr("Removable drives")
@@ -463,6 +440,34 @@ Dock {
                 visible: panel.placed("system")
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: panel.openAt("system", this)
+            }
+        }
+    }
+    Flickable {
+        x: panel.trayRect.x + 8
+        y: panel.barRect.y
+        width: Math.max(0, panel.trayRect.width - 16)
+        height: panel.dockH
+        contentWidth: nativeTray.implicitWidth
+        contentHeight: height
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        Tray {
+            id: nativeTray
+            flat: true
+            symbolicColor: Theme.Palette.Text.Default.Primary
+            anchors.verticalCenter: parent.verticalCenter
+            onMenuRequested: (item, centerX) => {
+                panel.warm = true;
+                Qt.callLater(() => {
+                    const menu = trayMenuLoader.item;
+                    if (!menu)
+                        return;
+                    panel.popupAnchor = nativeTray.mapToItem(panel.contentItem, centerX, 0).x;
+                    nativeTray.openItem = item;
+                    menu.show(item);
+                    panel.openLobe = "tray";
+                });
             }
         }
     }

@@ -9,10 +9,12 @@ the window manager. Popups are not separate windows: they grow out of the bar an
 
 ## SberOS unified panel
 
-This adapted shell defaults to one bottom `UnifiedPanel` with five separate opaque
-blocks: Sber/settings, applications, a centred Oska entry area, indicators, and
-quick settings/calendar. Oska stays at the screen centre as neighbouring content
-changes. The Oska search field stays in the centre of the panel. Typing expands
+This adapted shell defaults to one bottom `UnifiedPanel` with five logical zones:
+Sber/settings, applications, a centred Oska entry area, indicators, and quick
+settings/calendar. Application tray icons have their own island inside the
+indicators zone; system controls remain in the indicators island. Oska stays at
+the screen centre as neighbouring content changes. The Oska search field stays
+in the centre of the panel. Typing expands
 local KRunner/Milou app and document results above it inside the same surface;
 the results scroll independently. Meta+Space focuses this field. Corporate
 search is excluded from the MVP. The notification button still uses its existing

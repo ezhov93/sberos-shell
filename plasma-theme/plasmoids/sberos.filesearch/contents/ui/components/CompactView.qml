@@ -61,14 +61,6 @@ Item {
     function focusSearch() {
         if (!searchActive || !searchPopupHost) return;
         searchInput.forceActiveFocus();
-        searchInput.Window.window?.requestActivate();
-    }
-    Connections {
-        target: searchInput.Window.window ?? null
-        function onActiveChanged() {
-            if (searchInput.Window.window?.active && compactRoot.searchActive)
-                Qt.callLater(() => searchInput.forceActiveFocus());
-        }
     }
 
     // Button Mode - icon only (no background)

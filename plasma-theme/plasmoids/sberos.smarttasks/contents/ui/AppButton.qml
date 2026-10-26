@@ -24,6 +24,8 @@ Item {
     signal activated
     signal newInstanceRequested
     signal contextRequested
+    signal previewHoverEntered
+    signal previewHoverExited
 
     implicitWidth: cellSize + (separatorBefore ? 8 : 0)
     implicitHeight: cellSize
@@ -85,6 +87,7 @@ Item {
 
         PlasmaCore.ToolTipArea {
             anchors.fill: parent
+            visible: root.runningCount === 0
             mainText: root.label
         }
 
@@ -93,6 +96,8 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+            onEntered: root.previewHoverEntered()
+            onExited: root.previewHoverExited()
             onClicked: mouse => {
                 if (mouse.button === Qt.MiddleButton) {
                     root.newInstanceRequested()

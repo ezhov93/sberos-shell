@@ -26,6 +26,10 @@ PlasmoidItem {
     property string selectedLauncherUrl: ""
     property bool selectedIsActive: false
     property int selectedWindowCount: 0
+    property bool previewVisible: false
+    property int previewTaskIndex: -1
+    property string previewAppName: ""
+    property var previewWindows: []
 
     Plasmoid.title: qsTr("Приложения")
     Plasmoid.icon: "view-app-grid-symbolic"
@@ -46,12 +50,58 @@ PlasmoidItem {
     }
 
     function openTaskMenu(index, task) {
+        previewOpenTimer.stop()
+        previewCloseTimer.stop()
+        previewVisible = false
         selectedTaskIndex = index
         selectedAppName = String(task.AppName || task.display || qsTr("Приложение"))
         selectedLauncherUrl = task.LauncherUrlWithoutIcon ? String(task.LauncherUrlWithoutIcon) : ""
         selectedIsActive = Boolean(task.IsActive)
         selectedWindowCount = task.IsGroupParent ? Math.max(2, Number(task.ChildCount)) : (task.IsLauncher ? 0 : 1)
         root.expanded = true
+    }
+
+    function windowPreviewData(index, task) {
+        const parentIndex = tasksModel.makeModelIndex(index)
+        const grouped = Boolean(task.IsGroupParent)
+        const count = grouped ? tasksModel.rowCount(parentIndex) : 1
+        const windows = []
+        for (let child = 0; child < count; child++) {
+            const childIndex = grouped ? tasksModel.index(child, 0, parentIndex) : parentIndex
+            const ids = tasksModel.data(childIndex, TaskManager.AbstractTasksModel.WinIdList) || []
+            const windowId = ids.length > 0 ? String(ids[0]) : ""
+            if (!windowId.length) continue
+            windows.push({
+                title: String(tasksModel.data(childIndex, Qt.DisplayRole) || task.AppName || qsTr("Окно")),
+                windowId: windowId,
+                lastActivated: Number(tasksModel.data(childIndex, TaskManager.AbstractTasksModel.LastActivated) || 0),
+                childIndex: grouped ? child : -1
+            })
+        }
+        windows.sort((left, right) => right.lastActivated - left.lastActivated)
+        return windows
+    }
+
+    function activatePreviewWindow(windowIndex) {
+        const windowData = previewWindows[windowIndex]
+        const parentIndex = tasksModel.makeModelIndex(previewTaskIndex)
+        const taskIndex = windowData.childIndex >= 0
+                         ? tasksModel.index(windowData.childIndex, 0, parentIndex) : parentIndex
+        tasksModel.requestActivate(taskIndex)
+        closeWindowPreview()
+    }
+
+    function closePreviewWindow(windowIndex) {
+        const windowData = previewWindows[windowIndex]
+        const parentIndex = tasksModel.makeModelIndex(previewTaskIndex)
+        const taskIndex = windowData.childIndex >= 0
+                         ? tasksModel.index(windowData.childIndex, 0, parentIndex) : parentIndex
+        tasksModel.requestClose(taskIndex)
+    }
+
+    function closeWindowPreview() {
+        previewVisible = false
+        root.expanded = false
     }
 
     function activateTask(index, active) {
@@ -156,6 +206,19 @@ PlasmoidItem {
                     onActivated: root.activateTask(index, active)
                     onNewInstanceRequested: tasksModel.requestNewInstance(tasksModel.makeModelIndex(index))
                     onContextRequested: root.openTaskMenu(index, model)
+                    onPreviewHoverEntered: {
+                        previewCloseTimer.stop()
+                        if (runningCount > 0) {
+                            root.previewTaskIndex = index
+                            root.previewAppName = label
+                            root.previewWindows = root.windowPreviewData(index, model)
+                            if (root.previewWindows.length) previewOpenTimer.restart()
+                        }
+                    }
+                    onPreviewHoverExited: {
+                        previewOpenTimer.stop()
+                        if (root.previewVisible) previewCloseTimer.restart()
+                    }
                 }
             }
         }
@@ -163,8 +226,10 @@ PlasmoidItem {
 
     fullRepresentation: Item {
         id: fullView
-        readonly property int popupWidth: 248
-        readonly property int popupHeight: root.contextMenuHeight
+        readonly property int popupWidth: root.previewVisible
+                                              ? Math.min(520, Math.max(272, root.previewWindows.length * 256 + 24))
+                                              : 248
+        readonly property int popupHeight: root.previewVisible ? 230 : root.contextMenuHeight
         implicitWidth: popupWidth
         implicitHeight: popupHeight
         width: implicitWidth
@@ -172,8 +237,32 @@ PlasmoidItem {
 
         Loader {
             anchors.fill: parent
-            sourceComponent: taskContextMenu
+            sourceComponent: root.previewVisible ? windowPreview : taskContextMenu
         }
+
+        HoverHandler {
+            onHoveredChanged: {
+                if (hovered) previewCloseTimer.stop()
+                else if (root.previewVisible) previewCloseTimer.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: previewOpenTimer
+        interval: 300
+        onTriggered: {
+            if (root.previewWindows.length) {
+                root.previewVisible = true
+                root.expanded = true
+            }
+        }
+    }
+
+    Timer {
+        id: previewCloseTimer
+        interval: 350
+        onTriggered: root.closeWindowPreview()
     }
 
     Component {
@@ -184,6 +273,17 @@ PlasmoidItem {
             actions: root.contextActions
             onTriggered: action => root.runContextAction(action)
             onDismissed: root.expanded = false
+        }
+    }
+
+    Component {
+        id: windowPreview
+        WindowPreview {
+            appName: root.previewAppName
+            windows: root.previewWindows
+            smartTheme: SmartPanelTheme {}
+            onActivateRequested: index => root.activatePreviewWindow(index)
+            onCloseRequested: index => root.closePreviewWindow(index)
         }
     }
 }

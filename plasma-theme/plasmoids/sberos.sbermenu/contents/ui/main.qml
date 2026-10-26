@@ -25,7 +25,7 @@ PlasmoidItem {
         {action: "settings", icon: "settings", label: qsTr("Настройки")},
         {action: "terminal", icon: "terminal", label: qsTr("Терминал")},
         {action: "power", icon: "power", label: qsTr("Питание и сеанс")},
-        {action: "collapse", icon: "sber", label: qsTr("Свернуть меню Сбера")}
+        {action: "collapse", icon: "down", label: qsTr("Свернуть меню Сбера")}
     ]
     readonly property var powerActions: [
         {action: "logout", label: qsTr("Завершить сеанс"), shortcut: "", enabled: sessionManagement.canLogout},
@@ -127,7 +127,7 @@ PlasmoidItem {
                     anchors.centerIn: parent
                     width: compactButton.width / 3
                     height: width
-                    source: Qt.resolvedUrl("../assets/smart-panel/sber.svg")
+                    source: Qt.resolvedUrl("../assets/smart-panel/" + (root.expanded ? "down" : "sber") + ".svg")
                     isMask: true
                     color: root.smartTheme.foreground
                 }

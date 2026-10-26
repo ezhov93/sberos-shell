@@ -27,11 +27,6 @@
       <label>The max number of columns in the applications grid</label>
       <default>5</default>
     </entry>
-    <entry name="useDirectoryIcons" type="Bool">
-      <label>Determines whether directories should be displayed by their icon rather than a collection of their contents</label>
-      <default>false</default>
-    </entry>
-
     <entry name="backgroundType" type="Enum">
       <label>The type of background to use</label>
       <choices>
@@ -95,21 +90,8 @@
       <label>Determines whether or not the search bar is displayed</label>
       <default>true</default>
     </entry>
-    <entry name="searchIconSize" type="Int">
-      <label>The size of the icons in the search results list. If adaptiveSearchIconSize is true, this value specifies the max value.</label>
-      <default>48</default>
-    </entry>
-    <entry name="adaptiveSearchIconSize" type="Bool">
-      <label>Determines whether the icons in the search results list should be shrunk to match their native resolution.</label>
-      <default>false</default>
-    </entry>
-    <entry name="searchRunners" type="StringList">
-      <label>List of KRunner plugin IDs to use in search</label>
-      <default>krunner_services,krunner_systemsettings,krunner_recentdocuments,baloosearch,krunner_placesrunner,locations,krunner_bookmarksrunner,krunner_appstream</default>
-    </entry>
-
     <entry name="disableAnimations" type="Bool">
-      <label>Disables animations for app grid navigation and search results</label>
+      <label>Disables animations for app grid navigation</label>
       <default>false</default>
     </entry>
     <entry name="animationSpeedMultiplier" type="Double">

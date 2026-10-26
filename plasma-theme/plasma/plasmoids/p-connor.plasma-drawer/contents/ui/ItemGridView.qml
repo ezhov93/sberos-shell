@@ -109,9 +109,7 @@ FocusScope {
     }
 
     function trigger(index) {
-        if (gridView.model.modelForRow(index) != null) {
-            appsGrid.tryEnterDirectory(index);
-        } else if ("trigger" in gridView.model) {
+        if (gridView.model && "trigger" in gridView.model) {
             gridView.model.trigger(index, "", null);
             root.toggle();
         }

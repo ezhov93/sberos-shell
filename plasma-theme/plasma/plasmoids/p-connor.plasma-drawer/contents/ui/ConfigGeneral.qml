@@ -44,12 +44,9 @@ KCM.SimpleKCM {
     property alias cfg_backgroundOpacity:               backgroundOpacity.value
 
     property int cfg_appIconSize:                       plasmoid.configuration.appIconSize
-    property alias cfg_useDirectoryIcons:               useDirectoryIcons.checked
     property alias cfg_maxNumberColumns:                maxNumberColumns.value
 
     property alias cfg_showSearch:                      showSearch.checked
-    property alias cfg_adaptiveSearchIconSize:          adaptSearchIcons.checked
-    property int cfg_searchIconSize:                    plasmoid.configuration.searchIconSize
 
     property alias cfg_showSystemActions:               showSystemActions.checked
     property alias cfg_showSystemActionLabels:          showSystemActionLabels.checked
@@ -284,11 +281,6 @@ KCM.SimpleKCM {
             }
         }
 
-        CheckBox {
-            id: useDirectoryIcons
-            text:  i18n("Use directory icons")
-        }
-
         // ----------------- Search -----------------
         Item {
             Kirigami.FormData.isSection: true
@@ -299,38 +291,6 @@ KCM.SimpleKCM {
 
             id: showSearch
             text:  i18n("Show search bar")
-        }
-
-        CheckBox {
-            id: adaptSearchIcons
-            enabled: showSearch.checked
-            text:  i18n("Adaptive search result size")
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            enabled: showSearch.checked
-
-            Label {
-                text: adaptSearchIcons.checked ? i18n("Max size of search result icons:") : i18n("Size of search result icons:")
-            }
-            ComboBox {
-                id: searchIconSize
-                model: [
-                    i18n(Kirigami.Units.iconSizes.small),
-                    i18n(Kirigami.Units.iconSizes.smallMedium),
-                    i18n(Kirigami.Units.iconSizes.medium),
-                    i18n(Kirigami.Units.iconSizes.large),
-                    i18n(Kirigami.Units.iconSizes.huge),
-                    i18n(Kirigami.Units.iconSizes.enormous)
-                ]
-                onActivated: {
-                    cfg_searchIconSize = parseInt(currentText);
-                }
-                Component.onCompleted: {
-                    currentIndex = model.findIndex((size) => size == cfg_searchIconSize);
-                }
-            }
         }
 
         // ----------------- System Actions -----------------

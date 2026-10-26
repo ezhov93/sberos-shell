@@ -141,7 +141,7 @@ PlasmoidItem {
         sourceModel: Kicker.RunnerModel {
             id: kickerRunnerModel
             appletInterface: kicker
-            runners: plasmoid.configuration.searchRunners
+            runners: ["krunner_services"]
             onCountChanged: {
                 for (let i = 0; i < count; i++) {
                     kickerRunnerModel.modelForRow(i).countChanged.connect(runnerModel.invalidateFilter);

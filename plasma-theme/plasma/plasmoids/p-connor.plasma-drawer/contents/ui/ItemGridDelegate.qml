@@ -37,9 +37,6 @@ Item {
     property var iconColorOverride: undefined
     property bool forceSymbolicIcons: false
 
-    readonly property bool isDirectory: model.hasChildren ?? false
-    readonly property var directoryModel: isDirectory ? GridView.view.model.modelForRow(itemIndex) : undefined
-
     // For this widget, the only favoritable actions should be system actions
     readonly property bool isSystemAction: (model.favoriteId
                                             && GridView.view.model.favoritesModel
@@ -52,11 +49,19 @@ Item {
     Accessible.role: Accessible.MenuItem
     Accessible.name: model.display
 
-    readonly property bool hasActionList: ((("hasActionList" in model) && (model.hasActionList == true))
+    readonly property bool hasActionList: ((model.sourceModel
+                                            && model.sourceModel.data(model.sourceModel.index(model.sourceRow, 0), 0x0108))
+                                           || (("hasActionList" in model) && (model.hasActionList == true))
                                            || isSystemAction)
 
     function getActionList() {
-        return isSystemAction ? Tools.createSystemActionActions(i18n, GridView.view.model.favoritesModel, model.favoriteId) : model.actionList;
+        if (isSystemAction) {
+            return Tools.createSystemActionActions(i18n, GridView.view.model.favoritesModel, model.favoriteId);
+        }
+        if (model.sourceModel) {
+            return model.sourceModel.data(model.sourceModel.index(model.sourceRow, 0), 0x0109);
+        }
+        return model.actionList;
     }
 
     // Rectangle{
@@ -68,71 +73,6 @@ Item {
     //     color: "transparent"
     // }
 
-    Component {
-        id: iconComponent
-
-        Item {
-            anchors.centerIn: parent
-            Kirigami.Icon {
-                id: icon
-                anchors.centerIn: parent
-                width: parent.width
-                height: parent.height
-                animated: false
-                source: model.decoration + (forceSymbolicIcons ? "-symbolic" : "")
-                roundToIconSize: width > Kirigami.Units.iconSizes.huge ? false : true
-                isMask: iconColorOverride !== undefined
-                color: iconColorOverride ?? "transparent"
-            }
-        }
-    }
-
-    Component {
-        id: directoryViewComponent
-
-        Rectangle {
-            id: directoryBackgroundBox
-
-            // anchors.fill: parent
-            radius: width / 4
-            //border.color: Kirigami.Theme.textColor
-            //border.width: 2
-            color: "#33000005"
-
-            GridView {
-                id: directoryGridView
-
-                anchors.fill: parent
-                anchors.margins: parent.width / 10
-                cellWidth: (width / 2) * 0.9 > Kirigami.Units.iconSizes.small ? width / 2 : width
-                cellHeight: cellWidth
-
-                // TODO - don't use clip here for performance reasons
-                clip: true
-                z: 1 // Make in front of background
-                interactive: false
-
-                model: directoryModel
-                delegate: Item {
-                    width: directoryGridView.cellWidth
-                    height: directoryGridView.cellHeight
-
-                    Kirigami.Icon {
-                        id: directoryIconItem
-
-                        width: parent.width * 0.9
-                        height: parent.height * 0.9
-                        anchors.centerIn: parent
-
-                        animated: false
-                        source: model.decoration + (forceSymbolicIcons ? "-symbolic" : "")
-                        roundToIconSize: width > Kirigami.Units.iconSizes.medium ? false : true
-                    }
-                }
-            }
-        }
-    }
-
     Rectangle {
         id: displayBox
         width: iconSize
@@ -142,11 +82,13 @@ Item {
         // anchors.verticalCenter: parent.verticalCenter - (showLabel ? label.height / 2 : 0)
         color:"transparent"
 
-        // Load either icon or directory view
-        Loader {
-            id: displayLoader
+        Kirigami.Icon {
             anchors.fill: parent
-            sourceComponent: isDirectory && !plasmoid.configuration.useDirectoryIcons ? directoryViewComponent : iconComponent
+            animated: false
+            source: model.decoration + (forceSymbolicIcons ? "-symbolic" : "")
+            roundToIconSize: width > Kirigami.Units.iconSizes.huge ? false : true
+            isMask: iconColorOverride !== undefined
+            color: iconColorOverride ?? "transparent"
         }
     }
 
@@ -184,25 +126,4 @@ Item {
         color: drawerTheme.textColor
     }
 
-    // PC3.Label {
-    //     id: folderArrow
-
-    //     visible: isDirectory
-
-    //     anchors {
-    //         top: label.bottom
-    //         topMargin: Kirigami.Units.smallSpacing
-    //         left: parent.left
-    //         leftMargin: highlightItemSvg.margins.left
-    //         right: parent.right
-    //         rightMargin: highlightItemSvg.margins.right
-    //     }
-
-    //     horizontalAlignment: Text.AlignHCenter
-
-    //     elide: Text.ElideRight
-    //     wrapMode: Text.NoWrap
-
-    //     text: "^"
-    // }
 }

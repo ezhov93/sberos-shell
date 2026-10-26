@@ -1,9 +1,16 @@
-import QtQuick
-import QtQuick.Controls
+/***************************************************************************
+ *   Copyright (C) 2013-2017 by Eike Hein <hein@kde.org>                   *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ ***************************************************************************/
 
-import org.kde.plasma.plasmoid
-import org.kde.kquickcontrolsaddons
+import QtQuick
 import org.kde.kirigami as Kirigami
+
+import "../code/tools.js" as Tools
 
 FocusScope {
     id: appsGrid
@@ -13,216 +20,287 @@ FocusScope {
     signal keyNavUp
     signal keyNavDown
 
-    property int iconSize: Kirigami.Units.iconSizes.huge
-
-    // TODO - polish cell sizes for different resolutions
-    readonly property int cellSizeWidth: (iconSize * 1.5) + Kirigami.Units.gridUnit
-                                + (2 * Kirigami.Units.smallSpacing)
-                                + (2 * Math.max(highlightItemSvg.margins.top + highlightItemSvg.margins.bottom,
-                                                highlightItemSvg.margins.left + highlightItemSvg.margins.right))
-    readonly property int minCellSizeHeight: (cellSizeWidth - (iconSize * .33))
-    // cellSizeHeight grows to match the appsGrid height if there is some space left at the bottom
-    readonly property int cellSizeHeight: minCellSizeHeight + ((height % minCellSizeHeight) / Math.floor(height / minCellSizeHeight))
-
-    property int numberColumns:  5
-    property int numberRows:  Math.floor(height / cellSizeHeight)
-
     required property var model
 
-    readonly property var currentItemGrid: stackView.currentItem
-    readonly property var currentModel: currentItemGrid ? currentItemGrid.model : null //modelStack[modelStackLength - 1]
+    property var apps: []
+    property var appSources: []
+    readonly property int columns: Math.max(1, Math.min(8, Math.floor((width + 16) / 184)))
+    readonly property int pageCapacity: columns * 4
+    readonly property int pageCount: Math.max(1, Math.ceil(apps.length / pageCapacity))
+    readonly property int currentPage: Math.min(pageCount - 1, Math.floor(appsView.contentY / (appsView.cellHeight * 4)))
+    readonly property var currentMatch: appsView.currentItem
 
-    readonly property bool isAtRoot: stackView.depth <= 1
+    function rebuild() {
+        const entries = [];
+        const sources = [];
+        const seen = Object.create(null);
+        collectApps(model, entries, sources, seen);
 
-    implicitWidth: currentItemGrid.implicitWidth
-    implicitHeight: currentItemGrid.implicitHeight
+        const sorted = entries.map((entry, index) => ({entry: entry, source: sources[index]}));
+        sorted.sort((a, b) => a.entry.display.localeCompare(b.entry.display));
+        apps = sorted.map(item => item.entry);
+        appSources = sorted.map(item => item.source);
+        appsView.contentY = 0;
+        appsView.currentIndex = -1;
+    }
 
-    function tryEnterDirectory(directoryIndex) {
-        let dir = currentModel.modelForRow(directoryIndex);
-        if (dir && dir.hasChildren && currentItemGrid) {
-            let origin = Qt.point(0, 0);
-            let item = currentItemGrid.itemAtIndex(directoryIndex);
-            if (item) {
-                origin = Qt.point(  (item.x + (cellSizeWidth / 2)) - (currentItemGrid.width / 2),
-                                    (item.y + (cellSizeHeight / 2)) - (currentItemGrid.height / 2) - currentItemGrid.contentY )
+    function collectApps(sourceModel, entries, sources, seen) {
+        if (!sourceModel) {
+            return;
+        }
+
+        for (let row = 0; row < sourceModel.count; ++row) {
+            const sourceIndex = sourceModel.index(row, 0);
+            if (sourceModel.data(sourceIndex, 0x0107)) {
+                collectApps(sourceModel.modelForRow(row), entries, sources, seen);
+                continue;
             }
-            stackView.push(directoryView, {model: dir, origin: origin});
-        }
-    }
 
-    function tryExitDirectory() {
-        if (!isAtRoot) {
-            stackView.pop();
-        }
-    }
+            const display = sourceModel.data(sourceIndex, Qt.DisplayRole);
+            if (!display) {
+                continue;
+            }
 
-    function returnToRootDirectory(doTransition = true) {
-        if (!isAtRoot) {
-            // Pops all items up until root
-            stackView.pop(null, doTransition ? undefined : StackView.ReplaceTransition);
+            const favoriteId = sourceModel.data(sourceIndex, 0x0104);
+            const url = sourceModel.data(sourceIndex, 0x0105);
+            const identity = favoriteId ? String(favoriteId) : (url ? url.toString() : display);
+            if (seen[identity]) {
+                continue;
+            }
+            seen[identity] = true;
+
+            entries.push({
+                display: display,
+                decoration: sourceModel.data(sourceIndex, Qt.DecorationRole),
+                url: url,
+                sourceModel: sourceModel,
+                sourceRow: row
+            });
+            sources.push({model: sourceModel, row: row});
         }
     }
 
     function selectFirst() {
-        if (currentItemGrid && currentItemGrid.count > 0) {
-            currentItemGrid.trySelect(0, 0);
+        if (apps.length > 0) {
+            appsView.currentIndex = 0;
+            appsView.forceActiveFocus();
         }
     }
 
     function selectLast() {
-        if (currentItemGrid && currentItemGrid.count > 0) {
-            currentItemGrid.trySelect(currentItemGrid.lastRow(), 0);
+        if (apps.length > 0) {
+            appsView.currentIndex = apps.length - 1;
+            appsView.forceActiveFocus();
         }
     }
 
     function removeSelection() {
-        if (currentItemGrid) {
-            currentItemGrid.currentIndex = -1;
-        }
+        appsView.currentIndex = -1;
     }
 
-    // ActionMenu {
-    //     id: actionMenu
-    //     onActionClicked: visualParent.actionTriggered(actionId, actionArgument)
-    //     onClosed: {
-    //         currentItemGrid.currentIndex = -1;
-    //     }
-    // }
+    function triggerSelected() {
+        if (appsView.currentIndex < 0 || appsView.currentIndex >= appSources.length) {
+            return;
+        }
 
-    // I believe StackView requires that the component be defined this way
-    Component {
-        id: directoryView
-        ItemGridView {
-            property var origin: Qt.point(0, 0)
+        const source = appSources[appsView.currentIndex];
+        source.model.trigger(source.row, "", null);
+        root.toggle();
+    }
 
-            // width: appsGrid.numberColumns * cellSizeWidth
-            // height: appsGrid.numberRows * cellSizeHeight
-            numberColumns: appsGrid.numberColumns
-            maxVisibleRows: appsGrid.numberRows
+    function openActionMenu(x, y, actionList) {
+        if (!actionList || !actionList.length) {
+            return;
+        }
+        actionMenu.actionList = actionList;
+        actionMenu.targetIndex = appsView.currentIndex;
+        actionMenu.open(x, y);
+    }
 
-            cellWidth:  cellSizeWidth
-            cellHeight: cellSizeHeight
-            iconSize: appsGrid.iconSize
+    ActionMenu {
+        id: actionMenu
+        property int targetIndex: -1
+        visualParent: appsView
 
-            model: appsGrid.model
-
-            dragEnabled: false
-            hoverEnabled: true
-            layer.enabled: true
-
-            onKeyNavUp: {
-                currentIndex = -1;
-                appsGrid.keyNavUp();
-            }
-            onKeyNavDown: {
-                currentIndex = -1;
-                appsGrid.keyNavDown();
-            }
-
-            Component.onCompleted: {
-                keyNavLeft.connect(appsGrid.keyNavLeft);
-                keyNavRight.connect(appsGrid.keyNavRight);
+        onActionClicked: function(actionId, actionArgument) {
+            const source = appsGrid.appSources[targetIndex];
+            const closeRequested = Tools.triggerAction(plasmoid, source.model, source.row, actionId, actionArgument);
+            if (closeRequested) {
+                root.toggle();
             }
         }
     }
 
-    StackView {
-        id: stackView
-        initialItem: directoryView
-
-        implicitWidth: currentItemGrid.implicitWidth
-        implicitHeight: currentItemGrid.implicitHeight
+    GridView {
+        id: appsView
         anchors.top: parent.top
-
+        anchors.bottom: pageDots.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: appsGrid.columns * cellWidth
+        cellWidth: 184
+        cellHeight: 196
+        model: appsGrid.apps
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        snapMode: GridView.SnapToRow
+        keyNavigationEnabled: false
+        currentIndex: -1
         focus: true
 
-        property var transitionDuration: plasmoid.configuration.disableAnimations ? 0 : Kirigami.Units.veryLongDuration / plasmoid.configuration.animationSpeedMultiplier
+        delegate: Item {
+            id: appCell
+            required property int index
+            required property string display
+            required property var decoration
+            readonly property var source: appsGrid.appSources[index]
+            readonly property bool hasActionList: source
+                ? source.model.data(source.model.index(source.row, 0), 0x0108)
+                : false
 
-        pushEnter: !plasmoid.configuration.disableAnimations ? pushEnterTransition : instantEnterTransition
-        pushExit:  !plasmoid.configuration.disableAnimations ? pushExitTransition  : instantExitTransition
-        popEnter:  !plasmoid.configuration.disableAnimations ? popEnterTransition  : instantEnterTransition
-        popExit:   !plasmoid.configuration.disableAnimations ? popExitTransition   : instantExitTransition
-
-        replaceEnter: instantEnterTransition
-        replaceExit: instantExitTransition
-
-        Transition {
-            id: pushEnterTransition
-
-            NumberAnimation {
-                property: "x";
-                from: pushEnterTransition.ViewTransition.item.origin.x
-                to: 0
-                duration: stackView.transitionDuration
-                easing.type: Easing.OutCubic
+            function getActionList() {
+                return source ? source.model.data(source.model.index(source.row, 0), 0x0109) : [];
             }
 
-            NumberAnimation {
-                property: "y"
-                from: pushEnterTransition.ViewTransition.item.origin.y
-                to: 0
-                duration: stackView.transitionDuration
-                easing.type: Easing.OutCubic
+            width: appsView.cellWidth
+            height: appsView.cellHeight
+
+            Item {
+                id: tile
+                anchors.centerIn: parent
+                width: 168
+                height: 148
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 16
+                    color: appsView.currentIndex === appCell.index ? "#18ffffff" : "transparent"
+                    border.width: appsView.currentIndex === appCell.index ? 1 : 0
+                    border.color: "#35ffffff"
+                }
+
+                Kirigami.Icon {
+                    id: appIcon
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    width: 120
+                    height: width
+                    source: appCell.decoration
+                    roundToIconSize: false
+                }
+
+                Text {
+                    anchors.top: appIcon.bottom
+                    anchors.topMargin: 10
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 144
+                    text: appCell.display
+                    color: drawerTheme.textColor
+                    font.pixelSize: 14
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
             }
 
-            NumberAnimation { property: "opacity"; from: 0; to: 1.0; duration: stackView.transitionDuration * .5 }
-            NumberAnimation { property: "scale"; from: 0; to: 1.0; duration: stackView.transitionDuration; easing.type: Easing.OutCubic }
-        }
-
-        Transition {
-            id: pushExitTransition
-            NumberAnimation { property: "y"; from: 0; to: -(appsGrid.iconSize * .5); duration: stackView.transitionDuration; easing.type: Easing.OutCubic }
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0; duration: stackView.transitionDuration * .5; easing.type: Easing.OutCubic }
-            NumberAnimation { property: "scale"; from: 1.0; to: 0.8; duration: stackView.transitionDuration * .5; easing.type: Easing.OutCubic }
-        }
-
-        Transition {
-            id: popEnterTransition
-
-            SequentialAnimation {
-                PauseAnimation { duration: stackView.transitionDuration * .2 }
-                ParallelAnimation {
-                    NumberAnimation { property: "y"; from: -(appsGrid.iconSize * .5); to: 0; duration: stackView.transitionDuration; easing.type: Easing.OutCubic }
-                    NumberAnimation { property: "opacity"; from: 0; to: 1.0; duration: stackView.transitionDuration * .5; easing.type: Easing.OutCubic }
-                    NumberAnimation { property: "scale"; from: 0.8; to: 1.0; duration: stackView.transitionDuration; easing.type: Easing.OutCubic }
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onPressed: appsView.currentIndex = appCell.index
+                onClicked: function(mouse) {
+                    if (mouse.button === Qt.RightButton) {
+                        appsGrid.openActionMenu(appCell.x, appCell.y, appCell.getActionList());
+                    } else {
+                        appsGrid.triggerSelected();
+                    }
                 }
             }
         }
 
-        Transition {
-            id: popExitTransition
-            NumberAnimation {
-                property: "x"
-                from: 0
-                to: popExitTransition.ViewTransition.item.origin.x
-                duration: stackView.transitionDuration * 1.5
-                easing.type: Easing.OutCubic
+        Keys.onLeftPressed: function(event) {
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            } else if (currentIndex % appsGrid.columns === 0) {
+                event.accepted = true;
+                appsGrid.keyNavLeft();
+            } else {
+                event.accepted = true;
+                moveCurrentIndexLeft();
             }
-
-            NumberAnimation {
-                property: "y"
-                from: 0
-                to: popExitTransition.ViewTransition.item.origin.y
-                duration: stackView.transitionDuration * 1.5
-                easing.type: Easing.OutCubic
-            }
-
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0; duration: stackView.transitionDuration * .75; easing.type: Easing.OutQuint }
-            NumberAnimation { property: "scale"; from: 1.0; to: 0; duration: stackView.transitionDuration * 1.5; easing.type: Easing.OutCubic }
         }
 
-        Transition {
-            id: instantEnterTransition
-
-            PropertyAction { property: "opacity"; value: 1.0 }
-            PropertyAction { property: "scale"; value: 1.0 }
+        Keys.onRightPressed: function(event) {
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            } else if (currentIndex % appsGrid.columns === appsGrid.columns - 1 || currentIndex === count - 1) {
+                event.accepted = true;
+                appsGrid.keyNavRight();
+            } else {
+                event.accepted = true;
+                moveCurrentIndexRight();
+            }
         }
 
-        Transition {
-            id: instantExitTransition
+        Keys.onUpPressed: function(event) {
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            } else if (currentIndex < appsGrid.columns) {
+                event.accepted = true;
+                appsGrid.keyNavUp();
+            } else {
+                event.accepted = true;
+                moveCurrentIndexUp();
+                positionViewAtIndex(currentIndex, GridView.Contain);
+            }
+        }
 
-            PropertyAction { property: "opacity"; value: 0 }
-            PropertyAction { property: "scale"; value: 0 }
+        Keys.onDownPressed: function(event) {
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            } else if (currentIndex + appsGrid.columns >= count) {
+                event.accepted = true;
+                appsGrid.keyNavDown();
+            } else {
+                event.accepted = true;
+                currentIndex += appsGrid.columns;
+                positionViewAtIndex(currentIndex, GridView.Contain);
+            }
+        }
+
+        Keys.onReturnPressed: appsGrid.triggerSelected()
+        Keys.onEnterPressed: appsGrid.triggerSelected()
+        Keys.onMenuPressed: function(event) {
+            if (currentItem && currentItem.hasActionList) {
+                openActionMenu(currentItem.x, currentItem.y, currentItem.getActionList());
+                event.accepted = true;
+            }
         }
     }
+
+    Row {
+        id: pageDots
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: 8
+        visible: appsGrid.pageCount > 1
+
+        Repeater {
+            model: appsGrid.pageCount
+            delegate: Rectangle {
+                required property int index
+                width: 6
+                height: 6
+                radius: 3
+                color: index === appsGrid.currentPage ? drawerTheme.textColor : "#66ffffff"
+            }
+        }
+    }
+
+    onModelChanged: rebuild()
+    Connections {
+        target: appsGrid.model
+        enabled: target !== null
+        function onCountChanged() { appsGrid.rebuild(); }
+    }
+
+    Component.onCompleted: rebuild()
 }

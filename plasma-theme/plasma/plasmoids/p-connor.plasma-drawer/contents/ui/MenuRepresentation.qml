@@ -50,6 +50,7 @@ Kicker.DashboardWindow {
 
     onVisibleChanged: {
         if (visible) {
+            searchField.text = "";
             // Set favorites here to ensure system actions are available
             systemFavoritesModel.favorites = plasmoid.configuration.favoriteSystemActions;
         } else {
@@ -72,16 +73,11 @@ Kicker.DashboardWindow {
     }
 
     function leave() {
-        if (!searching && !content.item.isAtRoot) {
-            content.item.tryExitDirectory();
-        } else {
-            root.toggle();
-        }
+        root.toggle();
     }
 
     function reset() {
         searchField.text = "";
-        // appsGridView.returnToRootDirectory(false);
         content.focus = true;
     }
 
@@ -163,12 +159,12 @@ Kicker.DashboardWindow {
             visible: plasmoid.configuration.showSearch
             enabled: visible
 
-            height: 72
+            height: 56
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(456, root.width - 32)
-            leftPadding: 68
+            leftPadding: 64
             rightPadding: 16
 
             color: drawerTheme.textColor
@@ -176,7 +172,7 @@ Kicker.DashboardWindow {
             horizontalAlignment: TextInput.AlignLeft
             verticalAlignment: TextInput.AlignVCenter
 
-            placeholderText: i18n("Какое приложение найти?")
+            placeholderText: i18n("Найду документ или приложение")
             placeholderTextColor: drawerTheme.softTextColor
 
             onTextChanged: {
@@ -186,17 +182,10 @@ Kicker.DashboardWindow {
             background: Rectangle {
                 id: searchFieldBackground
                 anchors.fill: parent
-                radius: 24
-                color: "#14ffffff"
+                radius: 17
+                color: "#ebffffff"
                 border.width: 1
-                border.color: "#60ffffff"
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: 7
-                    radius: 17
-                    color: "#d92b323b"
-                }
+                border.color: "#e4e6eb"
             }
 
             Kirigami.Icon {
@@ -208,7 +197,7 @@ Kicker.DashboardWindow {
                 roundToIconSize: true
                 anchors {
                     left: parent.left
-                    leftMargin: searchField.text === "" ? 16 : 25
+                    leftMargin: searchField.text === "" ? 8 : 19
                     verticalCenter: parent.verticalCenter
                 }
                 isMask: searchField.text !== ""
@@ -258,26 +247,26 @@ Kicker.DashboardWindow {
             RunnerResultsView {
                 id: runnerResultsView
 
-                width: Math.min(Kirigami.Units.gridUnit * 32, root.width * 0.33)
-                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.fill: parent
 
                 visible: searching
                 enabled: visible
 
                 focus: true
 
-                iconSize: plasmoid.configuration.searchIconSize
-                shrinkIconsToNative: plasmoid.configuration.adaptiveSearchIconSize
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: "red"
-                    opacity: 0.05
-                    visible: root.debugFocus && parent.activeFocus
-                    z: 100
-                }
-
                 model: runnerModel
+                textColor: drawerTheme.textColor
+                onResultActivated: root.toggle()
+
+                Text {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: searchField.text.length > 0 && runnerModel.count === 0
+                    text: i18n("Ничего не найдено")
+                    color: "white"
+                    font.pixelSize: 24
+                    horizontalAlignment: Text.AlignHCenter
+                }
             }
         }
 
@@ -290,9 +279,6 @@ Kicker.DashboardWindow {
                 enabled: visible
                 focus: true
 
-                iconSize: plasmoid.configuration.appIconSize
-                numberColumns: Math.min(plasmoid.configuration.maxNumberColumns, Math.floor((root.width - Kirigami.Units.largeSpacing * 2) / cellSizeWidth))
-
                 model: appsModel
             }
         }
@@ -303,11 +289,11 @@ Kicker.DashboardWindow {
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 top: parent.top
-                bottom: parent.bottom
-                topMargin: contentMargin
-                bottomMargin: contentMargin
-                // margins: contentMargin
+                topMargin: searching ? 124 : contentMargin
+                bottom: searching ? searchField.top : parent.bottom
+                bottomMargin: searching ? 8 : contentMargin
             }
+            width: root.width
             sourceComponent: !searching ? appsGridViewComponent : runnerResultsViewComponent
             active: root.visible
             focus: true

@@ -1,292 +1,200 @@
-import QtQuick
-import QtQuick.Controls
+/***************************************************************************
+ *   Copyright (C) 2014 by Weng Xuetian <wengxt@gmail.com>
+ *   Copyright (C) 2013-2017 by Eike Hein <eikehein@kde.org>
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ ***************************************************************************/
 
-import org.kde.plasma.plasmoid
-import org.kde.plasma.components 3.0 as PC3
-import org.kde.plasma.extras as PlasmaExtras
-import org.kde.kquickcontrolsaddons
+pragma ComponentBehavior: Bound
+
+import QtQuick
 import org.kde.kirigami as Kirigami
 
 FocusScope {
     id: searchResults
 
-    signal keyNavLeft
-    signal keyNavRight
     signal keyNavUp
     signal keyNavDown
+    signal resultActivated
 
-    width: Kirigami.Units.gridUnit * 20
-    height: Kirigami.Units.gridUnit * 60
-
-    property alias model: runnerSectionsList.model
-    property alias currentSectionIndex: runnerSectionsList.currentIndex
-    property alias currentSection: runnerSectionsList.currentItem
-    readonly property var currentMatch: currentSection ? currentSection.currentItem : null
-    property alias sectionsCount: runnerSectionsList.count
-
-    property int iconSize: Kirigami.Units.iconSizes.huge
-    property bool shrinkIconsToNative: false
+    property var model
+    property color textColor: "white"
+    property alias grid: resultsGrid
+    readonly property int columns: Math.max(1, Math.min(8, Math.floor((width + 16) / 184)))
+    readonly property int pageCapacity: columns * 4
+    readonly property int pageCount: Math.max(1, Math.ceil(resultsGrid.count / pageCapacity))
+    readonly property int currentPage: Math.min(pageCount - 1, Math.floor(resultsGrid.contentY / (resultsGrid.cellHeight * 4)))
+    readonly property var matchesModel: model && model.count > 0 ? model.modelForRow(0) : null
+    readonly property var currentMatch: resultsGrid.currentItem
 
     function selectFirst() {
-        if (sectionsCount > 0) {
-            runnerSectionsList.positionViewAtBeginning();
-            runnerSectionsList.itemAtIndex(0).currentIndex = 0;
+        if (resultsGrid.count > 0) {
+            resultsGrid.currentIndex = 0;
+            resultsGrid.forceActiveFocus();
         }
     }
 
     function selectLast() {
-        if (sectionsCount > 0) {
-            runnerSectionsList.positionViewAtEnd();
-            let lastList = runnerSectionsList.itemAtIndex(sectionsCount - 1);
-            if (lastList && lastList.count > 0) {
-                lastList.currentIndex = lastList.lastVisibleIndex;
-            }
+        if (resultsGrid.count > 0) {
+            resultsGrid.currentIndex = resultsGrid.count - 1;
+            resultsGrid.forceActiveFocus();
         }
     }
 
     function removeSelection() {
-        if (currentSection) {
-            currentSection.currentIndex = -1;
-        }
+        resultsGrid.currentIndex = -1;
     }
 
     function triggerSelected() {
-        if (currentSection && currentSection.currentIndex != -1) {
-            currentSection.matchesList.trigger(currentSection.currentIndex);
+        if (matchesModel && resultsGrid.currentIndex >= 0) {
+            matchesModel.trigger(resultsGrid.currentIndex, "", null);
+            resultActivated();
         }
     }
 
-    PC3.ScrollView {
-        id: scrollView
-        // Add spacing on the left by right adjusting the ScrollView, which
-        // centers the runnerSectionsList
-        width: parent.width - ScrollBar.vertical.width
-        height: parent.height
-        anchors.right: parent.right
+    GridView {
+        id: resultsGrid
+        anchors {
+            top: parent.top
+            bottom: pageDots.top
+            bottomMargin: 48
+            horizontalCenter: parent.horizontalCenter
+        }
+        width: searchResults.columns * cellWidth
+        cellWidth: 184
+        cellHeight: 196
+        model: searchResults.matchesModel
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        keyNavigationEnabled: false
+        keyNavigationWraps: false
+        currentIndex: -1
 
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        ScrollBar.vertical.interactive: true
+        onCountChanged: {
+            contentY = 0;
+            currentIndex = -1;
+        }
 
-        focus: true
+        delegate: Item {
+            id: appCell
+            required property int index
+            required property string display
+            required property string decoration
+            width: searchResults.grid.cellWidth
+            height: searchResults.grid.cellHeight
 
-        ListView {
-            id: runnerSectionsList
+            Item {
+                anchors.centerIn: parent
+                width: 168
+                height: 148
 
-            // ScrollView automatically sizes its child
-            anchors.verticalCenter: parent.verticalCenter
-            clip: true
-
-            // TODO - Find a better way to provide scrollbar content height without buffering delegates
-            cacheBuffer: height * 100
-
-            focus: true
-            currentIndex: -1
-
-            keyNavigationEnabled: false
-            boundsBehavior: Flickable.StopAtBounds
-
-            highlightFollowsCurrentItem: false
-            highlightMoveDuration: 0
-            highlightResizeDuration: 0
-
-            function moveUp() {
-                if (currentIndex <= 0) {
-                    keyNavUp();
-                    return;
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 16
+                    color: searchResults.grid.currentIndex === appCell.index ? "#18ffffff" : "transparent"
+                    border.width: searchResults.grid.currentIndex === appCell.index ? 1 : 0
+                    border.color: "#35ffffff"
                 }
 
-                decrementCurrentIndex();
-                if (currentItem && "count" in currentItem) {
-                    currentItem.currentIndex = currentItem.lastVisibleIndex;
-                }
-            }
-
-            function moveDown() {
-                if (currentIndex >= count - 1) {
-                    keyNavDown();
-                    return;
-                }
-
-                incrementCurrentIndex();
-                if (currentItem && "count" in currentItem) {
-                    currentItem.currentIndex = 0;
-                }
-            }
-
-            function ensureCurrentMatchInView() {
-                let section = currentItem;
-                if (!section) {
-                    return;
-                }
-                let match = section.currentItem;
-                if (!match) {
-                    return;
-                }
-
-                let headerHeight = section.matchesList.mapToItem(section, 0, 0).y;
-                let matchY = section.y + match.y + headerHeight + Kirigami.Units.smallSpacing; // Match's y relative to runnerSectionsList's start
-                let mappedY = matchY - contentY; // Match's y adjusted to scrolled position
-
-                if (mappedY < 0) {
-                    contentY += mappedY;
-                } else if (mappedY + section.matchesList.rowHeight > height) {
-                    contentY += ((mappedY + section.matchesList.rowHeight) - height);
-                }
-            }
-
-            delegate: FocusScope {
-                width: scrollView.width - scrollView.ScrollBar.vertical.width - Kirigami.Units.smallSpacing
-                height: matchesList.height + sectionHeader.height + Kirigami.Units.largeSpacing * 4
-
-                visible: matchesList?.model?.count > 0 ?? false
-
-                property alias count: matchesList.count
-                property alias expanded: matchesList.expanded
-                property alias expandable: matchesList.expandable
-                property alias lastVisibleIndex: matchesList.lastVisibleIndex
-
-                property alias currentIndex: matchesList.currentIndex
-                property alias currentItem: matchesList.currentItem
-                property alias matchesList: matchesList
-
-                Item {
-                    id: sectionHeader
-                    width: parent.width
-                    height: runnerName.height
+                Kirigami.Icon {
+                    id: appIcon
+                    anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-
-                    PlasmaExtras.Heading {
-                        id: runnerName
-
-                        text: model.display ?? ""
-                        level: 2
-                        color: drawerTheme.textColor
-                    }
-
-                    Button {
-                        id: showMoreButton
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-
-                        visible: matchesList.expandable
-
-                        contentItem: PC3.Label {
-                            id: showMoreLabel
-                            verticalAlignment: Text.AlignBottom
-                            text: matchesList.expanded ? i18n("Show Less") : i18n("Show More")
-                            color: showMoreButton.hovered ? drawerTheme.textColor : drawerTheme.softTextColor
-                            font.underline: showMoreButton.activeFocus
-                        }
-                        background: Item {
-                            anchors.fill: showMoreLabel
-                            visible: false
-                        }
-
-                        onPressed: {
-                            matchesList.focus = true;
-                            matchesList.expanded = !matchesList.expanded;
-                        }
-
-                        Keys.onPressed: function (event) {
-                            if ((event.key == Qt.Key_Enter || event.key == Qt.Key_Return)) {
-                                // matchesList.focus = true;
-                                matchesList.expanded = !matchesList.expanded;
-                                event.accepted = true;
-                                return;
-                            }
-
-                            if (event.key == Qt.Key_Up) {
-                                focus = false;
-                                matchesList.focus = true;
-                                runnerSectionsList.moveUp();
-                                event.accepted = true;
-                                return;
-                            }
-
-                            if (event.key == Qt.Key_Down || event.key == Qt.Key_Left) {
-                                focus = false;
-                                matchesList.focus = true;
-                                matchesList.currentIndex = 0;
-                                event.accepted = true;
-                                return;
-                            }
-                        }
-                    }
+                    width: 120
+                    height: width
+                    source: appCell.decoration
+                    roundToIconSize: false
                 }
 
-                // Rectangle {
-                //     id: sectionSeparator
-                //     anchors.left: runnerName.right
-                //     anchors.right: parent.right
-                //     anchors.verticalCenter: runnerName.verticalCenter
-                //     anchors.leftMargin: Kirigami.Units.smallSpacing * 2
-                //     // width: root.width
-                //     height: 2 * Kirigami.Units.devicePixelRatio
-                //     color: Kirigami.Theme.textColor
-                //     opacity: .05
-                // }
-
-                ItemListView {
-                    id: matchesList
-                    width: parent.width
-                    anchors.top: sectionHeader.bottom
-                    anchors.topMargin: Kirigami.Units.smallSpacing * 2
-
-                    focus: true
-
-                    iconSize: searchResults.iconSize
-                    shrinkIconsToNative: searchResults.shrinkIconsToNative
-
-                    maxVisibleRows: 5
-
-                    interactive: false
-
-                    // currentIndex: index == 0 ? 0 : -1
-                    onCurrentIndexChanged: {
-                        if (currentIndex != -1) {
-                            runnerSectionsList.currentIndex = index;
-                            runnerSectionsList.ensureCurrentMatchInView();
-                        }
-                    }
-
-                    model: runnerSectionsList.model.modelForRow(index)
-
-                    onKeyNavUp: {
-                        runnerSectionsList.moveUp();
-                    }
-
-                    onKeyNavDown: {
-                        runnerSectionsList.moveDown();
-                    }
-
-                    onKeyNavRight: {
-                        if (showMoreButton.visible) {
-                            showMoreButton.focus = true;
-                        }
-                    }
-
-                    Component.onCompleted: {
-                        keyNavRight.connect(searchResults.keyNavRight);
-                        keyNavLeft.connect(searchResults.keyNavLeft);
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "blue"
-                        opacity: 0.05
-                        visible: root.debugFocus && parent.activeFocus
-                        z: 100
-                    }
+                Text {
+                    anchors.top: appIcon.bottom
+                    anchors.topMargin: 10
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 144
+                    text: appCell.display
+                    color: searchResults.textColor
+                    font.pixelSize: 14
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    wrapMode: Text.NoWrap
                 }
+            }
+
+            HoverHandler {
+                onHoveredChanged: if (hovered)
+                    searchResults.grid.currentIndex = appCell.index
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton
+                onClicked: {
+                    searchResults.grid.currentIndex = appCell.index;
+                    searchResults.triggerSelected();
+                }
+            }
+
+            Accessible.role: Accessible.Button
+            Accessible.name: appCell.display
+        }
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                event.accepted = true;
+                searchResults.triggerSelected();
+            } else if (event.key === Qt.Key_Up && (currentIndex < searchResults.columns || currentIndex < 0)) {
+                event.accepted = true;
+                searchResults.keyNavUp();
+            } else if (event.key === Qt.Key_Down && (currentIndex < 0 || currentIndex + searchResults.columns >= count)) {
+                event.accepted = true;
+                searchResults.keyNavDown();
+            } else if (event.key === Qt.Key_Left && currentIndex === 0) {
+                event.accepted = true;
+                searchResults.keyNavUp();
+            } else if (event.key === Qt.Key_Right && currentIndex === count - 1) {
+                event.accepted = true;
+                searchResults.keyNavDown();
+            } else if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
+                event.accepted = true;
+                const delta = event.key === Qt.Key_Left ? -1 : event.key === Qt.Key_Right ? 1 : event.key === Qt.Key_Up ? -searchResults.columns : searchResults.columns;
+                const nextIndex = currentIndex + delta;
+                if (nextIndex >= 0 && nextIndex < count)
+                    currentIndex = nextIndex;
             }
         }
     }
 
-    Keys.onPressed: function (event) {
-        if (event.key == Qt.Key_Up || event.key == Qt.Key_Down || event.key == Qt.Key_Left || event.key == Qt.Key_Right) {
-            if (currentSectionIndex == -1) {
-                event.accepted = true;
-                runnerSectionsList.moveDown();
+    Row {
+        id: pageDots
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 88
+        spacing: 12
+        visible: searchResults.pageCount > 1
+
+        Repeater {
+            model: searchResults.pageCount
+            delegate: Rectangle {
+                id: pageDot
+                required property int index
+                width: 12
+                height: 12
+                radius: 6
+                color: pageDot.index === searchResults.currentPage ? searchResults.textColor : "#939bab"
+
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -8
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: {
+                        searchResults.grid.currentIndex = -1;
+                        searchResults.grid.contentY = pageDot.index * searchResults.pageCapacity * searchResults.grid.cellHeight / searchResults.columns;
+                    }
+                }
             }
         }
     }

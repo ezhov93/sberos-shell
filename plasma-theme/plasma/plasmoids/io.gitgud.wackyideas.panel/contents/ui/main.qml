@@ -301,6 +301,10 @@ ContainmentItem {
         }
 
         onDrop: event => {
+            if (Plasmoid.immutable) {
+                event.ignore();
+                return;
+            }
             if(dndSpacer.parent.index > 0)
             appletsModel.remove(dndSpacer.parent.index);
             root.processMimeData(event.mimeData, event.x, event.y);
@@ -582,7 +586,7 @@ ContainmentItem {
     }
     MouseArea {
         anchors.fill: parent
-        visible: Containment.corona.editMode && !Plasmoid.userConfiguring
+        visible: !Plasmoid.immutable && Containment.corona.editMode && !Plasmoid.userConfiguring
         hoverEnabled: true
         onClicked: Plasmoid.internalAction("configure").trigger()
         Rectangle {

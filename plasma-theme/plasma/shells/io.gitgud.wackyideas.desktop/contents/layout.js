@@ -55,3 +55,6 @@ systemSpacer.writeConfig("expanding", true)
 
 panel.addWidget("KdeControlStation")
 panel.addWidget("io.gitgud.wackyideas.clockcalendar")
+
+// The SberOS panel layout is fixed; users cannot add or rearrange applets.
+panel.locked = true

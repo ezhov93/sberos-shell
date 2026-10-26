@@ -28,7 +28,7 @@ T.Dialog {
             id: background
             anchors.fill: parent
             color: Theme.Palette.Background.Default.Secondary
-            radius: Theme.Sizes.BorderRadius.L
+            radius: Theme.Sizes.BorderRadius.Xxl
         }
         ShadowBox {
             source: background

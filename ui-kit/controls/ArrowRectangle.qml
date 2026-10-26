@@ -38,10 +38,10 @@ Item {
     Rectangle {
         id: background
         anchors.fill: parent
-        radius: backgroundConfig.radius
+        radius: Theme.Sizes.BorderRadius.Xxl
         color: control.color
         border.width: 1.5
-        border.color: inverse ? Theme.Palette.Background.Inverse.Basic : Theme.Palette.Background.Default.Basic
+        border.color: inverse ? Theme.Palette.Outline.Inverse.SolidSecondary : Theme.Palette.Outline.Default.SolidSecondary
     }
 
     ShadowBox {

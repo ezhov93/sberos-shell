@@ -41,10 +41,10 @@ T.Menu {
         Rectangle {
             id: background
             anchors.fill: parent
-            radius: Theme.Sizes.BorderRadius.S
+            radius: Theme.Sizes.BorderRadius.L
             color: Theme.Palette.Background.Default.Secondary
             border.width: 1.5
-            border.color: Theme.Palette.Background.Default.Basic
+            border.color: Theme.Palette.Outline.Default.SolidSecondary
         }
         ShadowBox {
             source: background

@@ -19,6 +19,10 @@
 По [ADR-0006](../docs/adr/0006-settings-ui-kit.md) принято перевести
 собственное окно настроек оболочки на UI Kit. Общие элементы развиваются
 здесь, привязки к конфигурации и сервисам остаются в `shell/`.
+[ADR-0011](../docs/adr/0011-mock-visual-target.md) задаёт визуальную цель Smart
+Panel. По [UIKIT-002](../docs/tasks/UIKIT-002.md) общая палитра и существующие
+переиспользуемые controls выравниваются по цветам и стилю мока; композиция
+панелей и элементы, специфичные для оболочки, остаются в `shell/` и `quickshell/`.
 [Правила миграции](../docs/rules/settings-ui-kit.md) задают проверки
 совместимости и интерфейса. Окно настроек использует UI Kit; библиотека
 собирается отдельно и подключается параметром `SBER_QML_IMPORT_PATH` сборки оболочки.
@@ -47,7 +51,8 @@ python3 ui-kit/tools/api_contract.py --check
 
 - `core/`, `controls/`, `theme/`, `utils/`, `widgets/` — исходники модулей
   `Sber.Core`, `Sber.Controls`, `Sber.Theme`, `Sber.Utils`, `Sber.Widgets`.
-- `resources/theme/` — цвета, размеры и настройки шрифтов из `sberos-theme`.
+- `resources/theme/` — цвета, размеры и настройки шрифтов из `sberos-theme`,
+  с применёнными к общей теме визуальными токенами Smart Panel по UIKIT-002.
 - `resources/icons/` — SVG из `sberos-app-icons`.
 - `examples/gallery/` — интерактивная галерея компонентов.
 - `tests/` — тест загрузки плагинов Qt Test/CTest; `po/` — переводы.

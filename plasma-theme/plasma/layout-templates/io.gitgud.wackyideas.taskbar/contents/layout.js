@@ -32,7 +32,7 @@ panel.addWidget("io.gitgud.wackyideas.sbermenu")
 //panel.addWidget("org.kde.plasma.showActivityManager")
 var applications = panel.addWidget("org.kde.plasma.icontasks")
 applications.currentConfigGroup = ["General"]
-applications.writeConfig("launchers", "preferred://filemanager,preferred://browser")
+applications.writeConfig("launchers", "preferred://filemanager,preferred://browser,applications:org.kde.konsole.desktop,applications:systemsettings.desktop")
 
 /* Next up is determining whether to add the Input Method Panel
  * widget to the panel or not. This is done based on whether

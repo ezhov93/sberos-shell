@@ -310,6 +310,17 @@ Item {
         restoreMode: Binding.RestoreBinding
     }
 
+    readonly property bool searchHasPanelFocus: {
+        let item = panel.activeFocusItem;
+        while (item) {
+            if (item.isAppletContainer) {
+                return item.applet?.plasmoid?.pluginName === "com.mcc45tr.filesearch";
+            }
+            item = item.parent;
+        }
+        return false;
+    }
+
     KSvg.FrameSvgItem {
 
         Accessible.name: i18n("Panel Focus Indicator")
@@ -328,7 +339,7 @@ Item {
             ? (root.verticalPanel ?  Math.min(panel.activeFocusItem.height, panel.activeFocusItem.height) : translucentItem.height)
             : 0
 
-        visible: panel.active && panel.activeFocusItem
+        visible: panel.active && panel.activeFocusItem && !root.searchHasPanelFocus
 
         imagePath: "widgets/tabbar"
         prefix: {

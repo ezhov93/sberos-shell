@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Вход и блокировка — интерактивный мок</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="prototype">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">SberOS · демонстрация</p>
+        <h1>Вход и блокировка</h1>
+        <p class="intro">Макеты экрана входа, пароля и приветствия с переходом к рабочему столу.</p>
+      </div>
+      <a class="panel-link" href="../smart-panel/index.html">Открыть мок Smart Panel ↗</a>
+    </header>
+
+    <section class="screen-stage" id="screenStage" aria-label="Экран демонстрации">
+      <img id="screenArtwork" src="../../sources/login/svg/sddm-entry.svg" alt="Экран входа SberOS">
+      <div id="entryTargets" class="screen-targets" aria-label="Пользователи">
+        <button class="entry-target first" data-user="user-1" aria-label="Выбрать первого пользователя"></button>
+        <button class="entry-target second" data-user="user-2" aria-label="Выбрать второго пользователя"></button>
+        <button class="other-target" data-action="other-user" aria-label="Демо входа под другим пользователем"></button>
+      </div>
+      <form id="passwordForm" class="screen-password" hidden>
+        <label class="sr-only" for="passwordInput">Пароль для демонстрации</label>
+        <input id="passwordInput" type="password" autocomplete="off" aria-describedby="passwordHint" placeholder="Введите пароль">
+      </form>
+      <iframe id="desktopFrame" title="Демонстрационный рабочий стол SberOS" src="../smart-panel/index.html" hidden></iframe>
+      <div id="screenNotice" class="screen-notice" role="status" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="demo-controls" aria-label="Управление демонстрацией">
+      <div class="state-copy">
+        <span id="stateLabel" class="state-label">Экран входа</span>
+        <p id="stateDescription">Выберите одного из двух пользователей на макете, чтобы перейти к вводу пароля.</p>
+      </div>
+      <div id="actions" class="actions">
+        <button id="submitPassword" class="primary" hidden>Войти</button>
+        <button id="continueDesktop" class="primary" hidden>Перейти к рабочему столу</button>
+        <button id="lockButton" hidden>Заблокировать</button>
+        <button id="logoutButton" hidden>Выйти из демо-сессии</button>
+        <button id="resetButton" class="subtle">Сбросить демо</button>
+      </div>
+      <p id="passwordHint" class="demo-note" hidden>Для перехода введите любой непустой пароль. Это демонстрация: проверка не выполняется, значение не сохраняется и никуда не отправляется.</p>
+    </section>
+    <footer><a href="../../sources/login/README.md">Исходные SVG и связанные сценарии</a></footer>
+  </main>
+  <script src="mock.js"></script>
+</body>
+</html>

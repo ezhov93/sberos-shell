@@ -1,0 +1,61 @@
+:root {
+    color-scheme: dark;
+    font-family: Ubuntu, system-ui, sans-serif;
+    color: #f4f6f7;
+    background: #111a1c;
+    font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(ellipse at 50% -20%, #29403d 0, #172224 52%, #101719 100%); }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a { color: #a4f2dc; }
+.prototype { width: min(100% - 40px, 1440px); margin: 0 auto; padding: 28px 0 24px; }
+.page-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 0 0 18px; }
+.eyebrow { margin: 0 0 6px; color: #8fdac5; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.15; font-weight: 650; }
+.intro { margin: 8px 0 0; color: #b6c4c5; font-size: 14px; }
+.panel-link { flex: none; padding: 10px 14px; border: 1px solid #608c82; border-radius: 10px; color: #d5f7ed; text-decoration: none; font-size: 13px; }
+.panel-link:hover { background: #d5f7ed15; }
+.screen-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #0f181a; border: 1px solid #4d6464; border-radius: 14px; box-shadow: 0 24px 80px #0006; }
+#screenArtwork { display: block; width: 100%; height: 100%; object-fit: contain; }
+.screen-targets, .screen-password { position: absolute; inset: 0; }
+.entry-target, .other-target { position: absolute; border: 0; background: transparent; cursor: pointer; }
+.entry-target { left: 40.1%; width: 19.72%; height: 7.41%; border-radius: 10px; }
+.entry-target.first { top: 69.81%; }
+.entry-target.second { top: 77.59%; }
+.other-target { left: 40.1%; top: 85.37%; width: 19.72%; height: 4.45%; border-radius: 8px; }
+.entry-target:hover, .other-target:hover { background: #ffffff12; }
+.entry-target:focus-visible, .other-target:focus-visible { outline: 3px solid #8ce5ce; outline-offset: 2px; }
+.screen-password input { position: absolute; left: 45.21%; top: 72.41%; width: 12.2%; height: 3.1%; padding: 0 4px; border: 0; outline: 0; background: transparent; color: #fff; font-size: clamp(10px, 1vw, 16px); }
+.screen-password input::placeholder { color: #dce4e9aa; }
+.screen-password input:focus-visible { outline: 2px solid #9cebd6; border-radius: 4px; }
+#desktopFrame { position: absolute; inset: 0 auto auto 0; width: 1920px; height: 1080px; border: 0; transform: scale(var(--desktop-scale, .75)); transform-origin: top left; }
+.screen-notice { position: absolute; left: 50%; bottom: 2.5%; transform: translateX(-50%); padding: 8px 14px; border: 1px solid #a1decf88; border-radius: 999px; background: #102221e8; color: #e4fff6; font-size: clamp(10px, 1vw, 14px); box-shadow: 0 6px 28px #0006; white-space: nowrap; }
+.demo-controls { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 14px; padding: 16px 18px; border: 1px solid #3a5151; border-radius: 12px; background: #1b292be8; }
+.state-copy { min-width: 0; }
+.state-label { color: #9be8d3; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.state-copy p { margin: 5px 0 0; color: #d0d9db; font-size: 14px; }
+.actions { display: flex; flex: none; flex-wrap: wrap; justify-content: end; gap: 8px; }
+.actions button { min-height: 40px; padding: 0 14px; border: 1px solid #66817f; border-radius: 9px; background: #283b3d; color: #eef9f6; cursor: pointer; }
+.actions button:hover { background: #34504e; }
+.actions button:focus-visible { outline: 2px solid #9cebd6; outline-offset: 2px; }
+.actions .primary { border-color: #57b49b; background: #177d68; font-weight: 650; }
+.actions .primary:hover { background: #1d947a; }
+.actions .subtle { color: #cad7d7; background: transparent; }
+.demo-note { margin: 10px 2px 0; color: #aababc; font-size: 12px; line-height: 1.45; }
+footer { margin-top: 14px; color: #9cb1b1; font-size: 12px; }
+footer a { color: #a4f2dc; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 720px) {
+    .prototype { width: min(100% - 24px, 1440px); padding-top: 18px; }
+    .page-header { align-items: start; flex-direction: column; gap: 12px; }
+    .panel-link { align-self: start; }
+    .demo-controls { align-items: stretch; flex-direction: column; }
+    .actions { justify-content: start; }
+    .actions button { flex: 1 1 auto; }
+    .screen-stage { border-radius: 8px; }
+}

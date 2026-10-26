@@ -53,4 +53,5 @@ fileSearch.writeConfig("showSearchButton", false)
 var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
 systemSpacer.writeConfig("expanding", true)
 
+panel.addWidget("KdeControlStation")
 panel.addWidget("io.gitgud.wackyideas.clockcalendar")

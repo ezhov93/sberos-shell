@@ -20,7 +20,6 @@ PlasmoidItem {
     property date currentDate: new Date()
     property date viewedMonth: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
     readonly property string clockLabel: titleCase(locale.toString(currentDate, "ddd, d MMM · HH:mm"))
-    property alias clockControl: clockButton
 
     preferredRepresentation: compactRepresentation
     Plasmoid.title: qsTr("Часы и календарь")
@@ -48,8 +47,6 @@ PlasmoidItem {
     onExpandedChanged: {
         if (expanded) {
             viewedMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-        } else if (root.clockControl) {
-            root.clockControl.forceActiveFocus()
         }
     }
 

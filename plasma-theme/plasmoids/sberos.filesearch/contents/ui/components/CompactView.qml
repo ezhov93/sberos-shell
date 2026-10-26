@@ -67,7 +67,7 @@ Item {
         target: searchInput.Window.window ?? null
         function onActiveChanged() {
             if (searchInput.Window.window?.active && compactRoot.searchActive)
-                Qt.callLater(() => compactRoot.focusSearch());
+                Qt.callLater(() => searchInput.forceActiveFocus());
         }
     }
 

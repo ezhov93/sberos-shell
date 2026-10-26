@@ -7,6 +7,7 @@
 | Задача | Работа |
 | --- | --- |
 | [DOCS-AGENT-WORKFLOW](DOCS-AGENT-WORKFLOW.md) | Описать экономную работу с контекстом и командами |
+| [DOCS-TEST-PROCESS-CLEANUP](DOCS-TEST-PROCESS-CLEANUP.md) | Останавливать процессы после тестов и проверок |
 | [PANEL-000](PANEL-000.md) | Согласовать адаптацию требований Smart Panel |
 | [PANEL-001](PANEL-001.md) | Собрать пятизонную компоновку |
 | [PANEL-002](PANEL-002.md) | Реализовать меню Сбер |

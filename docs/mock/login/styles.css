@@ -28,8 +28,8 @@ h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.15; font-weigh
 .other-target { left: 40.1%; top: 85.37%; width: 19.72%; height: 4.45%; border-radius: 8px; }
 .entry-target:hover, .other-target:hover { background: #ffffff12; }
 .entry-target:focus-visible, .other-target:focus-visible { outline: 3px solid #8ce5ce; outline-offset: 2px; }
-.screen-password input { position: absolute; left: 45.21%; top: 72.41%; width: 12.2%; height: 3.1%; padding: 0 4px; border: 0; outline: 0; background: transparent; color: #fff; font-size: clamp(10px, 1vw, 16px); }
-.screen-password input::placeholder { color: #dce4e9aa; }
+.screen-password input { position: absolute; left: 45.21%; top: 72.41%; width: 12.2%; height: 3.1%; padding: 0 4px; border: 0; outline: 0; border-radius: 3px; background: rgba(255,255,255,.96); color: #465b66; font-size: clamp(10px, 1vw, 16px); }
+.screen-password input::placeholder { color: #778790; opacity: 1; }
 .screen-password input:focus-visible { outline: 2px solid #9cebd6; border-radius: 4px; }
 #desktopFrame { position: absolute; inset: 0 auto auto 0; width: 1920px; height: 1080px; border: 0; transform: scale(var(--desktop-scale, .75)); transform-origin: top left; }
 .screen-notice { position: absolute; left: 50%; bottom: 2.5%; transform: translateX(-50%); padding: 8px 14px; border: 1px solid #a1decf88; border-radius: 999px; background: #102221e8; color: #e4fff6; font-size: clamp(10px, 1vw, 14px); box-shadow: 0 6px 28px #0006; white-space: nowrap; }

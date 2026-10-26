@@ -20,6 +20,7 @@ Item {
     required property color textColor
     required property color accentColor
     required property int searchTextLength
+    required property string searchText
     required property int panelRadius
     required property bool showSearchButton
     required property bool showSearchButtonBackground
@@ -46,7 +47,18 @@ Item {
     // Signals
     signal toggleExpanded()
     signal openNotifications()
+    signal searchTextEdited(string text)
+    signal searchCleared()
+    signal queryAccepted()
     property int notificationCount: 0
+
+    onExpandedChanged: {
+        if (expanded && oskaMode) Qt.callLater(() => searchInput.forceActiveFocus());
+        else if (!expanded) compactRoot.searchCleared();
+    }
+    Component.onCompleted: {
+        if (expanded && oskaMode) Qt.callLater(() => searchInput.forceActiveFocus());
+    }
 
     // Button Mode - icon only (no background)
     Kirigami.Icon {
@@ -150,7 +162,29 @@ Item {
                 horizontalAlignment: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? Text.AlignLeft : Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 elide: Text.ElideRight
-                visible: compactRoot.searchTextLength > 0 || compactRoot.oskaMode
+                visible: (compactRoot.searchTextLength > 0 || compactRoot.oskaMode) && !searchInput.visible
+            }
+
+            TextField {
+                id: searchInput
+                Layout.fillWidth: true
+                Layout.preferredHeight: 56
+                visible: compactRoot.oskaMode && compactRoot.expanded
+                text: compactRoot.searchText
+                placeholderText: qsTr("Найду документ или приложение")
+                Accessible.name: qsTr("Поиск документов и приложений")
+                color: compactRoot.smartTheme.foreground
+                placeholderTextColor: compactRoot.smartTheme.searchText
+                font.pixelSize: 16
+                leftPadding: 0
+                rightPadding: 0
+                background: Item {}
+                onTextEdited: compactRoot.searchTextEdited(text)
+                onAccepted: compactRoot.queryAccepted()
+                Keys.onEscapePressed: event => {
+                    compactRoot.toggleExpanded();
+                    event.accepted = true;
+                }
             }
 
             RssTicker {
@@ -227,6 +261,7 @@ Item {
         MouseArea {
             id: searchMouse
             anchors.fill: parent
+            enabled: !searchInput.visible
             cursorShape: Qt.PointingHandCursor
             hoverEnabled: true
 

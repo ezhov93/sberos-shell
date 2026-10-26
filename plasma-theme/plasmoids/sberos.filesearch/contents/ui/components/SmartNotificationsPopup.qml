@@ -11,19 +11,18 @@ FocusScope {
     required property var notifications
     required property bool serviceAvailable
     signal dismissed()
-    signal searchRequested(string query)
     signal closeNotification(int notificationId)
     signal activateNotification(int notificationId)
     signal clearRequested()
     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
     implicitWidth: 456
-    implicitHeight: 354
+    implicitHeight: 282
     Layout.minimumWidth: 456
     Layout.maximumWidth: 456
     Layout.preferredWidth: 456
-    Layout.minimumHeight: 354
-    Layout.maximumHeight: 354
-    Layout.preferredHeight: 354
+    Layout.minimumHeight: 282
+    Layout.maximumHeight: 282
+    Layout.preferredHeight: 282
     focus: true
     Keys.onEscapePressed: event => { popup.dismissed(); event.accepted = true; }
     Rectangle {
@@ -178,26 +177,6 @@ FocusScope {
                 font.pixelSize: 16
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-            }
-        }
-        TextField {
-            id: searchFooter
-            Layout.topMargin: 16
-            Layout.fillWidth: true
-            Layout.preferredHeight: 56
-            leftPadding: 12
-            rightPadding: 12
-            placeholderText: qsTr("Найду документ или приложение")
-            placeholderTextColor: popup.smartTheme.searchText
-            color: popup.smartTheme.foreground
-            font.pixelSize: 16
-            Accessible.name: qsTr("Поиск документов и приложений")
-            onTextChanged: if (text.length) popup.searchRequested(text)
-            background: Rectangle {
-                radius: 17
-                color: popup.smartTheme.inner
-                border.width: searchFooter.activeFocus ? 2 : 1
-                border.color: searchFooter.activeFocus ? popup.smartTheme.focus : popup.smartTheme.edge
             }
         }
     }

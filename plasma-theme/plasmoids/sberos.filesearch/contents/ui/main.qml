@@ -162,6 +162,7 @@ PlasmoidItem {
         isExtraWideMode: root.isExtraWideMode
         isUltraWideMode: root.isUltraWideMode
         expanded: root.expanded
+        searchText: root.searchText
         truncatedText: root.truncatedText
         responsiveFontSize: root.responsiveFontSize
         maxChars: root.maxChars
@@ -181,6 +182,12 @@ PlasmoidItem {
 
         notificationCount: notificationRows.count
         onOpenNotifications: root.openNotifications()
+        onSearchTextEdited: text => root.searchText = text
+        onSearchCleared: root.searchText = ""
+        onQueryAccepted: {
+            const popup = root.fullRepresentationItem;
+            if (popup && popup.activateFirst) popup.activateFirst();
+        }
         onToggleExpanded: {
             const closeSearch = root.expanded && !root.notificationsOpen;
             root.notificationsOpen = false;
@@ -196,7 +203,7 @@ PlasmoidItem {
         FocusScope {
             id: panelPopup
             implicitWidth: 456
-            implicitHeight: root.notificationsOpen ? 354 : 653
+            implicitHeight: root.notificationsOpen ? 282 : 653
             Layout.minimumWidth: implicitWidth
             Layout.maximumWidth: implicitWidth
             Layout.preferredWidth: implicitWidth
@@ -207,15 +214,20 @@ PlasmoidItem {
                 content: panelPopup
                 anchorItem: root.compactRepresentationItem ?? root
                 screenGeometry: Plasmoid.containment.screenGeometry
-                overlapPanel: true
+                overlapPanel: false
             }
             Loader {
+                id: representationLoader
                 anchors.fill: parent
                 active: root.expanded
                 sourceComponent: root.notificationsOpen ? notificationsRepresentation : smartSearchRepresentation
-                onLoaded: item.forceActiveFocus()
             }
             Keys.onEscapePressed: root.expanded = false
+            function activateFirst() {
+                if (representationLoader.status !== Loader.Ready || !representationLoader.item
+                        || !representationLoader.item.activateFirst) return;
+                representationLoader.item.activateFirst();
+            }
         }
     }
 
@@ -225,10 +237,6 @@ PlasmoidItem {
             id: notificationPopup
             notifications: notificationModel
             serviceAvailable: notificationModel.valid
-            onSearchRequested: query => {
-                root.searchText = query;
-                root.notificationsOpen = false;
-            }
             onDismissed: root.expanded = false
             onCloseNotification: notificationId => notificationModel.close(notificationId)
             onActivateNotification: notificationId => {
@@ -247,11 +255,8 @@ PlasmoidItem {
         id: smartSearchRepresentation
         Components.SmartSearchPopup {
             id: searchPopup
-            onNotificationsRequested: root.notificationsOpen = true
-            initialQuery: root.searchText
+            searchQuery: root.searchText
             logic: controller
-            expanded: root.expanded
-            onQueryChanged: query => root.searchText = query
             onDismissed: root.expanded = false
         }
     }

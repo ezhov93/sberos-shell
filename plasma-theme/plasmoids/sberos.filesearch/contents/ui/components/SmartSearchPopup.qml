@@ -10,14 +10,11 @@ import ".."
 FocusScope {
     id: popup
     required property var logic
-    required property bool expanded
-    property string initialQuery: ""
+    property string searchQuery: ""
     signal dismissed()
-    signal notificationsRequested()
-    signal queryChanged(string query)
     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
     property var matches: []
-    readonly property var entries: input.text.trim().length ? (results.queryString === input.text.trim() ? matches : []) : logic.searchHistory.map(item => ({
+    readonly property var entries: popup.searchQuery.trim().length ? (results.queryString === popup.searchQuery.trim() ? matches : []) : logic.searchHistory.map(item => ({
         display: item.display, decoration: item.decoration, url: item.filePath || "", sourceIndex: -1,
         application: Boolean(item.isApplication) || String(item.filePath || "").endsWith(".desktop")
     })).filter(item => item.url.length > 0)
@@ -31,17 +28,13 @@ FocusScope {
     Layout.minimumHeight: 653
     Layout.maximumHeight: 653
     Layout.preferredHeight: 653
-    focus: true
+    focus: false
 
-    onExpandedChanged: {
-        if (expanded) Qt.callLater(() => input.forceActiveFocus());
-        else { input.clear(); results.clear(); }
+    onSearchQueryChanged: {
+        popup.matches = [];
+        if (searchQuery.trim().length) debounce.restart();
+        else { debounce.stop(); results.clear(); }
     }
-    Component.onCompleted: {
-        input.text = initialQuery;
-        if (expanded) Qt.callLater(() => input.forceActiveFocus());
-    }
-    Keys.onEscapePressed: event => { popup.dismissed(); event.accepted = true; }
 
     function activate(entry) {
         if (entry.sourceIndex >= 0) {
@@ -51,8 +44,12 @@ FocusScope {
         } else {
             Qt.openUrlExternally(entry.url);
         }
-        logic.addToHistory(entry.display, entry.decoration, entry.application ? "Applications" : "Documents", entry.url || entry.display, entry.url, null, input.text);
+        logic.addToHistory(entry.display, entry.decoration, entry.application ? "Applications" : "Documents", entry.url || entry.display, entry.url, null, searchQuery);
         popup.dismissed();
+    }
+    function activateFirst() {
+        const first = popup.applications[0] || popup.documents[0];
+        if (first) popup.activate(first);
     }
     function refresh() {
         const values = [];
@@ -73,7 +70,7 @@ FocusScope {
     Timer {
         id: debounce
         interval: 100
-        onTriggered: results.queryString = input.text.trim()
+        onTriggered: results.queryString = popup.searchQuery.trim()
     }
     Timer {
         id: refreshTimer
@@ -184,7 +181,7 @@ FocusScope {
                 }
                 Text {
                     visible: popup.documents.length > 0
-                    text: input.text.length ? qsTr("Документы") : qsTr("Недавние документы")
+                    text: popup.searchQuery.length ? qsTr("Документы") : qsTr("Недавние документы")
                     color: popup.smartTheme.foreground
                     font.pixelSize: 16
                     font.weight: Font.DemiBold
@@ -231,52 +228,11 @@ FocusScope {
                 Text {
                     Layout.fillWidth: true
                     visible: popup.entries.length === 0
-                    text: results.querying ? qsTr("Поиск…") : input.text.length ? qsTr("Ничего не найдено") : qsTr("Начните вводить название документа или приложения")
+                    text: results.querying ? qsTr("Поиск…") : popup.searchQuery.length ? qsTr("Ничего не найдено") : qsTr("Начните вводить название документа или приложения")
                     color: popup.smartTheme.muted
                     font.pixelSize: 16
                     wrapMode: Text.WordWrap
                 }
-            }
-        }
-        TextField {
-            id: input
-            Layout.fillWidth: true
-            Layout.preferredHeight: 56
-            leftPadding: text.length ? 16 : 68
-            rightPadding: 16
-            placeholderText: qsTr("Найду документ или приложение")
-            Accessible.name: qsTr("Поиск документов и приложений")
-            color: popup.smartTheme.foreground
-            placeholderTextColor: popup.smartTheme.searchText
-            font.pixelSize: 16
-            onTextChanged: {
-                popup.queryChanged(text);
-                popup.matches = [];
-                if (text.trim().length) debounce.restart();
-                else { debounce.stop(); results.clear(); }
-            }
-            onAccepted: {
-                const first = popup.applications[0] || popup.documents[0];
-                if (first) popup.activate(first);
-            }
-            Keys.onDownPressed: input.nextItemInFocusChain().forceActiveFocus()
-            Button {
-                x: 8
-                y: 8
-                width: 40
-                height: 40
-                padding: 0
-                visible: input.text.length === 0
-                Accessible.name: qsTr("Уведомления")
-                onClicked: popup.notificationsRequested()
-                contentItem: OskaAvatar {}
-                background: Rectangle { radius: 20; color: "transparent"; border.width: parent.visualFocus ? 2 : 0; border.color: popup.smartTheme.focus }
-            }
-            background: Rectangle {
-                radius: 17
-                color: popup.smartTheme.inner
-                border.width: input.activeFocus ? 2 : 1
-                border.color: input.activeFocus ? popup.smartTheme.focus : popup.smartTheme.edge
             }
         }
     }

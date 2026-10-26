@@ -6,6 +6,7 @@
 
 | Задача | Работа |
 | --- | --- |
+| [ASSESS-THREE-SHELLS](ASSESS-THREE-SHELLS.md) | Оценить модификации трёх оболочек и выбрать основу дальнейшей работы |
 | [DOCS-AGENT-WORKFLOW](DOCS-AGENT-WORKFLOW.md) | Описать экономную работу с контекстом и командами |
 | [DOCS-001](DOCS-001.md) | Упростить навигацию и убрать дублирование в документации |
 | [DOCS-TEST-PROCESS-CLEANUP](DOCS-TEST-PROCESS-CLEANUP.md) | Останавливать процессы после тестов и проверок |

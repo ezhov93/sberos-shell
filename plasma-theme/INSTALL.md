@@ -19,6 +19,16 @@ the new applet list in an existing profile, apply the installed SberOS panel
 layout from Plasma's layout controls or create a fresh SberOS shell profile.
 
 Use `--dry-run` to list the packages and backups without changing files.
+To activate the custom clock in the current panel, run:
+
+```bash
+bash plasma-theme/install-sberos-panel.sh --activate-clock
+```
+
+This option replaces only the current panel's stock digital clock and saves a
+copy of `plasma-org.kde.plasma.desktop-appletsrc` alongside package backups.
+It requires exactly one stock digital clock in a panel. Restart Plasma after
+installing to reload the applet.
 
 ## TABLE OF CONTENTS
 

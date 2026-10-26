@@ -22,7 +22,9 @@ search is excluded from the MVP. The notification button still uses its existing
 view. The Sber button opens a four-entry menu with
 shell settings, the configured terminal, power/session and collapse. The
 applications button opens a full-screen Launchpad on that panel's screen, with
-a blurred desktop background, paged app grid and name-only local search; Esc or a click on the background
+a blurred desktop background, paged app grid and name-only local search in the
+Launchpad itself; matching apps replace the grid contents without opening the
+Oska/KRunner search dialog. Esc or a click on the background
 closes it. For a direct preview, run `sirca-shell --open-launchpad`. Right-click
 the terminal for desktop actions and pinning. Esc/outside clicks close one child
 level; the existing global launcher action closes all levels or opens the menu

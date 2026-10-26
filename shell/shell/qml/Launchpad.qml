@@ -334,6 +334,11 @@ Window {
             clip: true
             selectByMouse: true
             Accessible.name: qsTr("Поиск приложений")
+            onTextChanged: {
+                root.currentPage = 0;
+                root.currentIndex = 0;
+                root.selectionMoved = false;
+            }
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Escape) {
                     root.close_();

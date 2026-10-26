@@ -175,6 +175,84 @@ ContainmentItem {
             prefix: ['thick'].concat(panelSvg.prefix)
             imagePath: "widgets/panel-background"
         }
+
+        readonly property var systemIslandAppletNames: [
+            "org.kde.plasma.systemtray",
+            "org.kde.plasma.digitalclock",
+            "org.kde.plasma.showdesktop"
+        ]
+        readonly property var systemIslandMembers: currentLayout.visibleChildren.filter(item =>
+            item.isAppletContainer
+                && systemIslandAppletNames.indexOf(item.applet?.plasmoid?.pluginName) !== -1)
+        readonly property bool hasSharedSystemIsland: {
+            if (!root.isHorizontal || systemIslandMembers.length < 2) {
+                return false;
+            }
+
+            let firstIndex = systemIslandMembers[0].appletIndex;
+            let lastIndex = firstIndex;
+            for (const member of systemIslandMembers) {
+                firstIndex = Math.min(firstIndex, member.appletIndex);
+                lastIndex = Math.max(lastIndex, member.appletIndex);
+            }
+
+            for (const item of currentLayout.visibleChildren) {
+                if (item.isAppletContainer
+                        && item.appletIndex > firstIndex
+                        && item.appletIndex < lastIndex
+                        && systemIslandAppletNames.indexOf(item.applet?.plasmoid?.pluginName) === -1) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        readonly property real systemIslandLeft: {
+            let value = Infinity;
+            for (const member of systemIslandMembers) {
+                value = Math.min(value, member.x);
+            }
+            return value;
+        }
+        readonly property real systemIslandRight: {
+            let value = -Infinity;
+            for (const member of systemIslandMembers) {
+                value = Math.max(value, member.x + member.width);
+            }
+            return value;
+        }
+        readonly property real systemIslandTop: {
+            let value = Infinity;
+            for (const member of systemIslandMembers) {
+                value = Math.min(value, member.y);
+            }
+            return value;
+        }
+        readonly property real systemIslandBottom: {
+            let value = -Infinity;
+            for (const member of systemIslandMembers) {
+                value = Math.max(value, member.y + member.height);
+            }
+            return value;
+        }
+
+        // Draw one shared surface behind the tray, clock, and show-desktop applets.
+        Rectangle {
+            id: sharedSystemIsland
+            visible: dropArea.hasSharedSystemIsland
+            x: currentLayout.x + dropArea.systemIslandLeft + Kirigami.Units.smallSpacing
+            y: currentLayout.y + dropArea.systemIslandTop + Kirigami.Units.smallSpacing
+            width: Math.max(0, dropArea.systemIslandRight - dropArea.systemIslandLeft - 2 * Kirigami.Units.smallSpacing)
+            height: Math.max(0, dropArea.systemIslandBottom - dropArea.systemIslandTop - 2 * Kirigami.Units.smallSpacing)
+            radius: 24
+            color: Kirigami.Theme.backgroundColor
+            opacity: 0.72
+            border.width: 1
+            border.color: Qt.rgba(Kirigami.Theme.textColor.r,
+                                  Kirigami.Theme.textColor.g,
+                                  Kirigami.Theme.textColor.b,
+                                  0.22)
+        }
+
         property bool marginAreasEnabled: panelSvg.margins != thickPanelSvg.margins
         property var marginHighlightSvg: KSvg.Svg{imagePath: "widgets/margins-highlight"}
         //Margins are either the size of the margins in the SVG, unless that prevents the panel from being at least half a smallMedium icon) tall at which point we set the margin to whatever allows it to be that...or if it still won't fit, 1.
@@ -261,6 +339,8 @@ ContainmentItem {
                                           0.22)
                     visible: root.isHorizontal
                         && applet?.plasmoid?.pluginName !== "org.kde.plasma.panelspacer"
+                        && !(dropArea.hasSharedSystemIsland
+                             && dropArea.systemIslandAppletNames.indexOf(applet?.plasmoid?.pluginName) !== -1)
                 }
 
                 //when the applet moves caused by its resize, don't animate.

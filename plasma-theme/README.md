@@ -1,5 +1,10 @@
 # AeroThemePlasma
 
+> This repository copy is trimmed for ATP-001 to the SberOS shell, panel layout
+> template and selected panel plasmoids. The complete upstream source remains in
+> `../refs/aerothemeplasma/`. Use `install-sberos-panel.sh` for this working copy;
+> the upstream full-theme installation steps and screenshots below are not present.
+
 ## Microsoft® Windows™ is a registered trademark of Microsoft® Corporation. This name is used for referential use only, and does not aim to usurp copyrights from Microsoft. Microsoft Ⓒ 2026 All rights reserved. All resources belong to Microsoft Corporation.
 
 ## Introduction

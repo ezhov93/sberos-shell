@@ -1,5 +1,9 @@
 # Documentation
 
+> This working copy is reduced to the SberOS panel components. The full upstream
+> documentation and source are preserved in `../refs/aerothemeplasma/`; links to
+> removed documentation folders below apply to that upstream project.
+
 ## Table of contents
 
 1. [Introduction](#intro)

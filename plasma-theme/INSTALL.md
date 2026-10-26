@@ -1,5 +1,11 @@
 # Installation
 
+> This working copy contains only the SberOS panel components. The full
+> AeroThemePlasma installation steps below refer to directories that are not
+> included here; the complete upstream source is preserved in
+> `../refs/aerothemeplasma/`. For this copy, use only
+> `bash plasma-theme/install-sberos-panel.sh` from the repository root.
+
 ## Installing the SberOS panel components
 
 For development of the SberOS Plasma panel, use the user-local installer from

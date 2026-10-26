@@ -70,6 +70,5 @@ find_package(PlasmaActivitiesStats ${PROJECT_VERSION} REQUIRED)
 find_package(PlasmaWaylandProtocols 1.23.0 REQUIRED)
 
 add_subdirectory(plasma)
-add_subdirectory(misc)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

@@ -163,6 +163,7 @@ PANEL-008; затем Оська и уведомления (PANEL-004/PANEL-005)
 | [SHELL-004](archive/SHELL-004.md) | Удалить поддержку KDE Plasma applets из Sirca | Готово | ADR-0008, PANEL-001 |
 | [SHELL-005](SHELL-005.md) | Перевести слайдеры и переключатели Sirca на UI Kit | В работе | PANEL-007, ADR-0006 |
 | [OSD-001](OSD-001.md) | Показывать системный OSD Sirca без plasmashell | В работе | SHELL-001, PANEL-007 |
+| [SHELL-ALT-TAB-BLACK-SCREEN](SHELL-ALT-TAB-BLACK-SCREEN.md) | Не скрывать рабочий стол при Alt+Tab без plasmashell | В работе | — |
 | [SHELL-006](archive/SHELL-006.md) | Переписать установщик Sirca на Python | Готово | — |
 | [SHELL-007](archive/SHELL-007.md) | Исправить результаты аудита QML Sirca Shell | Готово | PANEL-002, PANEL-006, TEST-001 |
 | [SHELL-008](archive/SHELL-008.md) | Исправить результаты аудита Qt C++ Sirca Shell | Готово | PANEL-003, PANEL-008, DESKTOP-ICONS, TEST-001 |

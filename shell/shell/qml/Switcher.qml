@@ -71,19 +71,6 @@ Window {
         watch.stop();
     }
     property bool setupDone: false
-    // While Alt is held, the selected window itself is shown: KWin's highlight-window effect brings it forward and fades
-    // the others, so you see what you are about to switch to, not only its thumbnail.
-    function peek() {
-        let id = "";
-        if (visible && model && current >= 0 && current < n) {
-            const ids = model.data(model.makeModelIndex(current), TaskManager.AbstractTasksModel.WinIdList);
-            if (ids && ids.length)
-                id = ids[0];
-        }
-        Shell.dbusSendTyped("org.kde.KWin.HighlightWindow", "/org/kde/KWin/HighlightWindow", "org.kde.KWin.HighlightWindow", "highlightWindows", "S", [id ? [id] : []]);
-    }
-    onCurrentChanged: peek()
-    onVisibleChanged: peek()
     property double openedAt: 0
     // Alt let go → switch. The release event is the normal path; polling covers a tap so quick that Alt was already up
     // before this surface had the keyboard (then no release event ever arrives).

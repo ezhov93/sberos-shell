@@ -75,6 +75,14 @@ Qt-приложения используют выбранный пользова
 GPU-эффекты и локаль пользовательской сессии. Следующий шаг — проверить ввод,
 ошибку и успешную разблокировку в реальной Plasma-сессии. Скриншоты: [эталон](evidence/DESKTOP-001-lock/reference-1920x1080.png), [до](evidence/DESKTOP-001-lock/before-1920x1080.png), [после](evidence/DESKTOP-001-lock/after-1920x1080.png), [ошибка пароля](evidence/DESKTOP-001-lock/failed-1920x1080.png). В QML-предпросмотре не показываются неподдерживаемые выбор PIN и системные индикаторы из SVG.
 
+По запросу 2026-10-26 `onur.glasslock` установлен для текущего пользователя
+командой `kpackagetool6 --type Plasma/Shell --install desktop/lock/onur.glasslock`.
+`kpackagetool6 --list -t Plasma/Shell` показывает пакет; SHA-256 `LockScreenUi.qml`
+и `mock-lock-background.png` совпадают с рабочей копией. Глобальная установка
+через `--global` не выполнена: `/usr/share/plasma/shells` требует root, а `sudo`
+запрашивает пароль. Установка для текущего пользователя не переключает активный
+shell; применение lock screen в живой Plasma ещё не проверено.
+
 Первый этап: добавлен изолированный генератор KDE/GTK из ресурсов UI Kit,
 без изменений кода оболочки и библиотеки, установщиков и пользовательской сессии.
 [Карта миграции и контракт адаптера](../../shell/desktop/docs/SBEROS.md)

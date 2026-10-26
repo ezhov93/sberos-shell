@@ -167,7 +167,7 @@
   "resources/theme/colors/os/osSuperGray.json": "fb027fe3f9ce75a4a64dd214c1b712efb0bde3a4a59543703d0e30317a78f132",
   "resources/theme/font_list.json": "cbdd5cb1e368f254d9f12d8a18bed6b88a03a51de0971e4a608ed52143deb910",
   "resources/theme/font_styles.json": "6cbe8f66bfc62e66e5b65423b91feb3f4b84b56deecd5e1e4e45fa8e855e989b",
-  "resources/theme/sdds_os.json": "4b3e29666ea1ab1fbb3ce77553d8aca52ff5b0f87ca1713b6bf87518d6412380",
+  "resources/theme/sdds_os.json": "9d39d204001334d101c8e83cab6c8a99c145c80cfd554d94334d53cc7418d9a3",
   "resources/theme/sdds_os_raw.json": "694bf3aad75a80d7f9a36946ec9bca53befd49c1b35cf52c37970106f0080bef",
   "resources/theme/sizes_os.json": "4b802118daba9eec719178b04cf76f56e83f987650247db20a9355819d1462e4",
   "theme/CMakeLists.txt": "df70be5539ff7017891b6606c0732cd16f646ef3ecf041b3b79fad998ccc25fb",

@@ -51,8 +51,9 @@ python3 ui-kit/tools/api_contract.py --check
 
 - `core/`, `controls/`, `theme/`, `utils/`, `widgets/` — исходники модулей
   `Sber.Core`, `Sber.Controls`, `Sber.Theme`, `Sber.Utils`, `Sber.Widgets`.
-- `resources/theme/` — цвета, размеры и настройки шрифтов из `sberos-theme`,
-  с применёнными к общей теме визуальными токенами Smart Panel по UIKIT-002.
+- `resources/theme/` — цвета, размеры и настройки шрифтов из `sberos-theme`;
+  исходная палитра сохранена, а отдельные размеры и controls дорабатываются
+  по UIKIT-002.
 - `resources/icons/` — SVG из `sberos-app-icons`.
 - `examples/gallery/` — интерактивная галерея компонентов.
 - `tests/` — тест загрузки плагинов Qt Test/CTest; `po/` — переводы.

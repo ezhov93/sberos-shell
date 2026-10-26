@@ -47,6 +47,8 @@ applications.writeConfig("launchers", "preferred://filemanager,preferred://brows
 var fileSearch = panel.addWidget("com.mcc45tr.filesearch")
 fileSearch.currentConfigGroup = ["Panel"]
 fileSearch.writeConfig("displayMode", 3)
+fileSearch.writeConfig("panelHeight", 72)
+fileSearch.writeConfig("showSearchButton", false)
 
 var systemSpacer = panel.addWidget("org.kde.plasma.panelspacer")
 systemSpacer.writeConfig("expanding", true)

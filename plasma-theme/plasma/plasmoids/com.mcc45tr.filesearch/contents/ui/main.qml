@@ -34,7 +34,7 @@ PlasmoidItem {
 
     // ===== LAYOUT CALCULATIONS =====
     readonly property real textContentWidth: isButtonMode ? 0 : (textMetrics.width + ((isWideMode || isExtraWideMode || isUltraWideMode) ? (height + 30) : 20))
-    readonly property real baseWidth: isButtonMode ? height : (isUltraWideMode ? (height * 9) : (isExtraWideMode ? (height * 6) : ((isWideMode) ? (height * 4) : 70)))
+    readonly property real baseWidth: isButtonMode ? height : (isUltraWideMode ? (height * 9) : (isExtraWideMode ? 456 : ((isWideMode) ? (height * 4) : 70)))
 
     Layout.preferredWidth: Math.max(baseWidth, textContentWidth, placeholderContentWidth)
     Layout.preferredHeight: Plasmoid.configuration.panelHeight > 0 ? Plasmoid.configuration.panelHeight : 38

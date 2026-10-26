@@ -31,6 +31,8 @@ Item {
     property bool isUltraWideMode: false
     required property int maxChars
 
+    readonly property bool oskaMode: compactRoot.isExtraWideMode
+
     // Signals
     signal toggleExpanded()
 
@@ -66,40 +68,58 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         height: compactRoot.panelHeight > 0 ? compactRoot.panelHeight : parent.height
-        radius: compactRoot.panelRadius === 0 ? height / 2 : (compactRoot.panelRadius === 1 ? 12 : (compactRoot.panelRadius === 2 ? 6 : 0))
-        color: Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 0.95)
+        radius: compactRoot.oskaMode ? 24 : (compactRoot.panelRadius === 0 ? height / 2 : (compactRoot.panelRadius === 1 ? 12 : (compactRoot.panelRadius === 2 ? 6 : 0)))
+        color: compactRoot.oskaMode ? "#b8f7f9fb" : Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 0.95)
         visible: !compactRoot.isButtonMode
 
-        // Border for definition
         border.width: 1
-        border.color: compactRoot.expanded ? compactRoot.accentColor : Qt.rgba(compactRoot.textColor.r, compactRoot.textColor.g, compactRoot.textColor.b, 0.1)
+        border.color: compactRoot.expanded ? compactRoot.accentColor : (compactRoot.oskaMode ? "#85ffffff" : Qt.rgba(compactRoot.textColor.r, compactRoot.textColor.g, compactRoot.textColor.b, 0.1))
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 7
+            radius: 17
+            color: compactRoot.oskaMode ? "#ebffffff" : "transparent"
+            visible: compactRoot.oskaMode
+        }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? 10 : 0
-            anchors.rightMargin: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? (compactRoot.showSearchButton ? 4 : 10) : 0
-            spacing: 6
+            anchors.leftMargin: compactRoot.oskaMode ? 16 : ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? 10 : 0)
+            anchors.rightMargin: compactRoot.oskaMode ? 16 : ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? (compactRoot.showSearchButton ? 4 : 10) : 0)
+            spacing: compactRoot.oskaMode ? 12 : 6
 
-            // Display text (Static when searching, Hidden when ticker is running)
+            Image {
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
+                source: Qt.resolvedUrl("../../assets/oska-avatar.svg")
+                sourceSize: Qt.size(40, 40)
+                fillMode: Image.PreserveAspectFit
+                visible: compactRoot.oskaMode && compactRoot.searchTextLength === 0
+                Accessible.ignored: true
+            }
+
             Text {
                 id: displayText
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                text: compactRoot.truncatedText
-                color: compactRoot.textColor
-                font.pixelSize: compactRoot.responsiveFontSize
-                font.family: "Roboto Condensed"
+                text: compactRoot.oskaMode && compactRoot.searchTextLength === 0
+                    ? i18nd("plasma_applet_com.mcc45tr.filesearch", "Найду документ или приложение")
+                    : compactRoot.truncatedText
+                color: compactRoot.oskaMode ? "#6d7e92" : compactRoot.textColor
+                font.pixelSize: compactRoot.oskaMode ? 16 : compactRoot.responsiveFontSize
+                font.family: compactRoot.oskaMode ? Kirigami.Theme.defaultFont.family : "Roboto Condensed"
                 horizontalAlignment: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) ? Text.AlignLeft : Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 elide: Text.ElideRight
-                visible: compactRoot.searchTextLength > 0 // Only show static text when user is typing
+                visible: compactRoot.searchTextLength > 0 || compactRoot.oskaMode
             }
 
             RssTicker {
                 id: tickerContainer
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                visible: !compactRoot.isButtonMode && compactRoot.searchTextLength === 0
+                visible: !compactRoot.isButtonMode && compactRoot.searchTextLength === 0 && !compactRoot.oskaMode
 
                 logic: compactRoot.logic
                 rssFrequency: compactRoot.rssFrequency
@@ -119,7 +139,6 @@ Item {
                 isSearching: compactRoot.searchTextLength > 0
             }
 
-            // Search Icon Button (Wide and Extra Wide Mode only)
             Rectangle {
                 id: searchIconButton
                 Layout.preferredWidth: ((compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) && compactRoot.showSearchButton) ? (mainButton.height - 6) : 0
@@ -127,7 +146,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 radius: compactRoot.panelRadius === 0 ? width / 2 : (compactRoot.panelRadius === 1 ? 8 : (compactRoot.panelRadius === 2 ? 4 : 0))
                 color: compactRoot.showSearchButtonBackground ? compactRoot.accentColor : "transparent"
-                visible: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) && compactRoot.showSearchButton
+                visible: (compactRoot.isWideMode || compactRoot.isExtraWideMode || compactRoot.isUltraWideMode) && compactRoot.showSearchButton && !compactRoot.oskaMode
 
                 Behavior on Layout.preferredWidth { NumberAnimation { duration: 200 } }
 
@@ -147,8 +166,8 @@ Item {
             cursorShape: Qt.PointingHandCursor
             hoverEnabled: true
 
-            onEntered: mainButton.color = Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 1.0)
-            onExited: mainButton.color = Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 0.95)
+            onEntered: mainButton.color = compactRoot.oskaMode ? "#d6f7f9fb" : Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 1.0)
+            onExited: mainButton.color = compactRoot.oskaMode ? "#b8f7f9fb" : Qt.rgba(compactRoot.bgColor.r, compactRoot.bgColor.g, compactRoot.bgColor.b, 0.95)
 
             onClicked: compactRoot.toggleExpanded()
         }

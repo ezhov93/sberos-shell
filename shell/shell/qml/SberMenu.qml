@@ -26,7 +26,7 @@ Window {
     property int childOrigin: -1
     property bool childFromKeyboard: false
     property string terminalId: ""
-    readonly property real menuWidth: 96
+    readonly property real menuWidth: 72
     readonly property real cellSize: 40
     readonly property real menuSpacing: 8
     readonly property real menuPadding: 16
@@ -283,8 +283,6 @@ Window {
                                     menu.openChild("terminal", 1, false);
                             }
                         }
-                        Sber.ToolTip.visible: hovered
-                        Sber.ToolTip.text: modelData.text
                     }
                 }
             }

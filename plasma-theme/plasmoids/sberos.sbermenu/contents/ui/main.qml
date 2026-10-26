@@ -19,12 +19,13 @@ PlasmoidItem {
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property real panelExtent: Math.max(1, vertical ? width : height)
     property bool powerMenuOpen: false
+    property bool closingMenu: false
     property int selectedAction: -1
     readonly property var menuActions: [
         {action: "settings", icon: "settings", label: qsTr("Настройки")},
         {action: "terminal", icon: "terminal", label: qsTr("Терминал")},
         {action: "power", icon: "power", label: qsTr("Питание и сеанс")},
-        {action: "collapse", icon: "down", label: qsTr("Свернуть меню")}
+        {action: "collapse", icon: "sber", label: qsTr("Свернуть меню Сбера")}
     ]
     readonly property var powerActions: [
         {action: "logout", label: qsTr("Завершить сеанс"), shortcut: "", enabled: sessionManagement.canLogout},
@@ -45,17 +46,35 @@ PlasmoidItem {
     Layout.maximumHeight: vertical ? panelExtent : Infinity
     Layout.preferredHeight: vertical ? panelExtent : 72
 
-    onExpandedChanged: {
+    onExpandedChanged: expanded => {
         powerMenuOpen = false;
         selectedAction = -1;
+        closingMenu = false;
+        const menu = root.fullRepresentationItem;
+        if (menu) {
+            if (expanded) Qt.callLater(menu.openMenu);
+            else menu.resetMenu();
+        }
+    }
+
+    function closeMenu() {
+        if (powerMenuOpen) { powerMenuOpen = false; return; }
+        const menu = root.fullRepresentationItem;
+        if (menu) menu.closeMenu();
+        else expanded = false;
+    }
+
+    function toggleMenu() {
+        if (!expanded) expanded = true;
+        else if (closingMenu) root.fullRepresentationItem?.openMenu();
+        else closeMenu();
     }
 
     function activateMenu(action) {
         if (action === "power") {
             powerMenuOpen = !powerMenuOpen;
         } else if (action === "collapse") {
-            if (powerMenuOpen) powerMenuOpen = false;
-            else root.expanded = false;
+            root.closeMenu();
         } else {
             root.expanded = false;
             executableSource.connectSource(action === "settings" ? "kstart systemsettings" : "kstart konsole");
@@ -81,35 +100,71 @@ PlasmoidItem {
         onNewData: (sourceName, data) => disconnectSource(sourceName)
     }
 
-    compactRepresentation: Button {
-        id: compactButton
+    compactRepresentation: Item {
+        id: compactRoot
         implicitWidth: 72
         implicitHeight: 72
-        padding: 0
-        Accessible.name: qsTr("Меню Сбера")
-        onClicked: root.expanded = !root.expanded
-        background: Rectangle {
+        property alias menuButton: compactButton
+        readonly property Item buttonHost: root.expanded ? (root.fullRepresentationItem?.buttonHost ?? null) : null
+
+        Button {
+            id: compactButton
+            parent: compactRoot.buttonHost ?? compactRoot
             anchors.fill: parent
-            anchors.margins: root.panelExtent * 8 / 72
-            radius: height * 16 / 56
-            color: compactButton.down ? root.smartTheme.pressed : compactButton.hovered || root.expanded ? root.smartTheme.hover : root.smartTheme.inner
-            border.width: compactButton.visualFocus ? 2 : 0
-            border.color: root.smartTheme.focus
-        }
-        contentItem: Item {
-            SmartPanelIcon {
-                anchors.centerIn: parent
-                width: root.panelExtent / 3
-                height: width
-                source: Qt.resolvedUrl("../assets/smart-panel/sber.svg")
-                isMask: true
-                color: root.smartTheme.foreground
+            padding: 0
+            Accessible.name: root.expanded ? qsTr("Свернуть меню Сбера") : qsTr("Меню Сбера")
+            onClicked: root.toggleMenu()
+            background: Rectangle {
+                anchors.fill: parent
+                anchors.margins: compactButton.height * 8 / 72
+                radius: height * 16 / 56
+                color: compactButton.down ? root.smartTheme.pressed : compactButton.hovered || root.expanded ? root.smartTheme.hover : root.smartTheme.inner
+                border.width: compactButton.visualFocus ? 2 : 0
+                border.color: root.smartTheme.focus
+            }
+            contentItem: Item {
+                SmartPanelIcon {
+                    anchors.centerIn: parent
+                    width: compactButton.width / 3
+                    height: width
+                    source: Qt.resolvedUrl("../assets/smart-panel/sber.svg")
+                    isMask: true
+                    color: root.smartTheme.foreground
+                }
             }
         }
     }
 
     fullRepresentation: FocusScope {
         id: popup
+        property alias buttonHost: popupButtonHost
+        property real reveal: 0
+        readonly property int revealStep: Math.round(reveal * 72)
+        function resetMenu() { revealMotion.stop(); reveal = 0; }
+        function openMenu() {
+            if (!root.expanded) return;
+            root.closingMenu = false;
+            revealMotion.stop();
+            revealMotion.to = 1;
+            revealMotion.duration = Kirigami.Units.longDuration;
+            revealMotion.easing.type = Easing.OutCubic;
+            revealMotion.start();
+        }
+        function closeMenu() {
+            root.closingMenu = true;
+            revealMotion.stop();
+            revealMotion.to = 0;
+            revealMotion.duration = Kirigami.Units.shortDuration;
+            revealMotion.easing.type = Easing.InCubic;
+            revealMotion.start();
+        }
+        NumberAnimation {
+            id: revealMotion
+            target: popup
+            property: "reveal"
+            onFinished: { if (root.closingMenu) root.expanded = false; }
+        }
+        Component.onCompleted: Qt.callLater(openMenu)
         SmartPopupPlacement {
             content: popup
             anchorItem: root.compactRepresentationItem ?? root
@@ -118,8 +173,9 @@ PlasmoidItem {
             overlapPanel: true
             frameSource: Qt.resolvedUrl(root.powerMenuOpen
                 ? "../assets/smart-panel/power-popup-frame.svg"
-                : "../assets/smart-panel/popup-frame.svg")
-            frameBorders: root.powerMenuOpen ? KSvg.FrameSvg.NoBorder : KSvg.FrameSvg.AllBorders
+                : "../assets/smart-panel/menu-reveal-frame.svg")
+            frameBorders: KSvg.FrameSvg.NoBorder
+            framePrefix: root.powerMenuOpen ? "" : "reveal-" + popup.revealStep
         }
         implicitWidth: root.powerMenuOpen ? 352 : 72
         implicitHeight: root.powerMenuOpen ? 264 : 216
@@ -135,13 +191,15 @@ PlasmoidItem {
             if (root.powerMenuOpen) {
                 root.powerMenuOpen = false;
                 if (root.selectedAction === 2) menuRepeater.itemAt(2).forceActiveFocus();
-            } else root.expanded = false;
+            } else root.closeMenu();
             event.accepted = true;
         }
         function moveSelection(backward) {
             root.selectedAction = root.selectedAction < 0 ? (backward ? 3 : 0)
                 : (root.selectedAction + (backward ? 3 : 1)) % 4;
-            menuRepeater.itemAt(root.selectedAction).forceActiveFocus();
+            const button = root.selectedAction === 3 ? root.compactRepresentationItem?.menuButton
+                : menuRepeater.itemAt(root.selectedAction);
+            button?.forceActiveFocus();
         }
         function movePowerSelection(index, backward) {
             for (let offset = 1; offset <= 5; offset++) {
@@ -156,9 +214,11 @@ PlasmoidItem {
         Keys.onUpPressed: event => { moveSelection(true); event.accepted = true; }
 
         Rectangle {
+            id: menuSurface
             width: 72
-            height: 216
+            height: root.powerMenuOpen ? 216 : 72 + 144 * popup.reveal
             anchors.bottom: parent.bottom
+            clip: true
             radius: 24
             color: root.smartTheme.shell
             border.width: 1
@@ -170,10 +230,13 @@ PlasmoidItem {
                 color: root.smartTheme.inner
             }
             Column {
-                anchors.centerIn: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 8
+                opacity: popup.reveal
+                enabled: popup.reveal >= 1 && !root.closingMenu
                 Repeater {
                     id: menuRepeater
-                    model: root.menuActions
+                    model: root.menuActions.slice(0, 3)
                     delegate: Button {
                         id: actionButton
                         required property var modelData
@@ -213,6 +276,13 @@ PlasmoidItem {
                     }
                 }
             }
+        }
+        Item {
+            id: popupButtonHost
+            width: 72
+            height: 72
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
         }
         Rectangle {
             id: powerSurface

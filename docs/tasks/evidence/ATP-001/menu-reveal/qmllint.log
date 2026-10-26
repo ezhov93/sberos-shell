@@ -1,0 +1,21 @@
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:55:45: Member "openMenu" not found on type "QQuickItem" [missing-property]
+            if (expanded) Qt.callLater(menu.openMenu);
+                                            ^^^^^^^^
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:56:23: Member "resetMenu" not found on type "QQuickItem" [missing-property]
+            else menu.resetMenu();
+                      ^^^^^^^^^
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:63:24: Member "closeMenu" not found on type "QQuickItem" [missing-property]
+        if (menu) menu.closeMenu();
+                       ^^^^^^^^^
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:69:60: Member "openMenu" not found on type "QQuickItem" [missing-property]
+        else if (closingMenu) root.fullRepresentationItem?.openMenu();
+                                                           ^^^^^^^^
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:69:60: Member "openMenu" not found on type "QQuickItem" [missing-property]
+        else if (closingMenu) root.fullRepresentationItem?.openMenu();
+                                                           ^^^^^^^^
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:108:90: Member "buttonHost" not found on type "QQuickItem" [missing-property]
+        readonly property Item buttonHost: root.expanded ? (root.fullRepresentationItem?.buttonHost ?? null) : null
+                                                                                         ^^^^^^^^^^
+Warning: plasma-theme/plasmoids/sberos.sbermenu/contents/ui/main.qml:200:88: Member "menuButton" not found on type "QQuickItem" [missing-property]
+            const button = root.selectedAction === 3 ? root.compactRepresentationItem?.menuButton
+                                                                                       ^^^^^^^^^^

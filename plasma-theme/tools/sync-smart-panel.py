@@ -29,6 +29,19 @@ for name in packages:
         outputs[ui / 'OskaAvatar.qml'] = (root / 'shared/OskaAvatar.qml').read_bytes()
 outputs[root / 'plasmoids/sberos.sbermenu/contents/assets/smart-panel/power-popup-frame.svg'] = (root / 'shared/SmartPowerPopupFrame.svg').read_bytes()
 outputs[root / 'plasmoids/sberos.filesearch/contents/assets/smart-panel/search-popup-frame.svg'] = (root / 'shared/SmartSearchPopupFrame.svg').read_bytes()
+# One file supplies the moving blur region without disk writes during animation.
+menu_mask = ['<svg xmlns="http://www.w3.org/2000/svg" width="72" height="216" viewBox="0 0 72 216">',
+             '<!-- SPDX-License-Identifier: GPL-2.0-or-later -->']
+for step in range(73):
+    height = 72 + step * 2
+    menu_mask.append(f'<g id="reveal-{step}-center"><rect width="72" height="216" fill="none"/>'
+                     f'<rect y="{216 - height}" width="72" height="{height}" rx="24" fill="white"/></g>')
+    for side in ['left', 'top', 'right', 'bottom']:
+        menu_mask.append(f'<rect id="reveal-{step}-hint-{side}-margin" width="0.001" height="0.001"/>')
+for side in ['left', 'top', 'right', 'bottom']:
+    menu_mask.append(f'<rect id="hint-{side}-margin" width="0.001" height="0.001"/>')
+menu_mask.append('</svg>')
+outputs[root / 'plasmoids/sberos.sbermenu/contents/assets/smart-panel/menu-reveal-frame.svg'] = ('\n'.join(menu_mask) + '\n').encode()
 icons = {
     'sbermenu': ['sber', 'settings', 'terminal', 'power', 'down'],
     'controlcenter': ['controls', 'battery', 'capture', 'speaker', 'sun', 'wifi', 'bluetooth', 'night', 'moon', 'plane', 'bellOff', 'left', 'right'],

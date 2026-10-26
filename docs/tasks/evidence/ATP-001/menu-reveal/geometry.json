@@ -1,0 +1,21 @@
+[
+  {
+    "label": "sber",
+    "x": 16,
+    "y": 1216,
+    "width": 72,
+    "height": 216,
+    "thickness": 88,
+    "screen": {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440,
+      "left": 0,
+      "right": 2560,
+      "top": 0,
+      "bottom": 1440
+    },
+    "dpi": 1
+  }
+]

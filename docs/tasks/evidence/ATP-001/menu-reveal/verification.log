@@ -1,0 +1,17 @@
+qml: CAPTURE {"label":"sber","x":16,"y":1216,"width":72,"height":216,"thickness":88,"screen":{"x":0,"y":0,"width":2560,"height":1440,"left":0,"right":2560,"top":0,"bottom":1440},"dpi":1}
+WINDOW QSize(72, 216) QVariant(double, 0.001) QVariant(double, 0.001) APPLET QSizeF(72, 72) QVariant(double, 72) BUTTON_VISIBLE true
+OPEN_BUTTON Button_QMLTYPE_223(0x557f338978a0, id="compactButton", parent=0x557f33a9ff20, geometry=0,0 72x72) QPointF(16,1360) QSizeF(72, 72)
+CLOSED_BUTTON Button_QMLTYPE_223(0x557f338978a0, id="compactButton", parent=0x557f33861590, geometry=0,0 72x72) QPointF(16,1360) QVariant(bool, false)
+REVEAL 0.417817 TOP 84 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.569631 TOP 62 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.699237 TOP 44 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.799798 TOP 28 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.871212 TOP 18 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.962405 TOP 6 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.983419 TOP 2 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.995087 TOP 0 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 0.999386 TOP 0 EMPTY true BUTTON QPointF(16,1360)
+REVEAL 1 TOP 0 EMPTY true BUTTON QPointF(16,1360)
+TAB Button_QMLTYPE_223_QML_226(0x557f33b37440, id="actionButton", parent=0x557f33bbfe30, geometry=0,0 46x48)
+POWER QSizeF(352, 264) EMPTY false false
+MENU_REVEAL_OK true

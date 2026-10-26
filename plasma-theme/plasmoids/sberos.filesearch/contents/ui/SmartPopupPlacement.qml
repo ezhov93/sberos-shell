@@ -12,6 +12,7 @@ Item {
     property bool overlapPanel: false
     property url frameSource: Qt.resolvedUrl("../assets/smart-panel/popup-frame.svg")
     property int frameBorders: KSvg.FrameSvg.AllBorders
+    property string framePrefix: ""
     readonly property var popupWindow: content.Window.window
     property bool updatingFrame: false
 
@@ -46,6 +47,7 @@ Item {
                 if (frame.imagePath === undefined || frame.fixedMargins === undefined) continue;
                 frame.imagePath = decodeURIComponent(placement.frameSource
                     .toString().replace(/^file:\/\//, ""));
+                frame.prefix = placement.framePrefix.length ? [placement.framePrefix] : [];
                 // Window borders also select the native theme's shadow tiles.
                 // Remove those tiles, then retain all corners in our blur mask.
                 w.borders = 0;
@@ -76,6 +78,7 @@ Item {
     onOverlapPanelChanged: Qt.callLater(apply)
     onFrameSourceChanged: Qt.callLater(apply)
     onFrameBordersChanged: Qt.callLater(apply)
+    onFramePrefixChanged: applyFrame()
     Component.onCompleted: Qt.callLater(apply)
     Connections {
         target: placement.popupWindow

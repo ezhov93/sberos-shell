@@ -1,0 +1,145 @@
+[
+  {
+    "time": 1793091283204,
+    "id": "{fc3d0d88-b720-4d2e-8a53-37468052e78a}",
+    "caption": "Sber expansion probe - fullscreen",
+    "resourceClass": "org.qt-project.qml",
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "fullscreen": true
+  },
+  {
+    "time": 1793091283215,
+    "id": "{4a2f59f6-e3f0-4c2b-83d8-98b88f3c32dd}",
+    "caption": "Sber expansion probe - maximized",
+    "resourceClass": "org.qt-project.qml",
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091283507,
+    "id": "{38b84d87-1db8-4f39-b27c-5f7303530efb}",
+    "caption": "",
+    "resourceClass": "plasmashell",
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091284274,
+    "id": "{e7921fee-876e-4043-8262-a661984ac459}",
+    "caption": "",
+    "resourceClass": "plasmashell",
+    "geometry": {
+      "x": 0,
+      "y": 992,
+      "width": 1920,
+      "height": 88
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091284289,
+    "id": "{4a2f59f6-e3f0-4c2b-83d8-98b88f3c32dd}",
+    "caption": "Sber expansion probe - maximized",
+    "resourceClass": "org.qt-project.qml",
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091289401,
+    "id": "{8a47a7b6-7062-4438-84a5-450ec7f3c458}",
+    "caption": "plasmashell",
+    "resourceClass": "org.kde.plasmashell",
+    "geometry": {
+      "x": 96,
+      "y": 904,
+      "width": 620,
+      "height": 168
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091295571,
+    "id": "{9b9bdf73-c5f0-44c5-84c7-440995019860}",
+    "caption": "plasmashell",
+    "resourceClass": "org.kde.plasmashell",
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "fullscreen": true
+  },
+  {
+    "time": 1793091299281,
+    "id": "{9dc01e86-f405-45ef-8383-96fbccf35f1c}",
+    "caption": "plasmashell",
+    "resourceClass": "org.kde.plasmashell",
+    "geometry": {
+      "x": 96,
+      "y": 824,
+      "width": 620,
+      "height": 168
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091299301,
+    "id": "{9dc01e86-f405-45ef-8383-96fbccf35f1c}",
+    "caption": "plasmashell",
+    "resourceClass": "org.kde.plasmashell",
+    "geometry": {
+      "x": 96,
+      "y": 904,
+      "width": 620,
+      "height": 168
+    },
+    "fullscreen": false
+  },
+  {
+    "time": 1793091300527,
+    "id": "{0169b270-731f-4486-b7c0-3e2852d34ba8}",
+    "caption": "plasmashell",
+    "resourceClass": "org.kde.plasmashell",
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "fullscreen": true
+  },
+  {
+    "time": 1793091301847,
+    "id": "{e0e6514b-7847-4c4f-b905-c6f34d2918c3}",
+    "caption": "plasmashell",
+    "resourceClass": "org.kde.plasmashell",
+    "geometry": {
+      "x": 1560,
+      "y": 610,
+      "width": 344,
+      "height": 382
+    },
+    "fullscreen": false
+  }
+]

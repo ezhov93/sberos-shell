@@ -15,6 +15,8 @@ parser.add_argument('--source', required=True)
 parser.add_argument('--output', required=True)
 parser.add_argument('--baseline', action='store_true')
 parser.add_argument('--applications', action='store_true')
+parser.add_argument('--launchers-file', type=Path)
+parser.add_argument('--native-geometry', action='store_true')
 parser.add_argument('--restore-config', type=Path)
 parser.add_argument('--theme', choices=['light', 'dark'], default='light')
 args = parser.parse_args()
@@ -40,6 +42,9 @@ for path in sorted(Path('/usr/share/applications').glob('*.desktop')):
     if entry not in launchers and 'NoDisplay=true' not in path.read_text(errors='replace'):
         launchers.append(entry)
 launchers = launchers[:30]
+if args.launchers_file:
+    fixture = json.loads(args.launchers_file.read_text())
+    launchers = fixture['launchers'] if isinstance(fixture, dict) else fixture
 assert len(launchers) == 30, '30 installed desktop entries required'
 panel = output / 'data/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/Panel.qml'
 script = r'''
@@ -84,7 +89,16 @@ script = r'''
             }
             const grid = launcher ? findNamed(target, "launchpadGrid") : null;
             const field = launcher ? findNamed(target, "launchpadSearch") : null;
-            const record = {applicationMenuOpen: app.applicationMenuOpen, appsCount: grid?.apps.length,
+            const record = {time: Date.now(), panelHeight: root.height,
+                panelRects: root.containment.islandRects,
+                available: root.containment.plasmoid.availableScreenRect,
+                islandReplaced: app.islandReplaced, compactOpacity: app.compactRepresentationItem?.opacity,
+                counterFocus: app.compactRepresentationItem?.overflowButton.activeFocus,
+                panelActive: app.compactRepresentationItem?.Window.window.active,
+                returnFocusPending: app.returnFocusPending,
+                panelFocusItem: String(app.compactRepresentationItem?.Window.window.activeFocusItem),
+                counterFocusItem: app.compactRepresentationItem?.Window.window.activeFocusItem === app.compactRepresentationItem?.overflowButton,
+                applicationMenuOpen: app.applicationMenuOpen, appsCount: grid?.apps.length,
                 totalApps: grid?.allApps.length, query: field?.text, label: label, x: origin.x, y: origin.y, width: target.width, height: target.height,
                 expanded: app.expanded, overflowOpen: app.overflowOpen, childOpen: app.childOpen,
                 count: metrics?.count, visibleCount: metrics?.visibleCount, hiddenCount: metrics?.hiddenCount,
@@ -124,19 +138,100 @@ script = r'''
             openCalendar(root.containment);
         }
         if (label === "normal" || label === "model-shrink") app.plasmoid.configuration.launchers = LAUNCHERS.slice(0, 4);
-        if (label === "compact") app.plasmoid.configuration.launchers = LAUNCHERS.slice(0, 12);
+        if (label === "compact") app.plasmoid.configuration.launchers = LAUNCHERS.slice(0, COMPACT_PINS);
         if (label === "overflow") app.plasmoid.configuration.launchers = LAUNCHERS;
         if (label === "overflow-open") app.openOverflow();
         if (label === "child-menu") app.openTaskMenu(15, {AppName: "Application", IsLauncher: true});
         if (label === "child-dismiss" || label === "collapse") app.dismissPopup(true);
         overflowTimer.restart();
     }
-'''.replace('CHECK_LAUNCHPAD', json.dumps(args.applications)).replace('BASELINE', json.dumps(args.baseline)).replace('LAUNCHERS', json.dumps(launchers)).replace('OUTPUT', json.dumps(str(output)))
+'''.replace('COMPACT_PINS', str(10 if args.native_geometry else 12)).replace('CHECK_LAUNCHPAD', json.dumps(args.applications)).replace('BASELINE', json.dumps(args.baseline)).replace('LAUNCHERS', json.dumps(launchers)).replace('OUTPUT', json.dumps(str(output)))
+if args.native_geometry:
+    script += r'''
+    property int motionCapture: 0
+    Timer {
+        interval: 25
+        running: true
+        repeat: true
+        onTriggered: {
+            if (!root.tasksApplet?.overflowOpen || !root.tasksApplet.expanded) return;
+            const host = root.tasksApplet.fullRepresentationItem;
+            if (!host) return;
+            function findIsland(item) {
+                if (item.objectName === "applicationsExpansion") return item;
+                for (const child of item.children) { const found = findIsland(child); if (found) return found; }
+                return null;
+            }
+            const island = findIsland(host);
+            if (!island || !island.replaced || island.reveal <= 0 || island.reveal >= 1) return;
+            const pos = host.mapToGlobal(0, 0);
+            const record = {time: Date.now(), reveal: island.reveal, prefix: island.framePrefix,
+                source: island.frameSource, width: island.surfaceWidth, height: island.surfaceHeight,
+                bottom: pos.y + host.height, left: pos.x, hostHeight: host.height,
+                hostWidth: host.width, replaced: root.tasksApplet.islandReplaced,
+                compactOpacity: root.tasksApplet.compactRepresentationItem.opacity};
+            console.log("REVEAL_FRAME " + JSON.stringify(record));
+            const name = OUTPUT + "/motion-" + root.motionCapture++ + ".png";
+            host.grabToImage(result => result.saveToFile(name));
+        }
+    }
+'''.replace('OUTPUT', json.dumps(str(output)))
 s = panel.read_text()
 panel.write_text(s[:s.rfind('}')] + script + '\n}')
+session_command = 'plasmashell --no-respawn --shell-plugin io.gitgud.wackyideas.desktop'
+if args.native_geometry:
+    client = output / 'client.qml'
+    client.write_text('''import QtQuick
+    import QtQuick.Window
+    Window {
+        id: maximized
+        title: "Sber expansion probe - maximized"
+        color: "#26374a"
+        flags: Qt.Window | Qt.FramelessWindowHint
+        visible: true
+        visibility: Window.Maximized
+        Window {
+            id: fullscreen
+            title: "Sber expansion probe - fullscreen"
+            transientParent: null
+            color: "#344c38"
+            visible: true
+            visibility: Window.FullScreen
+        }
+        Timer {
+            interval: 200
+            running: true
+            repeat: true
+            onTriggered: console.log("CLIENT " + JSON.stringify({time: Date.now(),
+                maximized: {x: maximized.x, y: maximized.y, width: maximized.width, height: maximized.height, visibility: maximized.visibility},
+                fullscreen: {x: fullscreen.x, y: fullscreen.y, width: fullscreen.width, height: fullscreen.height, visibility: fullscreen.visibility}}))
+        }
+    }
+    ''')
+    native = output / 'native.js'
+    native.write_text('''function report(window) {
+        print("NATIVE " + JSON.stringify({time: Date.now(), id: String(window.internalId),
+            caption: window.caption, resourceClass: window.resourceClass,
+            geometry: window.frameGeometry, fullscreen: window.fullScreen}));
+    }
+    function watch(window) {
+        report(window);
+        window.frameGeometryChanged.connect(function() { report(window); });
+    }
+    workspace.windowAdded.connect(watch);
+    workspace.windowList().forEach(watch);
+    ''')
+    session = output / 'session.sh'
+    session.write_text('#!/bin/sh\n'
+                       'probe_id="$(qdbus6 org.kde.KWin /Scripting loadScript "' + str(native) + '")"\n'
+                       'qdbus6 org.kde.KWin "/Scripting/Script$probe_id" run\n'
+                       '/usr/lib/qt6/bin/qml --apptype gui "' + str(client) + '" &\n'
+                       'plasmashell --no-respawn --shell-plugin io.gitgud.wackyideas.desktop &\nwait $!\n')
+    session.chmod(0o755)
+    session_command = str(session)
 env = dict(os.environ, XDG_DATA_HOME=str(output/'data'), XDG_CONFIG_HOME=str(output/'config'),
            XDG_CACHE_HOME=str(output/'cache'), XDG_STATE_HOME=str(output/'state'),
-           QSG_RHI_BACKEND='opengl', QT_QUICK_CONTROLS_STYLE='org.kde.desktop', QT_STYLE_OVERRIDE='Breeze')
+           QT_LOGGING_RULES='kwin_scripting.debug=true', QSG_RHI_BACKEND='opengl', QT_QUICK_CONTROLS_STYLE='org.kde.desktop', QT_STYLE_OVERRIDE='Breeze')
 env.pop('QT_QPA_PLATFORM', None)
 env.pop('QT_QUICK_BACKEND', None)
 logfile = output / 'run.log'
@@ -144,7 +239,7 @@ with logfile.open('w') as log:
     process = subprocess.Popen(['dbus-run-session', '--', 'kwin_wayland', '--virtual', '--width', '1920', '--height', '1080',
                                 '--socket', 'sber-overflow-' + str(os.getpid()), '--no-lockscreen', '--no-global-shortcuts',
                                 '--no-kactivities', '--exit-with-session',
-                                'plasmashell --no-respawn --shell-plugin io.gitgud.wackyideas.desktop'],
+                                session_command],
                                env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
     print(f'Isolated process group: {process.pid}', flush=True)
     try:
@@ -202,3 +297,35 @@ if args.applications:
         assert startup['appletId'] == int(section.rsplit('[', 1)[1].rstrip(']'))
         assert startup['launchers'] == previous[section + '][Configuration][General']['launchers'].split(',')
     print('Single applet, Launchpad, search and popup exclusion passed', flush=True)
+
+if args.native_geometry:
+    lines = logfile.read_text().splitlines()
+    native_records = [json.loads(line.split('NATIVE ', 1)[1]) for line in lines if 'NATIVE ' in line]
+    frames = [json.loads(line.split('REVEAL_FRAME ', 1)[1]) for line in lines if 'REVEAL_FRAME ' in line]
+    assert frames and native_records
+    for record in records:
+        latest = {}
+        for item in native_records:
+            if item['time'] <= record['time']: latest[item['id']] = item
+        clients = {item['caption'].rsplit(' - ', 1)[-1]: item['geometry'] for item in latest.values()
+            if item['caption'].startswith('Sber expansion probe - ')}
+        assert clients['maximized']['height'] == 992, (record['label'], clients)
+        assert clients['fullscreen']['height'] == 1080, (record['label'], clients)
+        assert record['panelHeight'] == 88 and record['available']['height'] == 992
+        panels = [item['geometry'] for item in latest.values()
+            if item['resourceClass'] == 'plasmashell' and not item['caption']
+            and item['geometry']['width'] == 1920 and item['geometry']['height'] < 1080]
+        assert panels and all(panel == {'x': 0, 'y': 992, 'width': 1920, 'height': 88} for panel in panels)
+        record['nativePanel'] = panels[-1]
+        record['nativeClients'] = clients
+    assert all(frame['bottom'] == 1072 and frame['left'] == 96 for frame in frames), frames
+    assert all(frame['replaced'] and frame['compactOpacity'] == 0 for frame in frames), frames
+    assert states['overflow-open']['islandReplaced']
+    assert len(states['overflow-open']['panelRects']) == len(states['overflow']['panelRects']) - 1
+    assert len(states['collapse']['panelRects']) == len(states['overflow']['panelRects'])
+    assert not states['collapse']['islandReplaced'] and states['collapse']['compactOpacity'] == 1
+    assert states['collapse']['counterFocus']
+    (output / 'geometry.json').write_text(json.dumps(records, indent=2))
+    (output / 'motion.json').write_text(json.dumps(frames, indent=2))
+    (output / 'native.json').write_text(json.dumps(native_records, indent=2))
+    print('Native clients 992/1080, panel/work area, animation anchor, handoff and counter focus passed', flush=True)

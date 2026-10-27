@@ -310,11 +310,12 @@ Item {
         restoreMode: Binding.RestoreBinding
     }
 
-    readonly property bool searchHasPanelFocus: {
+    readonly property bool appletDrawsFocus: {
         let item = panel.activeFocusItem;
         while (item) {
             if (item.isAppletContainer) {
-                return item.applet?.plasmoid?.pluginName === "com.mcc45tr.filesearch";
+                return ["com.mcc45tr.filesearch", "io.gitgud.wackyideas.smarttasks"]
+                    .includes(item.applet?.plasmoid?.pluginName);
             }
             item = item.parent;
         }
@@ -339,7 +340,7 @@ Item {
             ? (root.verticalPanel ?  Math.min(panel.activeFocusItem.height, panel.activeFocusItem.height) : translucentItem.height)
             : 0
 
-        visible: panel.active && panel.activeFocusItem && !root.searchHasPanelFocus
+        visible: panel.active && panel.activeFocusItem && !root.appletDrawsFocus
 
         imagePath: "widgets/tabbar"
         prefix: {

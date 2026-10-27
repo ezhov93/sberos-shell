@@ -1,0 +1,509 @@
+[
+  {
+    "time": 1793091640253,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 96,
+        "y": 8,
+        "width": 256,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": false,
+    "compactOpacity": 1,
+    "counterFocus": false,
+    "panelActive": false,
+    "returnFocusPending": false,
+    "panelFocusItem": "null",
+    "counterFocusItem": false,
+    "applicationMenuOpen": false,
+    "label": "normal",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "overflowOpen": false,
+    "childOpen": false,
+    "count": 4,
+    "visibleCount": 4,
+    "hiddenCount": 0,
+    "compact": false,
+    "appletWidth": 256,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091641486,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 96,
+        "y": 8,
+        "width": 620,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": false,
+    "compactOpacity": 1,
+    "counterFocus": false,
+    "panelActive": false,
+    "returnFocusPending": false,
+    "panelFocusItem": "null",
+    "counterFocusItem": false,
+    "applicationMenuOpen": false,
+    "label": "compact",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "overflowOpen": false,
+    "childOpen": false,
+    "count": 12,
+    "visibleCount": 12,
+    "hiddenCount": 0,
+    "compact": true,
+    "appletWidth": 620,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091642727,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 96,
+        "y": 8,
+        "width": 620,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": false,
+    "compactOpacity": 1,
+    "counterFocus": false,
+    "panelActive": false,
+    "returnFocusPending": false,
+    "panelFocusItem": "null",
+    "counterFocusItem": false,
+    "applicationMenuOpen": false,
+    "label": "overflow",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "overflowOpen": false,
+    "childOpen": false,
+    "count": 30,
+    "visibleCount": 12,
+    "hiddenCount": 18,
+    "compact": true,
+    "appletWidth": 620,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091643960,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": true,
+    "compactOpacity": 0,
+    "counterFocus": false,
+    "panelActive": true,
+    "returnFocusPending": false,
+    "panelFocusItem": "null",
+    "counterFocusItem": false,
+    "applicationMenuOpen": false,
+    "label": "overflow-open",
+    "x": 96,
+    "y": 904,
+    "width": 620,
+    "height": 168,
+    "expanded": true,
+    "overflowOpen": true,
+    "childOpen": false,
+    "count": 30,
+    "visibleCount": 12,
+    "hiddenCount": 18,
+    "compact": true,
+    "appletWidth": 620,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091645175,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": true,
+    "compactOpacity": 0,
+    "counterFocus": false,
+    "panelActive": true,
+    "returnFocusPending": false,
+    "panelFocusItem": "null",
+    "counterFocusItem": false,
+    "applicationMenuOpen": false,
+    "label": "child-menu",
+    "x": 96,
+    "y": 904,
+    "width": 620,
+    "height": 168,
+    "expanded": true,
+    "overflowOpen": true,
+    "childOpen": true,
+    "count": 30,
+    "visibleCount": 12,
+    "hiddenCount": 18,
+    "compact": true,
+    "appletWidth": 620,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091646384,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": true,
+    "compactOpacity": 0,
+    "counterFocus": false,
+    "panelActive": true,
+    "returnFocusPending": false,
+    "panelFocusItem": "null",
+    "counterFocusItem": false,
+    "applicationMenuOpen": false,
+    "label": "child-dismiss",
+    "x": 96,
+    "y": 904,
+    "width": 620,
+    "height": 168,
+    "expanded": true,
+    "overflowOpen": true,
+    "childOpen": false,
+    "count": 30,
+    "visibleCount": 12,
+    "hiddenCount": 18,
+    "compact": true,
+    "appletWidth": 620,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091647594,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 96,
+        "y": 8,
+        "width": 620,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": false,
+    "compactOpacity": 1,
+    "counterFocus": true,
+    "panelActive": true,
+    "returnFocusPending": false,
+    "panelFocusItem": "Button_QMLTYPE_207(0x55e23edeef40)",
+    "counterFocusItem": true,
+    "applicationMenuOpen": false,
+    "label": "collapse",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "overflowOpen": false,
+    "childOpen": false,
+    "count": 30,
+    "visibleCount": 12,
+    "hiddenCount": 18,
+    "compact": true,
+    "appletWidth": 620,
+    "cellSize": 48
+  },
+  {
+    "time": 1793091648838,
+    "panelHeight": 88,
+    "panelRects": [
+      {
+        "x": 1678,
+        "y": 8,
+        "width": 226,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 16,
+        "y": 8,
+        "width": 72,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 96,
+        "y": 8,
+        "width": 256,
+        "height": 72,
+        "radius": 24
+      },
+      {
+        "x": 732,
+        "y": 8,
+        "width": 456,
+        "height": 72,
+        "radius": 24
+      }
+    ],
+    "available": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 992,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "bottom": 992
+    },
+    "islandReplaced": false,
+    "compactOpacity": 1,
+    "counterFocus": true,
+    "panelActive": true,
+    "returnFocusPending": false,
+    "panelFocusItem": "Button_QMLTYPE_207(0x55e23edeef40)",
+    "counterFocusItem": true,
+    "applicationMenuOpen": false,
+    "label": "model-shrink",
+    "x": 0,
+    "y": 992,
+    "width": 1920,
+    "height": 88,
+    "expanded": false,
+    "overflowOpen": false,
+    "childOpen": false,
+    "count": 4,
+    "visibleCount": 4,
+    "hiddenCount": 0,
+    "compact": false,
+    "appletWidth": 256,
+    "cellSize": 48
+  }
+]

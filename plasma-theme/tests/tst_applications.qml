@@ -63,4 +63,10 @@ TestCase {
         compare(launchpadSpy.count, 0);
         compare(taskSpy.count, 0);
     }
+    function test_restoreCounterInsideScope() {
+        strip.launchpadButton.forceActiveFocus();
+        strip.focusOverflow();
+        tryCompare(strip.overflowButton, "activeFocus", true);
+        verify(!strip.counterFocusPending);
+    }
 }

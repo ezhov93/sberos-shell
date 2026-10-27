@@ -83,6 +83,7 @@ ContainmentItem {
         }
         for (const item of visibleApplets) {
             const name = item.applet?.plasmoid?.pluginName;
+            if (item.isApplicationIsland && item.applet.islandReplaced) continue;
             if (dropArea.hasSharedSystemIsland && dropArea.systemIslandAppletNames.includes(name)) continue;
             shapes.push({x:currentLayout.x + item.x, y:currentLayout.y + item.y, width:item.width, height:item.height, radius:Math.min(24,item.height/3)});
         }

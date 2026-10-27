@@ -7,6 +7,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import org.kde.ksvg as KSvg
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.taskmanager as TaskManager
@@ -22,8 +23,13 @@ PlasmoidItem {
     property alias workspaceWallpaper: launchpad.workspaceWallpaper
     readonly property alias launchpadWindow: launchpad.window
     property bool overflowOpen: false
+    readonly property bool islandReplaced: expanded && overflowOpen && (fullRepresentationItem?.islandReplaced ?? false)
     property bool contextMenuVisible: false
     property int overflowFocusIndex: 0
+    property bool ownsPanelFocus: false
+    property var closingPopupWindow: null
+    property bool returnFocusPending: false
+    property bool returnFocusToCounter: false
     readonly property bool childOpen: contextMenuVisible || previewVisible
     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
     readonly property int contextMenuHeight: 56 + contextActions.reduce((height, item) => height + (item.separator ? 9 : 40), 0)
@@ -45,13 +51,18 @@ PlasmoidItem {
     hideOnWindowDeactivate: !(overflowOpen && childOpen)
 
     onExpandedChanged: expanded => {
-        if (expanded) applicationMenuOpen = false
+        if (expanded) {
+            releasePanelFocus()
+            applicationMenuOpen = false
+            if (overflowOpen) Qt.callLater(() => root.fullRepresentationItem?.openOverflow())
+        }
         if (!expanded) {
             previewOpenTimer.stop()
             previewCloseTimer.stop()
             previewVisible = false
             contextMenuVisible = false
             overflowOpen = false
+            root.fullRepresentationItem?.resetOverflow()
         }
     }
 
@@ -62,6 +73,7 @@ PlasmoidItem {
         onApplicationMenuOpenChanged: if (applicationMenuOpen) root.expanded = false
     }
     function toggleLaunchpad() {
+        releasePanelFocus()
         root.expanded = false
         launchpad.toggleLauncher()
     }
@@ -87,11 +99,62 @@ PlasmoidItem {
         overflowFocusIndex = stripMetrics.visibleCount
         overflowOpen = true
         expanded = true
-        Qt.callLater(focusOverflow)
+        Qt.callLater(() => { root.fullRepresentationItem?.openOverflow(); root.focusOverflow(); })
     }
 
     function focusOverflow() {
         root.fullRepresentationItem?.focusOverflow()
+    }
+
+    function releasePanelFocus() {
+        returnFocusPending = false
+        if (!ownsPanelFocus) return
+        ownsPanelFocus = false
+        if (Plasmoid.containment.status === PlasmaCore.Types.AcceptingInputStatus)
+            Plasmoid.containment.status = PlasmaCore.Types.ActiveStatus
+    }
+
+    Connections {
+        target: root.compactRepresentationItem?.Window.window ?? null
+        function onActiveChanged() {
+            if (target.active && root.returnFocusPending) Qt.callLater(root.restoreTaskFocus)
+            else if (!target.active && !root.returnFocusPending) root.releasePanelFocus()
+        }
+    }
+
+    function restoreTaskFocus() {
+        if (!returnFocusPending) return
+        const strip = root.compactRepresentationItem
+        const window = strip?.Window.window
+        if (!window) return
+        ownsPanelFocus = true
+        if (Plasmoid.containment.status !== PlasmaCore.Types.AcceptingInputStatus)
+            Plasmoid.containment.status = PlasmaCore.Types.AcceptingInputStatus
+        if (!window.active) { window.requestActivate(); return; }
+        // Plasma's compact wrapper selects its first child when its scope gains focus.
+        strip.forceActiveFocus(Qt.TabFocusReason)
+        Qt.callLater(() => {
+            if (!root.returnFocusPending || root.expanded || !window.active) return
+            root.returnFocusPending = false
+            if (root.returnFocusToCounter && stripMetrics.hiddenCount > 0)
+                strip.focusOverflow()
+            else strip.focusTask(Math.max(0, root.selectedTaskIndex))
+        })
+    }
+
+    function finishDismiss(keyboard) {
+        returnFocusToCounter = overflowOpen
+        returnFocusPending = keyboard
+        closingPopupWindow = root.fullRepresentationItem?.Window.window ?? null
+        expanded = false
+        if (!closingPopupWindow?.visible) Qt.callLater(root.restoreTaskFocus)
+    }
+
+    Connections {
+        target: root.closingPopupWindow
+        function onVisibleChanged() {
+            if (!root.closingPopupWindow.visible) Qt.callLater(root.restoreTaskFocus)
+        }
     }
 
     function dismissPopup(keyboard) {
@@ -102,15 +165,14 @@ PlasmoidItem {
             previewVisible = false
             Qt.callLater(focusOverflow)
         } else {
-            const wasOverflow = overflowOpen
-            expanded = false
-            if (keyboard) Qt.callLater(() => {
-                const strip = root.compactRepresentationItem
-                if (wasOverflow && stripMetrics.hiddenCount > 0)
-                    strip?.overflowButton.forceActiveFocus(Qt.TabFocusReason)
-                else strip?.focusTask(Math.max(0, root.selectedTaskIndex))
-            })
+            if (overflowOpen && root.fullRepresentationItem) root.fullRepresentationItem.closeOverflow(keyboard)
+            else finishDismiss(keyboard)
         }
+    }
+
+    function leaveTaskPreview() {
+        previewOpenTimer.stop()
+        if (previewVisible) previewCloseTimer.restart()
     }
 
     function schedulePreview(index, task, label) {
@@ -269,6 +331,8 @@ PlasmoidItem {
     }
 
     compactRepresentation: ApplicationsStrip {
+        opacity: root.islandReplaced ? 0 : 1
+        enabled: !root.islandReplaced
         launcherOpen: root.applicationMenuOpen
         onLaunchpadRequested: root.toggleLaunchpad()
         taskModel: tasksModel
@@ -290,16 +354,16 @@ PlasmoidItem {
 
     fullRepresentation: FocusScope {
         id: fullView
-        readonly property int gridWidth: Math.min(12, Math.max(1, tasksModel.count)) * stripMetrics.compactCellSize + 24
+        readonly property int gridWidth: Math.min(12, Math.max(1, tasksModel.count + 1)) * stripMetrics.compactCellSize + 24
         readonly property int availableHeight: Math.max(root.cellSize + 24,
             Plasmoid.containment.availableScreenRect.height - root.height - 16)
         readonly property int gridHeight: Math.min(availableHeight,
-            Math.ceil(tasksModel.count / Math.max(1, Math.floor((gridWidth - 24) / stripMetrics.compactCellSize))) * root.cellSize + 24)
+            Math.ceil((tasksModel.count + 1) / Math.max(1, Math.floor((gridWidth - 24) / stripMetrics.compactCellSize))) * root.cellSize + 24)
         readonly property int childWidth: root.previewVisible
             ? Math.min(420, Math.max(208, root.previewWindows.length * 192 + 16)) : 248
         readonly property int childHeight: root.previewVisible ? 186 : root.contextMenuHeight
-        implicitWidth: root.overflowOpen ? Math.max(gridWidth, root.childOpen ? childWidth : 0) : childWidth
-        implicitHeight: root.overflowOpen ? Math.max(gridHeight, root.childOpen ? childHeight : 0) : childHeight
+        implicitWidth: root.overflowOpen ? Math.max(root.width, gridWidth, root.childOpen ? childWidth : 0) : childWidth
+        implicitHeight: root.overflowOpen ? Math.max(root.height, gridHeight, root.childOpen ? childHeight : 0) : childHeight
         Layout.minimumWidth: implicitWidth
         Layout.maximumWidth: implicitWidth
         Layout.preferredWidth: implicitWidth
@@ -308,7 +372,16 @@ PlasmoidItem {
         Layout.preferredHeight: implicitHeight
         focus: true
 
+        readonly property bool islandReplaced: overflowLoader.item?.replaced ?? false
+        property bool restoreFocusOnClose: false
         function focusOverflow() { overflowLoader.item?.focusTask(root.overflowFocusIndex); }
+        function openOverflow() { overflowLoader.item?.openIsland(); }
+        function resetOverflow() { overflowLoader.item?.resetIsland(); }
+        function closeOverflow(keyboard) {
+            restoreFocusOnClose = keyboard;
+            if (overflowLoader.item) overflowLoader.item.closeIsland();
+            else root.finishDismiss(keyboard);
+        }
         Keys.onEscapePressed: event => { root.dismissPopup(true); event.accepted = true; }
 
         SmartPopupPlacement {
@@ -316,6 +389,17 @@ PlasmoidItem {
             anchorItem: root.compactRepresentationItem ?? root
             screenGeometry: Plasmoid.containment.screenGeometry
             alignment: "left"
+            overlapPanel: root.overflowOpen
+            frameSource: root.overflowOpen && overflowLoader.item?.frameSource.toString().length
+                ? overflowLoader.item.frameSource : Qt.resolvedUrl("../assets/smart-panel/popup-frame.svg")
+            framePrefix: root.overflowOpen ? overflowLoader.item?.framePrefix ?? "" : ""
+            frameBorders: root.overflowOpen ? KSvg.FrameSvg.NoBorder : KSvg.FrameSvg.AllBorders
+        }
+        Binding {
+            target: fullView.Window.window
+            property: "opacity"
+            when: root.overflowOpen && fullView.Window.window !== null
+            value: overflowLoader.item?.frameSource.toString().length ? 1 : 0
         }
 
         Connections {
@@ -330,6 +414,7 @@ PlasmoidItem {
         }
 
         Rectangle {
+            visible: !root.overflowOpen
             anchors.fill: parent
             radius: root.smartTheme.radius
             color: root.smartTheme.shell
@@ -347,25 +432,15 @@ PlasmoidItem {
             id: overflowLoader
             anchors.fill: parent
             active: root.overflowOpen
-            sourceComponent: TaskList {
+            sourceComponent: ApplicationsExpansion {
+                controller: root
                 taskModel: tasksModel
                 launcherCount: tasksModel.launcherCount
-                normalCellSize: root.cellSize
-                gridMode: true
-                maximumHeight: fullView.availableHeight
-                enabled: !root.contextMenuVisible
-                onActivated: (index, active) => root.activateTask(index, active)
-                onNewInstanceRequested: index => root.newTaskInstance(index)
-                onContextRequested: (index, task) => root.openTaskMenu(index, task)
-                onPreviewEntered: (index, task, label) => {
-                    root.overflowFocusIndex = index
-                    root.schedulePreview(index, task, label)
-                }
-                onPreviewExited: {
-                    previewOpenTimer.stop()
-                    if (root.previewVisible) previewCloseTimer.restart()
-                }
-                onDismissed: root.dismissPopup(true)
+                gridWidth: fullView.gridWidth
+                gridHeight: fullView.gridHeight
+                childRect: root.childOpen ? [Math.max(0, fullView.gridWidth - fullView.childWidth), 0,
+                    fullView.childWidth, fullView.childHeight] : []
+                onClosed: root.finishDismiss(fullView.restoreFocusOnClose)
             }
             onLoaded: Qt.callLater(fullView.focusOverflow)
         }
@@ -377,7 +452,7 @@ PlasmoidItem {
         }
 
         Loader {
-            anchors.right: parent.right
+            x: root.overflowOpen ? Math.max(0, fullView.gridWidth - width) : parent.width - width
             anchors.top: parent.top
             width: fullView.childWidth
             height: fullView.childHeight

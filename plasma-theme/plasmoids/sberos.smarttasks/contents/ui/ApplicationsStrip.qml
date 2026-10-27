@@ -10,6 +10,8 @@ FocusScope {
     property bool vertical: false
     property bool overflowExpanded: false
     property bool launcherOpen: false
+    property bool paintBackground: true
+    property bool counterFocusPending: false
     readonly property int launcherLength: normalCellSize + Math.round(normalCellSize / 6)
     readonly property alias metrics: tasks.metrics
     readonly property alias overflowButton: tasks.overflowButton
@@ -26,8 +28,20 @@ FocusScope {
     signal dismissed()
 
     function focusTask(index) { tasks.focusTask(index); }
+    function focusOverflow() {
+        counterFocusPending = true;
+        forceActiveFocus(Qt.TabFocusReason);
+        if (activeFocus) Qt.callLater(applyCounterFocus);
+    }
+    function applyCounterFocus() {
+        if (!counterFocusPending || !activeFocus) return;
+        counterFocusPending = false;
+        tasks.overflowButton.forceActiveFocus(Qt.TabFocusReason);
+    }
+    onActiveFocusChanged: if (activeFocus && counterFocusPending) Qt.callLater(applyCounterFocus)
 
     Rectangle {
+        visible: strip.paintBackground
         anchors.fill: parent
         radius: Math.min(24, height / 3)
         color: strip.smartTheme.shell

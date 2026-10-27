@@ -11,6 +11,8 @@ FocusScope {
     property bool vertical: false
     property Item leadingControl: null
     property bool gridMode: false
+    property bool includeLaunchpad: false
+    readonly property alias launchpadButton: launcher
     property bool overflowExpanded: false
     property int maximumHeight: 480
     readonly property alias metrics: metrics
@@ -20,6 +22,7 @@ FocusScope {
         : metrics.hiddenCount > 0 ? metrics.visibleCount : taskModel.count - 1
     readonly property SmartPanelTheme smartTheme: SmartPanelTheme {}
 
+    signal launchpadRequested()
     signal activated(int index, bool active)
     signal newInstanceRequested(int index)
     signal contextRequested(int index, var task)
@@ -28,10 +31,10 @@ FocusScope {
     signal overflowRequested()
     signal dismissed()
 
-    implicitWidth: gridMode ? Math.min(12, Math.max(1, taskModel.count)) * metrics.compactCellSize + 24
+    implicitWidth: gridMode ? Math.min(12, Math.max(1, taskModel.count + (includeLaunchpad ? 1 : 0))) * metrics.compactCellSize + 24
         : vertical ? 72 : metrics.preferredLength
     implicitHeight: gridMode ? Math.min(maximumHeight,
-        Math.ceil(taskModel.count / gridColumns) * normalCellSize + 24)
+        Math.ceil((taskModel.count + (includeLaunchpad ? 1 : 0)) / gridColumns) * normalCellSize + 24)
         : vertical ? metrics.preferredLength : normalCellSize
 
     TaskLayoutMetrics {
@@ -43,7 +46,7 @@ FocusScope {
     }
 
     function focusTask(index) {
-        const item = !gridMode && index === metrics.visibleCount && metrics.hiddenCount > 0
+        const item = gridMode && includeLaunchpad && index === -1 ? launcher : !gridMode && index === metrics.visibleCount && metrics.hiddenCount > 0
             ? overflowButton : tasks.itemAt(Math.max(0, Math.min(lastIndex, index)));
         if (!item) return;
         item.forceActiveFocus(Qt.TabFocusReason);
@@ -57,6 +60,11 @@ FocusScope {
         let current = overflowButton.activeFocus ? metrics.visibleCount : -1;
         for (let index = 0; index < tasks.count; index++) {
             if (tasks.itemAt(index)?.activeFocus) { current = index; break; }
+        }
+        if (gridMode && includeLaunchpad) {
+            const total = taskModel.count + 1;
+            focusTask((current + 1 + step + total) % total - 1);
+            return;
         }
         if (!gridMode && current === 0 && step < 0 && leadingControl) {
             leadingControl.forceActiveFocus(Qt.BacktabFocusReason);
@@ -93,6 +101,17 @@ FocusScope {
             columns: root.gridMode ? root.gridColumns : root.vertical ? 1 : Math.max(1, root.lastIndex + 1)
             spacing: 0
 
+            LaunchpadButton {
+                id: launcher
+                visible: root.gridMode && root.includeLaunchpad
+                width: metrics.compactCellSize
+                height: root.normalCellSize
+                iconSize: Math.round(root.normalCellSize * 2 / 3)
+                onClicked: root.launchpadRequested()
+                Keys.onTabPressed: event => { root.moveFocus(1); event.accepted = true; }
+                Keys.onBacktabPressed: event => { root.moveFocus(-1); event.accepted = true; }
+            }
+
             Repeater {
                 id: tasks
                 model: root.taskModel
@@ -109,6 +128,8 @@ FocusScope {
                     runningCount: model.IsLauncher ? 0 : model.IsGroupParent ? Math.max(2, Number(model.ChildCount)) : 1
                     active: Boolean(model.IsActive)
                     separatorBefore: !root.gridMode && index === root.launcherCount && index > 0
+                    Keys.onTabPressed: event => { if (root.gridMode) root.moveFocus(1); event.accepted = root.gridMode; }
+                    Keys.onBacktabPressed: event => { if (root.gridMode) root.moveFocus(-1); event.accepted = root.gridMode; }
                     onActivated: root.activated(index, active)
                     onNewInstanceRequested: root.newInstanceRequested(index)
                     onContextRequested: root.contextRequested(index, model)

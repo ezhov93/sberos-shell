@@ -26,6 +26,7 @@ TestCase {
         launcherCount: 2
     }
     SignalSpy { id: overflowSpy; target: list; signalName: "overflowRequested" }
+    SignalSpy { id: launchpadSpy; target: list; signalName: "launchpadRequested" }
     SignalSpy { id: activationSpy; target: list; signalName: "activated" }
     SignalSpy { id: contextSpy; target: list; signalName: "contextRequested" }
     SignalSpy { id: dismissSpy; target: list; signalName: "dismissed" }
@@ -34,6 +35,8 @@ TestCase {
         apps.clear()
         for (let index = 0; index < 30; index++)
             apps.append({AppName: "Application " + index, decoration: "application-x-executable", IsLauncher: true})
+        list.includeLaunchpad = false
+        launchpadSpy.clear()
         list.gridMode = false
         list.overflowExpanded = false
         list.width = 248
@@ -110,5 +113,20 @@ TestCase {
         compare(activationSpy.signalArguments[1][0], 29)
         keyClick(Qt.Key_Escape)
         compare(dismissSpy.count, 1)
+    }
+    function test_gridIncludesLaunchpad() {
+        list.gridMode = true
+        list.includeLaunchpad = true
+        list.width = 504
+        list.height = 168
+        list.focusTask(-1)
+        keyClick(Qt.Key_Return)
+        compare(launchpadSpy.count, 1)
+        keyClick(Qt.Key_Right)
+        keyClick(Qt.Key_Return)
+        compare(activationSpy.count, 1)
+        compare(activationSpy.signalArguments[0][0], 0)
+        keyClick(Qt.Key_Backtab)
+        verify(list.launchpadButton.activeFocus)
     }
 }

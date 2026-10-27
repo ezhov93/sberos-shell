@@ -18,3 +18,6 @@ __pycache__/
 *.user
 *.autosave
 *~
+
+# Local source snapshots for reference projects
+/refs/

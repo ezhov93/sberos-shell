@@ -39,7 +39,13 @@
 
 ## Кодовые базы и UI Kit
 
-Сравниваются три основы по [ADR-0010](adr/0010-base-comparison.md): [`shell/`](../shell/) (Sirca), [`quickshell/`](../quickshell/) (NextKDE) и [`plasma-theme/`](../plasma-theme/) (AeroThemePlasma). Рабочие копии отделены от исходников в `refs/`; референсы не изменять.
+Сравниваются три основы по [ADR-0010](adr/0010-base-comparison.md):
+[`shell/`](../shell/) (Sirca), [`quickshell/`](../quickshell/) (NextKDE) и
+[`plasma-theme/`](../plasma-theme/) (AeroThemePlasma). Ссылки на исходные проекты:
+[Sirca Shell](https://github.com/onuroluc/sirca-shell),
+[NextKDE](https://github.com/SuceV587/NextKde) и
+[AeroThemePlasma](https://github.com/aeroshell-desktop/aerothemeplasma).
+Локальные исходные снимки лежат в игнорируемом Git каталоге `/refs/`; не изменяйте их.
 
 [`ui-kit/`](../ui-kit/README.md) — общий набор QML/C++ компонентов, темы и токенов для оболочки и приложений. Его [API-контракт](../ui-kit/docs/API.md) — основной справочник по использованию. UI Kit не содержит логику рабочего стола или предметную логику приложений.
 

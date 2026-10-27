@@ -2,16 +2,21 @@
 set -Eeuo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 dry_run=0
 install_args=()
+service=plasma-plasmashell.service
+drop_in="$config_home/systemd/user/$service.d/sberos-shell.conf"
+expected_override=$'[Service]\nExecStart=\nExecStart=/usr/bin/plasmashell --no-respawn --shell-plugin io.gitgud.wackyideas.desktop'
 
 usage() {
     cat <<'EOF'
-Install the current SberOS Plasma packages and restart the configured Plasma shell.
+Install the current SberOS Plasma packages, configure the SberOS shell plugin,
+and restart the Plasma shell.
 
 Usage: install-and-restart.sh [--dry-run] [--activate-clock]
 
-  --dry-run       Preview package installation; do not restart Plasma.
+  --dry-run       Preview package and service configuration changes; do not write or restart.
   --activate-clock  Also replace the current panel clock, backing up its config.
 EOF
 }
@@ -35,14 +40,22 @@ if ! command -v systemctl >/dev/null 2>&1; then
     exit 1
 fi
 
-service=plasma-plasmashell.service
-service_definition="$(systemctl --user cat "$service" 2>/dev/null)" || {
+systemctl --user cat "$service" >/dev/null 2>&1 || {
     printf 'Cannot read the user service %s. Is Plasma running in this session?\n' "$service" >&2
     exit 1
 }
-if [[ "$service_definition" != *"--shell-plugin io.gitgud.wackyideas.desktop"* ]]; then
-    printf '%s is not configured to start the SberOS Plasma shell; leaving the session unchanged.\n' "$service" >&2
+
+if [[ -L "$drop_in" || ( -e "$drop_in" && ! -f "$drop_in" ) ]]; then
+    printf 'Unexpected service override at %s; leaving it unchanged.\n' "$drop_in" >&2
     exit 1
+fi
+if [[ -f "$drop_in" && "$(cat -- "$drop_in")" != "$expected_override" ]]; then
+    printf 'Service override at %s has unexpected contents; leaving it unchanged.\n' "$drop_in" >&2
+    exit 1
+fi
+
+if ((dry_run)) && [[ ! -f "$drop_in" ]]; then
+    printf 'Would configure %s to start the SberOS Plasma shell using %s.\n' "$service" "$drop_in"
 fi
 
 "$script_dir/install.sh" "${install_args[@]}"
@@ -52,10 +65,35 @@ if ((dry_run)); then
     exit 0
 fi
 
+override_created=0
+if [[ ! -f "$drop_in" ]]; then
+    mkdir -p -- "$(dirname -- "$drop_in")"
+    temp_override="$(mktemp "$(dirname -- "$drop_in")/.sberos-shell.conf.XXXXXX")"
+    printf '%s\n' "$expected_override" > "$temp_override"
+    chmod 0644 "$temp_override"
+    mv -- "$temp_override" "$drop_in"
+    override_created=1
+fi
+
+rollback_override() {
+    local reason="$1"
+    if ((override_created)); then
+        rm -f -- "$drop_in"
+        systemctl --user daemon-reload || true
+        systemctl --user restart "$service" || true
+    fi
+    printf '%s\n' "$reason" >&2
+    exit 1
+}
+
 echo "Reloading $service to apply the installed packages..."
-systemctl --user daemon-reload
-systemctl --user restart "$service"
-systemctl --user is-active --quiet "$service"
+systemctl --user daemon-reload || rollback_override "Could not reload the Plasma user service configuration."
+effective_exec="$(systemctl --user show "$service" -p ExecStart --value)" || rollback_override "Could not verify the Plasma shell command."
+if [[ "$effective_exec" != *"--shell-plugin io.gitgud.wackyideas.desktop"* ]]; then
+    rollback_override "The effective ExecStart does not select the SberOS Plasma shell."
+fi
+systemctl --user restart "$service" || rollback_override "Could not restart $service."
+systemctl --user is-active --quiet "$service" || rollback_override "$service did not become active."
 
 systemctl --user show "$service" \
     -p ActiveState -p SubState -p MainPID -p NRestarts

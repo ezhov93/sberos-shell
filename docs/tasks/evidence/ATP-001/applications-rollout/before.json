@@ -1,0 +1,64 @@
+[
+  {
+    "id": 3,
+    "screen": 0,
+    "widgets": [
+      {
+        "id": 4,
+        "type": "io.gitgud.wackyideas.sbermenu",
+        "launchers": ""
+      },
+      {
+        "id": 6,
+        "type": "io.gitgud.wackyideas.smarttasks",
+        "launchers": "preferred://filemanager,preferred://browser,applications:org.kde.konsole.desktop,applications:systemsettings.desktop"
+      },
+      {
+        "id": 7,
+        "type": "com.mcc45tr.filesearch",
+        "launchers": ""
+      },
+      {
+        "id": 8,
+        "type": "KdeControlStation",
+        "launchers": ""
+      },
+      {
+        "id": 9,
+        "type": "io.gitgud.wackyideas.clockcalendar",
+        "launchers": ""
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "screen": 1,
+    "widgets": [
+      {
+        "id": 12,
+        "type": "io.gitgud.wackyideas.sbermenu",
+        "launchers": ""
+      },
+      {
+        "id": 14,
+        "type": "io.gitgud.wackyideas.smarttasks",
+        "launchers": ""
+      },
+      {
+        "id": 15,
+        "type": "com.mcc45tr.filesearch",
+        "launchers": ""
+      },
+      {
+        "id": 16,
+        "type": "KdeControlStation",
+        "launchers": ""
+      },
+      {
+        "id": 18,
+        "type": "io.gitgud.wackyideas.clockcalendar",
+        "launchers": ""
+      }
+    ]
+  }
+]

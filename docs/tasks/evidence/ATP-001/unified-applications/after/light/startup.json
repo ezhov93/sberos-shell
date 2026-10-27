@@ -1,0 +1,42 @@
+{
+  "plugins": [
+    "io.gitgud.wackyideas.sbermenu",
+    "io.gitgud.wackyideas.smarttasks",
+    "com.mcc45tr.filesearch",
+    "KdeControlStation",
+    "io.gitgud.wackyideas.clockcalendar"
+  ],
+  "appletId": 5,
+  "launchers": [
+    "applications:org.kde.dolphin.desktop",
+    "applications:org.kde.konsole.desktop",
+    "applications:AmneziaVPN.desktop",
+    "applications:chatgpt.desktop",
+    "applications:chromium.desktop",
+    "applications:im-config.desktop",
+    "applications:kdesystemsettings.desktop",
+    "applications:kvantummanager.desktop",
+    "applications:micro.desktop",
+    "applications:org.freedesktop.IBus.Setup.desktop",
+    "applications:org.gnome.Papers.desktop",
+    "applications:org.kde.ark.desktop",
+    "applications:org.kde.discover.desktop",
+    "applications:org.kde.drkonqi.coredump.gui.desktop",
+    "applications:org.kde.gwenview.desktop",
+    "applications:org.kde.iconexplorer.desktop",
+    "applications:org.kde.khelpcenter.desktop",
+    "applications:org.kde.kinfocenter.desktop",
+    "applications:org.kde.kmenuedit.desktop",
+    "applications:org.kde.kwalletmanager.desktop",
+    "applications:org.kde.partitionmanager.desktop",
+    "applications:org.kde.plasma-systemmonitor.desktop",
+    "applications:org.kde.plasma.emojier.desktop",
+    "applications:org.kde.plasma.lookandfeelexplorer.desktop",
+    "applications:org.kde.plasma.themeexplorer.desktop",
+    "applications:org.kde.plasmaengineexplorer.desktop",
+    "applications:org.kde.spectacle.desktop",
+    "applications:system-config-printer.desktop",
+    "applications:systemsettings.desktop",
+    "applications:vim.desktop"
+  ]
+}

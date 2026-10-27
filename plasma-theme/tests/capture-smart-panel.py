@@ -41,7 +41,7 @@ for theme in ['light']:
         {label: "notifications", plugin: "com.mcc45tr.filesearch"},
         {label: "quick", plugin: "KdeControlStation"},
         {label: "calendar", plugin: "io.gitgud.wackyideas.clockcalendar"},
-        {label: "launcher", plugin: "p-connor.plasma-drawer"}
+        {label: "launcher", plugin: "io.gitgud.wackyideas.smarttasks"}
     ].filter(state => SELECTED.includes(state.label))
     property int captureStep: -1
     property var captureApplet: null
@@ -64,7 +64,7 @@ for theme in ['light']:
                 let target = root;
                 if (state.plugin) {
                     target = root.captureApplet?.fullRepresentationItem;
-                    if (state.label === "launcher") target = target?.dashWindow?.mainItem;
+                    if (state.label === "launcher") target = root.captureApplet?.launchpadWindow?.mainItem;
                 }
                 if (!target || target.width <= 0 || target.height <= 0) {
                     console.log("CAPTURE_FAILED " + state.label);
@@ -99,7 +99,7 @@ for theme in ['light']:
             if (root.captureApplet.notificationsOpen !== undefined) root.captureApplet.notificationsOpen = state.label === "notifications";
             if (state.label !== "launcher") root.captureApplet.expanded = true;
             if (state.power) root.captureApplet.powerMenuOpen = true;
-            if (state.label === "launcher") root.captureApplet.fullRepresentationItem.dashWindow.toggleLauncher();
+            if (state.label === "launcher") root.captureApplet.toggleLaunchpad();
         }
         captureTimer.restart();
     }

@@ -9,6 +9,7 @@ FocusScope {
     required property int launcherCount
     property int normalCellSize: 48
     property bool vertical: false
+    property Item leadingControl: null
     property bool gridMode: false
     property bool overflowExpanded: false
     property int maximumHeight: 480
@@ -56,6 +57,10 @@ FocusScope {
         let current = overflowButton.activeFocus ? metrics.visibleCount : -1;
         for (let index = 0; index < tasks.count; index++) {
             if (tasks.itemAt(index)?.activeFocus) { current = index; break; }
+        }
+        if (!gridMode && current === 0 && step < 0 && leadingControl) {
+            leadingControl.forceActiveFocus(Qt.BacktabFocusReason);
+            return;
         }
         if (lastIndex >= 0) focusTask((current + step + lastIndex + 1) % (lastIndex + 1));
     }

@@ -2,8 +2,8 @@
     "KPackageStructure": "Plasma/Applet",
     "KPlugin": {
         "Id": "io.gitgud.wackyideas.smarttasks",
-        "Name": "SberOS Task Manager",
-        "Description": "Плашка закреплённых и запущенных приложений SberOS",
+        "Name": "SberOS Applications",
+        "Description": "Launchpad, закреплённые и запущенные приложения SberOS",
         "Icon": "view-app-grid-symbolic",
         "Category": "Application Launchers",
         "License": "GPL-2.0-or-later",
@@ -11,9 +11,17 @@
         "Authors": [
             {
                 "Name": "SberOS Shell contributors"
+            },
+            {
+                "Name": "Connor Popp",
+                "Email": "cmpopp2@gmail.com"
+            },
+            {
+                "Name": "KDE contributors"
             }
         ],
-        "Name[ru]": "Диспетчер задач SberOS"
+        "Name[ru]": "Приложения SberOS"
     },
-    "X-Plasma-API-Minimum-Version": "6.0"
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": "org.kde.plasma.launchermenu"
 }

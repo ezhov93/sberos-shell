@@ -1,0 +1,16 @@
+{
+  "plugins": [
+    "io.gitgud.wackyideas.sbermenu",
+    "io.gitgud.wackyideas.smarttasks",
+    "com.mcc45tr.filesearch",
+    "KdeControlStation",
+    "io.gitgud.wackyideas.clockcalendar"
+  ],
+  "appletId": 4,
+  "launchers": [
+    "preferred://filemanager",
+    "preferred://browser",
+    "applications:org.kde.konsole.desktop",
+    "applications:systemsettings.desktop"
+  ]
+}

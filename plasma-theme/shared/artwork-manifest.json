@@ -9,9 +9,7 @@
   "plasmoids/sberos.smarttasks/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
   "plasmoids/sberos.smarttasks/contents/ui/SmartPopupPlacement.qml": "3986930b121fef95c2b7599206e899c84820e1c828cf8d1c04d2797394c07d3c",
   "plasmoids/sberos.smarttasks/contents/assets/smart-panel/popup-frame.svg": "c09fe7126370cffa90ff353f8a7d8a18b624d75598875715cb67f77c7a3c6347",
-  "plasmoids/sberos.applications/contents/ui/SmartPanelTheme.qml": "ceab2e67ee8a9356d2e5fbdb47eaf5d3cb989d275492e8d930a203dedb45319d",
-  "plasmoids/sberos.applications/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
-  "plasmoids/sberos.applications/contents/ui/OskaAvatar.qml": "3a4d0718c621d701ef0ecb6fdbd0a733a02d345632314e2c2d703e6f8a2ac966",
+  "plasmoids/sberos.smarttasks/contents/ui/OskaAvatar.qml": "3a4d0718c621d701ef0ecb6fdbd0a733a02d345632314e2c2d703e6f8a2ac966",
   "plasmoids/sberos.filesearch/contents/ui/SmartPanelTheme.qml": "ceab2e67ee8a9356d2e5fbdb47eaf5d3cb989d275492e8d930a203dedb45319d",
   "plasmoids/sberos.filesearch/contents/ui/SmartPanelIcon.qml": "1349d58af864671e46538506f7303f7eda87cc8a3a0d1a35b670f00aeb62a75e",
   "plasmoids/sberos.filesearch/contents/ui/SmartPopupPlacement.qml": "3986930b121fef95c2b7599206e899c84820e1c828cf8d1c04d2797394c07d3c",
@@ -172,8 +170,8 @@
   "plasmoids/sberos.controlcenter/contents/assets/smart-panel/bell-9296a6.svg": "d8d9a3bf9e76405a13203b9bd1d5925709faf44b95d6fa70043b6df758ac22d7",
   "plasmoids/sberos.controlcenter/contents/assets/smart-panel/bell-959ba8.svg": "71cdba2fb932d767f4d4caa62fa88f0e83cc153cecba9a5490fa0cb11b206fe4",
   "plasmoids/sberos.controlcenter/contents/assets/smart-panel/bell-ffffff.svg": "8e985d1b01351842ca585802f46787b23bbac481e871519427c5dfd37998a4e9",
-  "plasmoids/sberos.applications/contents/assets/launchpad.svg": "bc4f7134b8e5a613f138ba291e85cd69e109e4e07c54c7ea27f281a9c80f9f30",
-  "plasmoids/sberos.applications/contents/assets/oska-avatar.svg": "a4fd2b1ebdc58dac0482380d2915c10e2838a90ba58932163980fa476eea31ee",
+  "plasmoids/sberos.smarttasks/contents/assets/launchpad.svg": "bc4f7134b8e5a613f138ba291e85cd69e109e4e07c54c7ea27f281a9c80f9f30",
+  "plasmoids/sberos.smarttasks/contents/assets/oska-avatar.svg": "a4fd2b1ebdc58dac0482380d2915c10e2838a90ba58932163980fa476eea31ee",
   "plasmoids/sberos.filesearch/contents/assets/oska-avatar.svg": "a4fd2b1ebdc58dac0482380d2915c10e2838a90ba58932163980fa476eea31ee",
   "source/avatar.svg": "bf307d59be6bb457af57b6ddbbde31f062be9dc6caec993c587209dc16948ab4"
 }

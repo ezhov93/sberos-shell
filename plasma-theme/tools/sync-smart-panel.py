@@ -16,7 +16,7 @@ parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 mock = root.parent / 'docs/mock/smart-panel/assets'
-packages = ['panel', 'sbermenu', 'smarttasks', 'applications', 'filesearch', 'controlcenter', 'clockcalendar']
+packages = ['panel', 'sbermenu', 'smarttasks', 'filesearch', 'controlcenter', 'clockcalendar']
 outputs = {}
 for name in packages:
     ui = root / f'plasmoids/sberos.{name}/contents/ui'
@@ -25,7 +25,7 @@ for name in packages:
     if name in ['sbermenu', 'smarttasks', 'filesearch', 'controlcenter', 'clockcalendar']:
         outputs[ui / 'SmartPopupPlacement.qml'] = (root / 'shared/SmartPopupPlacement.qml').read_bytes()
         outputs[ui.parent / 'assets/smart-panel/popup-frame.svg'] = (root / 'shared/SmartPopupFrame.svg').read_bytes()
-    if name in ['applications', 'filesearch']:
+    if name in ['smarttasks', 'filesearch']:
         outputs[ui / 'OskaAvatar.qml'] = (root / 'shared/OskaAvatar.qml').read_bytes()
 outputs[root / 'plasmoids/sberos.sbermenu/contents/assets/smart-panel/power-popup-frame.svg'] = (root / 'shared/SmartPowerPopupFrame.svg').read_bytes()
 outputs[root / 'plasmoids/sberos.filesearch/contents/assets/smart-panel/search-popup-frame.svg'] = (root / 'shared/SmartSearchPopupFrame.svg').read_bytes()
@@ -83,7 +83,7 @@ for symbol in ['vpn', 'bell']:
         suffix = '-' + tint if tint else ''
         outputs[root / f'plasmoids/sberos.controlcenter/contents/assets/smart-panel/{symbol}{suffix}.svg'] = (
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="' + color + '" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + shape + '</svg>\n').encode()
-outputs[root / 'plasmoids/sberos.applications/contents/assets/launchpad.svg'] = (mock / 'launchpad.svg').read_bytes()
+outputs[root / 'plasmoids/sberos.smarttasks/contents/assets/launchpad.svg'] = (mock / 'launchpad.svg').read_bytes()
 # QtSvg does not render the source's pattern/use indirection correctly. Preserve
 # the embedded bitmap and its circular crop, without redrawing the character.
 source = ET.parse(mock / 'avatar.svg').getroot()
@@ -92,7 +92,7 @@ base64.b64decode(png.split(',', 1)[1], validate=True)
 avatar = ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40">'
           '<defs><clipPath id="crop"><circle cx="20" cy="20" r="20"/></clipPath></defs>'
           '<image width="40" height="40" clip-path="url(#crop)" xlink:href="' + png + '"/></svg>\n').encode()
-for name in ['applications', 'filesearch']:
+for name in ['smarttasks', 'filesearch']:
     outputs[root / f'plasmoids/sberos.{name}/contents/assets/oska-avatar.svg'] = avatar
 manifest = {str(path.relative_to(root)): hashlib.sha256(data).hexdigest() for path, data in outputs.items()}
 manifest['source/avatar.svg'] = hashlib.sha256((mock / 'avatar.svg').read_bytes()).hexdigest()

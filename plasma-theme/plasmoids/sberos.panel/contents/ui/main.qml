@@ -78,12 +78,11 @@ ContainmentItem {
     property Item desktopWallpaper: null
     readonly property var islandRects: {
         const shapes = [];
-        for (const group of [sharedApplicationIsland, sharedSystemIsland]) {
+        for (const group of [sharedSystemIsland]) {
             if (group.visible && group.width > 0) shapes.push({x:group.x, y:group.y, width:group.width, height:group.height, radius:group.radius});
         }
         for (const item of visibleApplets) {
             const name = item.applet?.plasmoid?.pluginName;
-            if (dropArea.hasSharedApplicationIsland && dropArea.applicationIslandAppletNames.includes(name)) continue;
             if (dropArea.hasSharedSystemIsland && dropArea.systemIslandAppletNames.includes(name)) continue;
             shapes.push({x:currentLayout.x + item.x, y:currentLayout.y + item.y, width:item.width, height:item.height, radius:Math.min(24,item.height/3)});
         }
@@ -172,85 +171,6 @@ ContainmentItem {
             visible: false
             prefix: ['thick'].concat(panelSvg.prefix)
             imagePath: "widgets/panel-background"
-        }
-
-        readonly property var applicationIslandAppletNames: [
-            "p-connor.plasma-drawer",
-            "io.gitgud.wackyideas.smarttasks"
-        ]
-        readonly property var applicationIslandMembers: currentLayout.visibleChildren.filter(item =>
-            item.isAppletContainer
-                && applicationIslandAppletNames.indexOf(item.applet?.plasmoid?.pluginName) !== -1)
-        readonly property bool hasSharedApplicationIsland: {
-            if (!root.isHorizontal || applicationIslandMembers.length === 0) {
-                return false;
-            }
-
-            let firstIndex = applicationIslandMembers[0].appletIndex;
-            let lastIndex = firstIndex;
-            for (const member of applicationIslandMembers) {
-                firstIndex = Math.min(firstIndex, member.appletIndex);
-                lastIndex = Math.max(lastIndex, member.appletIndex);
-            }
-
-            for (const item of currentLayout.visibleChildren) {
-                if (item.isAppletContainer
-                        && item.appletIndex > firstIndex
-                        && item.appletIndex < lastIndex
-                        && applicationIslandAppletNames.indexOf(item.applet?.plasmoid?.pluginName) === -1) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        readonly property real applicationIslandLeft: {
-            let value = Infinity;
-            for (const member of applicationIslandMembers) {
-                value = Math.min(value, member.x);
-            }
-            return value;
-        }
-        readonly property real applicationIslandRight: {
-            let value = -Infinity;
-            for (const member of applicationIslandMembers) {
-                value = Math.max(value, member.x + member.width);
-            }
-            return value;
-        }
-        readonly property real applicationIslandTop: {
-            let value = Infinity;
-            for (const member of applicationIslandMembers) {
-                value = Math.min(value, member.y);
-            }
-            return value;
-        }
-        readonly property real applicationIslandBottom: {
-            let value = -Infinity;
-            for (const member of applicationIslandMembers) {
-                value = Math.max(value, member.y + member.height);
-            }
-            return value;
-        }
-
-        // Draw the launcher and task manager inside one applications surface.
-        Rectangle {
-            id: sharedApplicationIsland
-            visible: dropArea.hasSharedApplicationIsland
-            x: currentLayout.x + dropArea.applicationIslandLeft
-            y: currentLayout.y + dropArea.applicationIslandTop
-            width: Math.max(0, dropArea.applicationIslandRight - dropArea.applicationIslandLeft)
-            height: Math.max(0, dropArea.applicationIslandBottom - dropArea.applicationIslandTop)
-            radius: Math.min(24, height / 3)
-            color: root.islandFill
-            border.width: 1
-            border.color: root.islandBorder
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: Math.min(7, root.contentThickness * 7 / 72)
-                radius: 16
-                color: root.islandInnerFill
-            }
         }
 
         readonly property var systemIslandAppletNames: [
@@ -430,8 +350,7 @@ ContainmentItem {
                     visible: root.isHorizontal
                         && applet?.plasmoid?.pluginName !== "org.kde.plasma.panelspacer"
                         && !container.isOskaIsland
-                        && !(dropArea.hasSharedApplicationIsland
-                             && dropArea.applicationIslandAppletNames.indexOf(applet?.plasmoid?.pluginName) !== -1)
+                        && !container.isApplicationIsland
                         && !(dropArea.hasSharedSystemIsland
                              && dropArea.systemIslandAppletNames.indexOf(applet?.plasmoid?.pluginName) !== -1)
                 }
@@ -554,7 +473,7 @@ ContainmentItem {
                 Binding {
                     target: container.applet
                     property: "workspaceWallpaper"
-                    when: container.applet?.plasmoid?.pluginName === "p-connor.plasma-drawer"
+                    when: container.isApplicationIsland
                     value: root.desktopWallpaper
                 }
 

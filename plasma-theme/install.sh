@@ -163,7 +163,6 @@ for package in \
     io.gitgud.wackyideas.sbermenu=sberos.sbermenu \
     io.gitgud.wackyideas.smarttasks=sberos.smarttasks \
     io.gitgud.wackyideas.clockcalendar=sberos.clockcalendar \
-    p-connor.plasma-drawer=sberos.applications \
     KdeControlStation=sberos.controlcenter \
     com.mcc45tr.filesearch=sberos.filesearch
 do
@@ -174,6 +173,19 @@ do
         "$script_dir/plasmoids/$package_dir" \
         "plasma/plasmoids"
 done
+
+# Retire the separate launcher package after the combined applet is installed.
+old_launcher="$data_home/plasma/plasmoids/p-connor.plasma-drawer"
+if [[ -d "$old_launcher" ]]; then
+    if ((dry_run)); then
+        printf 'Would back up and remove standalone launcher %s\n' "$old_launcher"
+    else
+        mkdir -p "$backup_root/plasma/plasmoids"
+        cp -a -- "$old_launcher" "$backup_root/plasma/plasmoids/p-connor.plasma-drawer"
+        backup_created=1
+        kpackagetool6 --type Plasma/Applet --remove p-connor.plasma-drawer
+    fi
+fi
 
 if ((dry_run)); then
     if ((activate_clock)); then

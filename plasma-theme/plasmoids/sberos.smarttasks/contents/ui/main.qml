@@ -16,7 +16,11 @@ PlasmoidItem {
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property int cellSize: Math.max(1, Math.round((vertical ? width : height) * 2 / 3))
-    readonly property int contentWidth: stripMetrics.preferredLength
+    readonly property int launcherLength: cellSize + Math.round(cellSize / 6)
+    readonly property int contentWidth: launcherLength + stripMetrics.preferredLength
+    property alias applicationMenuOpen: launchpad.applicationMenuOpen
+    property alias workspaceWallpaper: launchpad.workspaceWallpaper
+    readonly property alias launchpadWindow: launchpad.window
     property bool overflowOpen: false
     property bool contextMenuVisible: false
     property int overflowFocusIndex: 0
@@ -34,12 +38,14 @@ PlasmoidItem {
     property var previewWindows: []
 
     Plasmoid.title: qsTr("Приложения")
+    Plasmoid.status: applicationMenuOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
     Plasmoid.icon: "view-app-grid-symbolic"
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     preferredRepresentation: compactRepresentation
     hideOnWindowDeactivate: !(overflowOpen && childOpen)
 
     onExpandedChanged: expanded => {
+        if (expanded) applicationMenuOpen = false
         if (!expanded) {
             previewOpenTimer.stop()
             previewCloseTimer.stop()
@@ -49,11 +55,23 @@ PlasmoidItem {
         }
     }
 
+    Launchpad {
+        id: launchpad
+        appletInterface: root
+        visualParent: root.compactRepresentationItem ?? root
+        onApplicationMenuOpenChanged: if (applicationMenuOpen) root.expanded = false
+    }
+    function toggleLaunchpad() {
+        root.expanded = false
+        launchpad.toggleLauncher()
+    }
+    Plasmoid.onActivated: toggleLaunchpad()
+
     TaskLayoutMetrics {
         id: stripMetrics
         count: tasksModel.count
         launcherCount: tasksModel.launcherCount
-        availableLength: root.vertical ? root.height : root.width
+        availableLength: Math.max(0, (root.vertical ? root.height : root.width) - root.launcherLength)
         normalCellSize: root.cellSize
         onHiddenCountChanged: {
             if (hiddenCount === 0 && root.overflowOpen) root.expanded = false
@@ -105,10 +123,10 @@ PlasmoidItem {
         if (previewWindows.length) previewOpenTimer.restart()
     }
 
-    Layout.minimumWidth: vertical ? 0 : cellSize + 16
+    Layout.minimumWidth: vertical ? 0 : launcherLength + cellSize + 16
     Layout.preferredWidth: vertical ? 72 : contentWidth
     Layout.maximumWidth: vertical ? Infinity : contentWidth
-    Layout.minimumHeight: vertical ? cellSize + 16 : 0
+    Layout.minimumHeight: vertical ? launcherLength + cellSize + 16 : 0
     Layout.preferredHeight: vertical ? contentWidth : 72
     Layout.maximumHeight: vertical ? contentWidth : Infinity
 
@@ -250,7 +268,9 @@ PlasmoidItem {
         onLauncherListChanged: Qt.callLater(root.saveLaunchers)
     }
 
-    compactRepresentation: TaskList {
+    compactRepresentation: ApplicationsStrip {
+        launcherOpen: root.applicationMenuOpen
+        onLaunchpadRequested: root.toggleLaunchpad()
         taskModel: tasksModel
         launcherCount: tasksModel.launcherCount
         normalCellSize: root.cellSize

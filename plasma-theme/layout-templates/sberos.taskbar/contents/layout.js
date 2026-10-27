@@ -7,6 +7,14 @@
         if (existing && existing.type === "io.gitgud.wackyideas.panel") {
             var screen = existing.screen;
             if (screen < 0) screen = Number(existing.readConfig("lastScreen", -1));
+            // The combined applet keeps the existing task model and pins.
+            // Remove the former standalone launcher without replacing the panel.
+            const launchers = existing.widgets("p-connor.plasma-drawer");
+            if (launchers.length) {
+                existing.locked = false;
+                for (const launcher of launchers) launcher.remove();
+                existing.locked = true;
+            }
             occupiedScreens[screen] = true;
         }
     }
@@ -29,17 +37,6 @@
         panel.lengthMode = "fill"
 
         panel.addWidget("io.gitgud.wackyideas.sbermenu")
-        var appLauncher = panel.addWidget("p-connor.plasma-drawer")
-        appLauncher.currentConfigGroup = ["General"]
-        appLauncher.writeConfig("icon", "view-app-grid-symbolic")
-        appLauncher.writeConfig("appIconSize", 120)
-        appLauncher.writeConfig("maxNumberColumns", 8)
-        appLauncher.writeConfig("backgroundType", 1)
-        appLauncher.writeConfig("customBackgroundColor", "#32353e")
-        appLauncher.writeConfig("backgroundOpacity", 58)
-        appLauncher.writeConfig("showSystemActions", false)
-        appLauncher.writeConfig("searchRunners", "krunner_services")
-
         var applications = panel.addWidget("io.gitgud.wackyideas.smarttasks")
         applications.currentConfigGroup = ["General"]
         applications.writeConfig("launchers", "preferred://filemanager,preferred://browser,applications:org.kde.konsole.desktop,applications:systemsettings.desktop")

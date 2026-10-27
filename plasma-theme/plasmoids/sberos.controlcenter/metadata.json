@@ -21,7 +21,7 @@
         "Name[ru]": "Центр управления SberOS"
     },
     "X-Plasma-MainScript": "ui/main.qml",
-    "X-Plasma-Provides": "org.kde.plasma.multimediacontrols,org.kde.plasma.powermanagement,org.kde.plasma.notifications",
+    "X-Plasma-Provides": "org.kde.plasma.multimediacontrols,org.kde.plasma.powermanagement",
     "X-Plasma-NotificationArea": "true",
     "X-Plasma-API-Minimum-Version": "6.0"
 }

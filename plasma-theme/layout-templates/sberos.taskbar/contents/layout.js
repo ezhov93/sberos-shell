@@ -50,10 +50,6 @@
         fileSearch.writeConfig("showSearchButton", false)
 
         panel.addWidget("KdeControlStation")
-        // Keep Plasma's notification server and popup handler active. The custom
-        // notification history in File Search only watches notifications; it does not
-        // own org.freedesktop.Notifications or display incoming notification popups.
-        panel.addWidget("org.kde.plasma.notifications")
         panel.addWidget("io.gitgud.wackyideas.clockcalendar")
 
         // The SberOS panel layout is fixed; users cannot add or rearrange applets.

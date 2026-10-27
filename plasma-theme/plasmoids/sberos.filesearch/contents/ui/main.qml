@@ -31,18 +31,48 @@ PlasmoidItem {
         interval: 600
         onTriggered: root.searchFocusSettling = false
     }
-    NotificationManager.WatchedNotificationsModel { id: notificationModel }
-    Instantiator {
-        id: notificationRows
-        model: notificationModel
-        delegate: QtObject {
-            required property var model
-            readonly property int notificationId: model.id
+    NotificationManager.Notifications {
+        id: notificationModel
+        showExpired: true
+        showDismissed: false
+        showJobs: false
+        groupMode: NotificationManager.Notifications.GroupDisabled
+        sortMode: NotificationManager.Notifications.SortByDate
+    }
+
+    function notificationIndexForId(notificationId) {
+        for (let row = 0; row < notificationModel.count; row++) {
+            const index = notificationModel.index(row, 0)
+            if (Number(notificationModel.data(index, NotificationManager.Notifications.IdRole))
+                    === Number(notificationId)) {
+                return index
+            }
+        }
+        return undefined
+    }
+
+    function closeNotification(notificationId) {
+        const index = notificationIndexForId(notificationId)
+        if (index) notificationModel.close(index)
+    }
+
+    function clearNotifications() {
+        notificationModel.clear(NotificationManager.Notifications.ClearExpired)
+        for (let row = notificationModel.count - 1; row >= 0; row--) {
+            const index = notificationModel.index(row, 0)
+            if (notificationModel.data(index, NotificationManager.Notifications.TypeRole)
+                    === NotificationManager.Notifications.NotificationType) {
+                notificationModel.close(index)
+            }
         }
     }
     function openNotifications() {
         if (root.expanded && root.notificationsOpen) root.expanded = false;
-        else { root.notificationsOpen = true; root.expanded = true; }
+        else {
+            root.notificationsOpen = true;
+            notificationModel.lastRead = new Date();
+            root.expanded = true;
+        }
     }
 
     // Responsive font size based on height (40% of panel height)
@@ -199,7 +229,7 @@ PlasmoidItem {
         rssShowSource: Plasmoid.configuration.rssShowSource
         rssFrequency: Plasmoid.configuration.rssFrequency
 
-        notificationCount: notificationRows.count
+        notificationCount: notificationModel.unreadNotificationsCount
         onOpenNotifications: root.openNotifications()
         onSearchTextEdited: text => root.searchText = text
         onSearchCleared: root.searchText = ""
@@ -276,18 +306,15 @@ PlasmoidItem {
         Components.SmartNotificationsPopup {
             id: notificationPopup
             notifications: notificationModel
-            serviceAvailable: notificationModel.valid
+            serviceAvailable: NotificationManager.Server.valid
             onDismissed: root.expanded = false
-            onCloseNotification: notificationId => notificationModel.close(notificationId)
+            onCloseNotification: notificationId => root.closeNotification(notificationId)
             onActivateNotification: notificationId => {
-                notificationModel.invokeDefaultAction(notificationId);
+                const index = root.notificationIndexForId(notificationId)
+                if (index) notificationModel.invokeDefaultAction(index)
                 root.expanded = false;
             }
-            onClearRequested: {
-                const ids = [];
-                for (let i = 0; i < notificationRows.count; i++) ids.push(notificationRows.objectAt(i).notificationId);
-                for (const notificationId of ids) notificationModel.close(notificationId);
-            }
+            onClearRequested: root.clearNotifications()
         }
     }
 

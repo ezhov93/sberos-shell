@@ -216,6 +216,7 @@ QtObject {
             const o = sets.objectAt(i);
             if (o && o.panel) {
                 o.panel.launcherOpen = false;
+                o.panel.overflowOpen = false;
                 o.panel.previewShown = false;
             }
         }
@@ -581,7 +582,7 @@ QtObject {
     }
 
     // ---- click outside closes whatever is open
-    readonly property bool popupOpen: (!!dock && (dock.openLobe !== "" || dock.launcherOpen || (dock.previewShown && dock.lobeMode === "menu"))) || (!!_made.launchpad && _made.launchpad.visible)
+    readonly property bool popupOpen: (!!dock && (dock.openLobe !== "" || dock.launcherOpen || dock.overflowOpen || (dock.previewShown && dock.lobeMode === "menu"))) || (!!_made.launchpad && _made.launchpad.visible)
     // (no click catcher any more: popups close on focus loss, see Surface.popupFocus. Catcher.qml is unused.)
 
     // ---- window watcher for dodging: every visible window on this desktop, ungrouped, with its geometry

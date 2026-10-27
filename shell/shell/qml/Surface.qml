@@ -28,7 +28,7 @@ Window {
     signal pressedAnywhere                     // any press on this surface (passive; nothing is taken from the items)
     property bool focusArmed: false
     readonly property bool focusDebug: Config.user && Config.user.debugFocus === true        // live: "debugFocus": true in config.json
-    onPopupFocusChanged: {
+    function takePopupFocus() {
         focusArmed = false;
         lostLater.stop();
         if (popupFocus) {
@@ -40,6 +40,7 @@ Window {
             Shell.setKeyboardMode(surface, restingKeyboardMode);
         }
     }
+    onPopupFocusChanged: takePopupFocus()
     property string restingKeyboardMode: "none"
     onRestingKeyboardModeChanged: if (!popupFocus)
         Shell.setKeyboardMode(surface, restingKeyboardMode)

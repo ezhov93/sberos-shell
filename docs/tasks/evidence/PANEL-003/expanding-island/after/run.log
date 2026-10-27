@@ -1,0 +1,230 @@
+Accepting client connections on sockets: QList("sirca-island-17544")
+kwin_xkbcommon: XKB: [XKB-107] inet:442:58: unrecognized keysym "XF86ElectronicPrivacyScreenOn"
+kwin_xkbcommon: XKB: [XKB-107] inet:443:58: unrecognized keysym "XF86ElectronicPrivacyScreenOff"
+kwin_xkbcommon: XKB: [XKB-107] inet:444:58: unrecognized keysym "XF86ActionOnSelection"
+kwin_xkbcommon: XKB: [XKB-107] inet:445:58: unrecognized keysym "XF86ContextualInsert"
+kwin_xkbcommon: XKB: [XKB-107] inet:446:58: unrecognized keysym "XF86ContextualQuery"
+ShapeCorners: loading shaders...
+ShapeCorners: shaders loaded.
+ShapeCorners: Writing Breeze config
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.freedesktop.portal.Desktop' requested by ':1.3' (uid=1000 pid=17572 comm="/usr/lib/qt6/bin/qml --apptype gui /tmp/sirca-appl" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.freedesktop.impl.portal.PermissionStore' requested by ':1.4' (uid=1000 pid=17576 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.PermissionStore'
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.freedesktop.portal.Documents' requested by ':1.4' (uid=1000 pid=17576 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.freedesktop.portal.Documents'
+
+(/usr/libexec/xdg-desktop-portal:17576): xdg-desktop-portal-WARNING **: 10:44:34.425: Choosing gtk.portal for org.freedesktop.impl.portal.Lockdown as a last-resort fallback
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.gtk' requested by ':1.4' (uid=1000 pid=17576 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.gtk.vfs.Daemon' requested by ':1.8' (uid=1000 pid=17599 comm="/usr/libexec/xdg-desktop-portal-gtk" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.gtk.vfs.Daemon'
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.a11y.Bus' requested by ':1.10' (uid=1000 pid=17599 comm="/usr/libexec/xdg-desktop-portal-gtk" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.a11y.Bus'
+dbus-daemon[17630]: Activating service name='org.a11y.atspi.Registry' requested by ':1.1' (uid=1000 pid=17599 comm="/usr/libexec/xdg-desktop-portal-gtk" label="chatgpt (unconfined)")
+dbus-daemon[17630]: Successfully activated service 'org.a11y.atspi.Registry'
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.gtk'
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.kde' requested by ':1.4' (uid=1000 pid=17576 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+js: NATIVE {"time":1793087074498,"id":"{c6e2560c-54c0-421d-a15d-deb6fb9e025d}","caption":"Island probe - fullscreen","resourceClass":"org.qt-project.qml","geometry":{"x":0,"y":0,"width":1920,"height":1080}}
+js: NATIVE {"time":1793087074510,"id":"{cd9872d3-5930-450c-aebb-96ff2a9db401}","caption":"Island probe - maximized","resourceClass":"org.qt-project.qml","geometry":{"x":0,"y":0,"width":1920,"height":1080}}
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.kde'
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.kde.ActivityManager' requested by ':1.6' (uid=1000 pid=17573 comm="/home/ezhov/Projects/sberos-shell/shell/shell/buil" label="chatgpt (unconfined)")
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.kwallet' requested by ':1.4' (uid=1000 pid=17576 comm="/usr/libexec/xdg-desktop-portal" label="chatgpt (unconfined)")
+qml: CLIENT {"time":1793087074581,"maximized":{"x":0,"y":0,"width":1920,"height":1080},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.freedesktop.portal.Desktop'
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for ''")
+kf.wallet.ksecretd: Lacking a socket, pipe: 0 env: 0
+sirca-shell: start-up: Shell singleton built in 1 ms (at 174 ms)
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.kde.ActivityManager'
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'org.kde.ActivityManager'")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'org.kde.ActivityManager'")
+org.kde.plasma.libtaskmanager: The PlasmaWindowManagement protocol hasn't activated in time. The client possibly got denied by kwin? Check kwin output.
+Translation file not found
+dbus-daemon[17546]: [session uid=1000 pid=17546 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.kwallet'
+qml: CLIENT {"time":1793087074681,"maximized":{"x":0,"y":0,"width":1920,"height":1080},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qt.dbus.integration: QDBusConnection: name 'org.freedesktop.portal.Desktop' had owner '' but we thought it was ':1.4'
+js: NATIVE {"time":1793087074779,"id":"{caab4720-e959-4eba-97c2-ac71baa0c73e}","caption":"","resourceClass":"sirca-shell","geometry":{"x":0,"y":316,"width":1920,"height":764}}
+qml: CLIENT {"time":1793087074781,"maximized":{"x":0,"y":0,"width":1920,"height":1080},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+js: NATIVE {"time":1793087074789,"id":"{cd9872d3-5930-450c-aebb-96ff2a9db401}","caption":"Island probe - maximized","resourceClass":"org.qt-project.qml","geometry":{"x":0,"y":0,"width":1920,"height":992}}
+Connecting to deprecated signal QDBusConnectionInterface::serviceOwnerChanged(QString,QString,QString)
+qml: start-up: first frame of bottom after 389 ms
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'sirca-shell'")
+qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: Connection already associated with an application ID")
+qml: CLIENT {"time":1793087074881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087074981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qt.svg: Invalid path data; path truncated.
+qt.svg: Invalid path data; path truncated.
+qml: CLIENT {"time":1793087075781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075882,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087075981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: sound: PreferredDevice.sink is null, using the model's default alsa_output.pci-0000_00_1f.3.analog-stereo
+qml: sound: PreferredDevice.source is null, using the model's default alsa_input.pci-0000_00_1f.3.analog-stereo
+org.kde.applets.brightness: D-Bus service not available: "org.kde.ScreenBrightness"
+qml: sound: PreferredDevice.sink is null, using the model's default alsa_output.pci-0000_00_1f.3.analog-stereo
+qml: sound: PreferredDevice.source is null, using the model's default alsa_input.pci-0000_00_1f.3.analog-stereo
+qml: CLIENT {"time":1793087076081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qt.svg: Invalid path data; path truncated.
+qml: CLIENT {"time":1793087076181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087076282,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087076381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087076481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS GEOMETRY {"label":"light-closed","time":1793087076521,"window":{"x":0,"y":316,"width":1920,"height":764},"strut":88,"surface":{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},"count":31,"hidden":20,"expanded":false,"zones":[{"x":8,"y":684,"width":72,"height":72,"left":8,"right":80,"top":684,"bottom":756},{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},{"x":732,"y":684,"width":456,"height":72,"left":732,"right":1188,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":0,"height":72,"left":1718.140625,"right":1718.140625,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":193.859375,"height":72,"left":1718.140625,"right":1912,"top":684,"bottom":756}]}
+qml: CLIENT {"time":1793087076581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qt.svg: Invalid path data; path truncated.
+qml: CLIENT {"time":1793087076681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087076781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087076882,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087076981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087077081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087077181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087077281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: start-up: built switcher in 1 ms
+qml: APPLICATIONS GEOMETRY {"label":"light-open","time":1793087077363,"window":{"x":0,"y":316,"width":1920,"height":764},"strut":88,"surface":{"x":88,"y":588,"width":504,"height":168,"left":88,"right":592,"top":588,"bottom":756},"count":31,"hidden":20,"expanded":true,"zones":[{"x":8,"y":684,"width":72,"height":72,"left":8,"right":80,"top":684,"bottom":756},{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},{"x":732,"y":684,"width":456,"height":72,"left":732,"right":1188,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":0,"height":72,"left":1718.140625,"right":1718.140625,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":193.859375,"height":72,"left":1718.140625,"right":1912,"top":684,"bottom":756}]}
+qml: CLIENT {"time":1793087077381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087077481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: start-up: built clipboardPanel in 2 ms
+qml: CLIENT {"time":1793087077581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: start-up: built tiles in 3 ms
+qml: CLIENT {"time":1793087077681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087077781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087077881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: start-up: built powerMenu in 3 ms
+qml: CLIENT {"time":1793087077981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078082,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: start-up: built capture in 2 ms
+qml: CLIENT {"time":1793087078181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS GEOMETRY {"label":"dark-open","time":1793087078209,"window":{"x":0,"y":316,"width":1920,"height":764},"strut":88,"surface":{"x":88,"y":588,"width":504,"height":168,"left":88,"right":592,"top":588,"bottom":756},"count":31,"hidden":20,"expanded":true,"zones":[{"x":8,"y":684,"width":72,"height":72,"left":8,"right":80,"top":684,"bottom":756},{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},{"x":732,"y":684,"width":456,"height":72,"left":732,"right":1188,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":0,"height":72,"left":1718.140625,"right":1718.140625,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":193.859375,"height":72,"left":1718.140625,"right":1912,"top":684,"bottom":756}]}
+qml: CLIENT {"time":1793087078281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: start-up: built settings in 31 ms
+qml: CLIENT {"time":1793087078381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078882,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087078981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS GEOMETRY {"label":"dark-closed","time":1793087079060,"window":{"x":0,"y":316,"width":1920,"height":764},"strut":88,"surface":{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},"count":31,"hidden":20,"expanded":false,"zones":[{"x":8,"y":684,"width":72,"height":72,"left":8,"right":80,"top":684,"bottom":756},{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},{"x":732,"y":684,"width":456,"height":72,"left":732,"right":1188,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":0,"height":72,"left":1718.140625,"right":1718.140625,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":193.859375,"height":72,"left":1718.140625,"right":1912,"top":684,"bottom":756}]}
+qml: CLIENT {"time":1793087079081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079582,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079782,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087079981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+sirca-shell: self-test: ok: panel, D-Bus name, notifications; MISSING: shortcuts (kglobalaccel does not list ours: is kglobalacceld running?); fake input (org_kde_kwin_fake_input not granted: the desktop file must list it (installed by install.sh))
+qml: CLIENT {"time":1793087080781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087080982,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081282,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS GEOMETRY {"label":"context-menu","time":1793087081608,"window":{"x":0,"y":316,"width":1920,"height":764},"strut":88,"surface":{"x":88,"y":588,"width":504,"height":168,"left":88,"right":592,"top":588,"bottom":756},"count":31,"hidden":20,"expanded":true,"zones":[{"x":8,"y":684,"width":72,"height":72,"left":8,"right":80,"top":684,"bottom":756},{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},{"x":732,"y":684,"width":456,"height":72,"left":732,"right":1188,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":0,"height":72,"left":1718.140625,"right":1718.140625,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":193.859375,"height":72,"left":1718.140625,"right":1912,"top":684,"bottom":756}]}
+qml: CLIENT {"time":1793087081681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087081981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082582,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087082981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083382,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083782,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087083981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087084981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085582,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS GEOMETRY {"label":"scrolled","time":1793087085862,"window":{"x":0,"y":316,"width":1920,"height":764},"strut":88,"surface":{"x":88,"y":636,"width":504,"height":120,"left":88,"right":592,"top":636,"bottom":756},"count":31,"hidden":20,"expanded":true,"zones":[{"x":8,"y":684,"width":72,"height":72,"left":8,"right":80,"top":684,"bottom":756},{"x":88,"y":684,"width":636,"height":72,"left":88,"right":724,"top":684,"bottom":756},{"x":732,"y":684,"width":456,"height":72,"left":732,"right":1188,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":0,"height":72,"left":1718.140625,"right":1718.140625,"top":684,"bottom":756},{"x":1718.140625,"y":684,"width":193.859375,"height":72,"left":1718.140625,"right":1912,"top":684,"bottom":756}]}
+qml: CLIENT {"time":1793087085881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087085982,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086782,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087086981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS DRAG PASS: applications:org.kde.dolphin.desktop new position 13
+qml: CLIENT {"time":1793087087581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087782,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087087981,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088182,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088381,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088481,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088581,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088681,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088781,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088881,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087088982,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087089081,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: CLIENT {"time":1793087089181,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+qml: APPLICATIONS PASS: one native window, same controls, fixed reserve/bottom/zones, keyboard, scrolling, global close and model changes
+qml: CLIENT {"time":1793087089281,"maximized":{"x":0,"y":0,"width":1920,"height":992},"fullscreen":{"x":0,"y":0,"width":1920,"height":1080}}
+js: NATIVE {"time":1793087089321,"id":"{cd9872d3-5930-450c-aebb-96ff2a9db401}","caption":"Island probe - maximized","resourceClass":"org.qt-project.qml","geometry":{"x":0,"y":0,"width":1920,"height":1080}}
+ShapeCorners: Writing Breeze config
+QDBusMarshaller: cannot add a null QDBusVariant
+qt.dbus.integration: QDBusConnection: Could not emit signal org.freedesktop.impl.portal.Settings.SettingChanged: Marshalling failed: Invalid QVariant passed in arguments
+qt.qpa.wayland: There are no outputs - creating placeholder screen
+The Wayland connection broke. Did the Wayland compositor die?
+qt.qpa.wayland: Attempting wayland reconnect
+Failed to write to the pipe: Bad file descriptor.
+A connection to the bus can't be made

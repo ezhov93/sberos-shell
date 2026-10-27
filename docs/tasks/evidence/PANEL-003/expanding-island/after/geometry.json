@@ -1,0 +1,620 @@
+[
+  {
+    "label": "light-closed",
+    "time": 1793087076521,
+    "window": {
+      "x": 0,
+      "y": 316,
+      "width": 1920,
+      "height": 764
+    },
+    "strut": 88,
+    "surface": {
+      "x": 88,
+      "y": 684,
+      "width": 636,
+      "height": 72,
+      "left": 88,
+      "right": 724,
+      "top": 684,
+      "bottom": 756
+    },
+    "count": 31,
+    "hidden": 20,
+    "expanded": false,
+    "zones": [
+      {
+        "x": 8,
+        "y": 684,
+        "width": 72,
+        "height": 72,
+        "left": 8,
+        "right": 80,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 88,
+        "y": 684,
+        "width": 636,
+        "height": 72,
+        "left": 88,
+        "right": 724,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 732,
+        "y": 684,
+        "width": 456,
+        "height": 72,
+        "left": 732,
+        "right": 1188,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 0,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1718.140625,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 193.859375,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1912,
+        "top": 684,
+        "bottom": 756
+      }
+    ],
+    "clients": {
+      "time": 1793087076481,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "nativePanel": {
+      "time": 1793087074779,
+      "id": "{caab4720-e959-4eba-97c2-ac71baa0c73e}",
+      "caption": "",
+      "resourceClass": "sirca-shell",
+      "geometry": {
+        "x": 0,
+        "y": 316,
+        "width": 1920,
+        "height": 764
+      }
+    }
+  },
+  {
+    "label": "light-open",
+    "time": 1793087077363,
+    "window": {
+      "x": 0,
+      "y": 316,
+      "width": 1920,
+      "height": 764
+    },
+    "strut": 88,
+    "surface": {
+      "x": 88,
+      "y": 588,
+      "width": 504,
+      "height": 168,
+      "left": 88,
+      "right": 592,
+      "top": 588,
+      "bottom": 756
+    },
+    "count": 31,
+    "hidden": 20,
+    "expanded": true,
+    "zones": [
+      {
+        "x": 8,
+        "y": 684,
+        "width": 72,
+        "height": 72,
+        "left": 8,
+        "right": 80,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 88,
+        "y": 684,
+        "width": 636,
+        "height": 72,
+        "left": 88,
+        "right": 724,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 732,
+        "y": 684,
+        "width": 456,
+        "height": 72,
+        "left": 732,
+        "right": 1188,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 0,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1718.140625,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 193.859375,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1912,
+        "top": 684,
+        "bottom": 756
+      }
+    ],
+    "clients": {
+      "time": 1793087077281,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "nativePanel": {
+      "time": 1793087074779,
+      "id": "{caab4720-e959-4eba-97c2-ac71baa0c73e}",
+      "caption": "",
+      "resourceClass": "sirca-shell",
+      "geometry": {
+        "x": 0,
+        "y": 316,
+        "width": 1920,
+        "height": 764
+      }
+    }
+  },
+  {
+    "label": "dark-open",
+    "time": 1793087078209,
+    "window": {
+      "x": 0,
+      "y": 316,
+      "width": 1920,
+      "height": 764
+    },
+    "strut": 88,
+    "surface": {
+      "x": 88,
+      "y": 588,
+      "width": 504,
+      "height": 168,
+      "left": 88,
+      "right": 592,
+      "top": 588,
+      "bottom": 756
+    },
+    "count": 31,
+    "hidden": 20,
+    "expanded": true,
+    "zones": [
+      {
+        "x": 8,
+        "y": 684,
+        "width": 72,
+        "height": 72,
+        "left": 8,
+        "right": 80,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 88,
+        "y": 684,
+        "width": 636,
+        "height": 72,
+        "left": 88,
+        "right": 724,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 732,
+        "y": 684,
+        "width": 456,
+        "height": 72,
+        "left": 732,
+        "right": 1188,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 0,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1718.140625,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 193.859375,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1912,
+        "top": 684,
+        "bottom": 756
+      }
+    ],
+    "clients": {
+      "time": 1793087078181,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "nativePanel": {
+      "time": 1793087074779,
+      "id": "{caab4720-e959-4eba-97c2-ac71baa0c73e}",
+      "caption": "",
+      "resourceClass": "sirca-shell",
+      "geometry": {
+        "x": 0,
+        "y": 316,
+        "width": 1920,
+        "height": 764
+      }
+    }
+  },
+  {
+    "label": "dark-closed",
+    "time": 1793087079060,
+    "window": {
+      "x": 0,
+      "y": 316,
+      "width": 1920,
+      "height": 764
+    },
+    "strut": 88,
+    "surface": {
+      "x": 88,
+      "y": 684,
+      "width": 636,
+      "height": 72,
+      "left": 88,
+      "right": 724,
+      "top": 684,
+      "bottom": 756
+    },
+    "count": 31,
+    "hidden": 20,
+    "expanded": false,
+    "zones": [
+      {
+        "x": 8,
+        "y": 684,
+        "width": 72,
+        "height": 72,
+        "left": 8,
+        "right": 80,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 88,
+        "y": 684,
+        "width": 636,
+        "height": 72,
+        "left": 88,
+        "right": 724,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 732,
+        "y": 684,
+        "width": 456,
+        "height": 72,
+        "left": 732,
+        "right": 1188,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 0,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1718.140625,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 193.859375,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1912,
+        "top": 684,
+        "bottom": 756
+      }
+    ],
+    "clients": {
+      "time": 1793087078981,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "nativePanel": {
+      "time": 1793087074779,
+      "id": "{caab4720-e959-4eba-97c2-ac71baa0c73e}",
+      "caption": "",
+      "resourceClass": "sirca-shell",
+      "geometry": {
+        "x": 0,
+        "y": 316,
+        "width": 1920,
+        "height": 764
+      }
+    }
+  },
+  {
+    "label": "context-menu",
+    "time": 1793087081608,
+    "window": {
+      "x": 0,
+      "y": 316,
+      "width": 1920,
+      "height": 764
+    },
+    "strut": 88,
+    "surface": {
+      "x": 88,
+      "y": 588,
+      "width": 504,
+      "height": 168,
+      "left": 88,
+      "right": 592,
+      "top": 588,
+      "bottom": 756
+    },
+    "count": 31,
+    "hidden": 20,
+    "expanded": true,
+    "zones": [
+      {
+        "x": 8,
+        "y": 684,
+        "width": 72,
+        "height": 72,
+        "left": 8,
+        "right": 80,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 88,
+        "y": 684,
+        "width": 636,
+        "height": 72,
+        "left": 88,
+        "right": 724,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 732,
+        "y": 684,
+        "width": 456,
+        "height": 72,
+        "left": 732,
+        "right": 1188,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 0,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1718.140625,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 193.859375,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1912,
+        "top": 684,
+        "bottom": 756
+      }
+    ],
+    "clients": {
+      "time": 1793087081581,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "nativePanel": {
+      "time": 1793087074779,
+      "id": "{caab4720-e959-4eba-97c2-ac71baa0c73e}",
+      "caption": "",
+      "resourceClass": "sirca-shell",
+      "geometry": {
+        "x": 0,
+        "y": 316,
+        "width": 1920,
+        "height": 764
+      }
+    }
+  },
+  {
+    "label": "scrolled",
+    "time": 1793087085862,
+    "window": {
+      "x": 0,
+      "y": 316,
+      "width": 1920,
+      "height": 764
+    },
+    "strut": 88,
+    "surface": {
+      "x": 88,
+      "y": 636,
+      "width": 504,
+      "height": 120,
+      "left": 88,
+      "right": 592,
+      "top": 636,
+      "bottom": 756
+    },
+    "count": 31,
+    "hidden": 20,
+    "expanded": true,
+    "zones": [
+      {
+        "x": 8,
+        "y": 684,
+        "width": 72,
+        "height": 72,
+        "left": 8,
+        "right": 80,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 88,
+        "y": 684,
+        "width": 636,
+        "height": 72,
+        "left": 88,
+        "right": 724,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 732,
+        "y": 684,
+        "width": 456,
+        "height": 72,
+        "left": 732,
+        "right": 1188,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 0,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1718.140625,
+        "top": 684,
+        "bottom": 756
+      },
+      {
+        "x": 1718.140625,
+        "y": 684,
+        "width": 193.859375,
+        "height": 72,
+        "left": 1718.140625,
+        "right": 1912,
+        "top": 684,
+        "bottom": 756
+      }
+    ],
+    "clients": {
+      "time": 1793087085781,
+      "maximized": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 992
+      },
+      "fullscreen": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "nativePanel": {
+      "time": 1793087074779,
+      "id": "{caab4720-e959-4eba-97c2-ac71baa0c73e}",
+      "caption": "",
+      "resourceClass": "sirca-shell",
+      "geometry": {
+        "x": 0,
+        "y": 316,
+        "width": 1920,
+        "height": 764
+      }
+    }
+  }
+]

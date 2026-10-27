@@ -63,7 +63,7 @@ Dock {
     readonly property real activeSystemViewHeight: openLobe === "search" ? searchResults.y + searchResults.height + (oskaNotificationVisible ? 8 + oskaNotificationHeight : 0) : systemView ? systemView.y + (systemView.implicitHeight || systemView.height) : 0
     readonly property bool mediaAvailable: media.hasTrack
     readonly property int barW: dockW
-    readonly property bool showingCards: openLobe === "" && !searchField.activeFocus && !launcherOpen && !previewShown && cards.count > 0
+    readonly property bool showingCards: openLobe === "" && !searchField.activeFocus && !launcherOpen && !overflowOpen && !previewShown && cards.count > 0
     readonly property Item systemView: showingCards ? cards : openLobe === "search" ? searchResults : openLobe === "clock" ? calendarLoader.item : openLobe === "gear" ? controlLoader.item : openLobe === "notif" ? historyLoader.item : openLobe === "tray" ? trayMenuLoader.item : openLobe === "media" ? mediaLoader.item : openLobe === "disks" ? disksLoader.item : openLobe === "system" ? monitorLoader.item : null
     systemOpen: openLobe !== "" || showingCards
     systemFocus: openLobe !== "" || searchField.activeFocus

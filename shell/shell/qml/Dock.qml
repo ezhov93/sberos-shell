@@ -5,7 +5,6 @@ import QtQuick.Effects
 import org.kde.taskmanager as TaskManager
 import org.kde.kirigami as Kirigami
 import SircaShell
-import Sber.Theme
 import Sber.Controls as Sber
 import "Glass"
 
@@ -32,6 +31,12 @@ Surface {
     readonly property int visibleTaskSlotCount: tasksOverflow ? Math.max(1, compactSlotCapacity - 1) : taskSlotCount
     readonly property int hiddenTaskCount: Math.max(0, taskSlotCount - visibleTaskSlotCount)
     property bool overflowOpen: false
+    readonly property alias applicationSurface: applicationsIsland
+    readonly property bool applicationGridActive: unified && applicationsIsland.gridActive
+    readonly property real applicationRowHeight: applicationGridActive ? applicationsIsland.cellHeight : dockH
+    property int focusedApplicationSlot: 0
+    property bool restoreOverflowFocus: false
+    readonly property int applicationColumns: applicationsIsland.columns
     onHiddenTaskCountChanged: if (hiddenTaskCount === 0)
         overflowOpen = false
     property bool externalMenuOpen: false
@@ -58,6 +63,7 @@ Surface {
     onSystemOpenChanged: if (systemOpen) {
         launcherOpen = false;
         previewShown = false;
+        overflowOpen = false;
     }
 
     readonly property int gap: Config.dockGap
@@ -293,7 +299,9 @@ Surface {
     // lobe-mode preview: centred over its icon, kept inside the dock's straight top edge
     function cellCenter(index) {
         taskViewport.contentX;
-        return row.mapToItem(dock.contentItem, dock.taskCellSize * (index + 1) + dock.taskCellSize / 2, 0).x;
+        const cell = index < 0 ? launchpadCell : taskRepeater.itemAt(index);
+        const item = cell && cell.visible ? cell : overflowSlot;
+        return item.mapToItem(dock.contentItem, item.width / 2, 0).x;
     }
     property real lobeX: Math.max(barRect.x + rad + 14, Math.min(barRect.x + dockW - rad - 14 - lobeWidth, (systemUp ? systemAnchorX : cellCenter(launcherLobe ? -1 : Math.max(0, previewIndex))) - lobeWidth / 2))
     Behavior on lobeX {
@@ -353,27 +361,22 @@ Surface {
             h: maskLobeHeight + Config.bounceRoom
         }
     ] : [], true, 14)
-    inputRegions: unified ? panelZones.map(r => ({
-                x: r.x,
-                y: r.y,
-                w: r.width,
-                h: r.height,
-                r: Math.min(24, dockH / 2)
-            })).concat(lobeH > 1 ? [
+    inputRegions: unified ? panelZones.map((zone, index) => {
+        const r = index === 1 ? applicationsIsland.surfaceRect : zone;
+        return {
+            x: r.x,
+            y: r.y,
+            w: r.width,
+            h: r.height,
+            r: Math.min(24, dockH / 2)
+        };
+    }).concat(lobeH > 1 ? [
         {
             x: lobeX,
             y: systemLobeY,
             w: lobeWidth,
             h: lobeH,
             r: 20
-        }
-    ] : [], overflowPanel.visible ? [
-        {
-            x: overflowPanel.x,
-            y: overflowPanel.y,
-            w: overflowPanel.width,
-            h: overflowPanel.height,
-            r: 16
         }
     ] : []) : null
 
@@ -427,6 +430,7 @@ Surface {
     }
     // right-click: the same lobe, holding actions instead of thumbnails
     function openMenu(row) {
+        if (applicationGridActive) focusApplicationSlot(row + 1);
         const m = tasksModel;
         if (!m || row < 0)
             return;
@@ -510,6 +514,11 @@ Surface {
             m.requestClose(idx);
         previewShown = false;
     }
+    function finishReorder() {
+        if (!tasksModel) return;
+        tasksModel.syncLaunchers();
+        saveLaunchers();
+    }
     function saveLaunchers() {
         Qt.callLater(() => {
             if (tasksModel)
@@ -578,6 +587,7 @@ Surface {
     // click: launcher entry → start it; one window → focus, or minimise when already focused; several → cycle through them
     readonly property bool debug: Qt.application.arguments.indexOf("--debug") >= 0
     function activateCell(row) {
+        overflowOpen = false;
         systemCloseRequested();
         if (debug)
             console.log("activateCell", row);
@@ -676,18 +686,27 @@ Surface {
         if (launcherOpen) {
             warm = true;
             systemCloseRequested();
+            overflowOpen = false;
         }
         if (launcherOpen)
             previewShown = false;
     }
     onOverflowOpenChanged: if (overflowOpen) {
+        restoreOverflowFocus = false;
         launcherOpen = false;
         previewShown = false;
         systemCloseRequested();
+        Qt.callLater(() => dock.focusApplicationSlot(dock.visibleTaskSlotCount));
     }
     // the launcher and a right-click menu take the keyboard and close when they lose it (Surface.popupFocus)
     popupFocus: launcherOpen || overflowOpen || (previewShown && lobeMode === "menu") || systemFocus
     onFocusLost: {
+        if (overflowOpen && previewShown) {
+            previewShown = false;
+            dock.takePopupFocus();
+            Qt.callLater(() => dock.focusApplicationSlot(dock.focusedApplicationSlot));
+            return;
+        }
         launcherOpen = false;
         overflowOpen = false;
         previewShown = false;
@@ -698,6 +717,44 @@ Surface {
         function onLauncherToggleRequested() {
             dock.launcherOpen = !dock.launcherOpen;
         }
+    }
+
+    function focusApplicationSlot(slot) {
+        const last = applicationGridActive ? taskSlotCount - 1 : hiddenTaskCount > 0 ? visibleTaskSlotCount : taskSlotCount - 1;
+        slot = Math.max(0, Math.min(last, slot));
+        const item = !applicationGridActive && hiddenTaskCount > 0 && slot === visibleTaskSlotCount
+            ? overflowSlot : slot === 0 ? launchpadButton : taskRepeater.itemAt(slot - 1);
+        if (!item) return;
+        item.forceActiveFocus(Qt.TabFocusReason);
+        focusedApplicationSlot = slot;
+        if (applicationGridActive) {
+            const cell = slot === 0 ? launchpadCell : taskRepeater.itemAt(slot - 1);
+            taskViewport.contentY = Math.max(0, Math.min(taskViewport.contentHeight - taskViewport.height,
+                Math.max(cell.y + cell.height - taskViewport.height, Math.min(taskViewport.contentY, cell.y))));
+        }
+    }
+    function closeOverflow(keyboard) {
+        restoreOverflowFocus = keyboard;
+        overflowOpen = false;
+    }
+    function gridDropIndex(startSlot, dx, dy) {
+        const column = Math.max(0, Math.min(applicationColumns - 1,
+            startSlot % applicationColumns + Math.round(dx / applicationsIsland.cellWidth)));
+        const line = Math.max(0, Math.floor(startSlot / applicationColumns)
+            + Math.round(dy / applicationsIsland.cellHeight));
+        return Math.max(0, Math.min(taskSlotCount - 2, line * applicationColumns + column - 1));
+    }
+    function handleApplicationKey(event) {
+        if (!applicationGridActive) return;
+        let step = 0;
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_Backtab) step = -1;
+        else if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab) step = 1;
+        else if (event.key === Qt.Key_Up) step = -applicationColumns;
+        else if (event.key === Qt.Key_Down) step = applicationColumns;
+        if (!step) return;
+        const next = (focusedApplicationSlot + step + taskSlotCount) % taskSlotCount;
+        focusApplicationSlot(next);
+        event.accepted = true;
     }
 
     function magFor(i) {
@@ -791,8 +848,24 @@ Surface {
         }
     }
 
+    ApplicationsIsland {
+        id: applicationsIsland
+        visible: dock.unified
+        compactRect: dock.panelZones.length > 1 ? dock.panelZones[1] : dock.taskAreaRect
+        entryCount: dock.taskSlotCount
+        maximumHeight: dock.barRect.y + dock.dockH - dock.gap
+        expanded: dock.overflowOpen
+        onGridActiveChanged: {
+            taskViewport.contentX = 0;
+            taskViewport.contentY = 0;
+            if (!gridActive && dock.restoreOverflowFocus) {
+                dock.restoreOverflowFocus = false;
+                Qt.callLater(() => dock.focusApplicationSlot(dock.visibleTaskSlotCount));
+            }
+        }
+    }
     Repeater {
-        model: dock.unified ? dock.panelZones : []
+        model: dock.unified ? dock.panelZones.filter((zone, index) => index !== 1) : []
         Rectangle {
             required property var modelData
             x: modelData.x
@@ -811,26 +884,6 @@ Surface {
                 radius: 17
                 color: Config.panelInnerSurface
             }
-        }
-    }
-    Rectangle {
-        visible: dock.unified && dock.lobeH > 1
-        x: dock.lobeX
-        y: dock.systemLobeY
-        width: dock.lobeWidth
-        height: dock.lobeH
-        radius: 24
-        color: Config.panelSurface
-        border.width: 1
-        border.color: Config.panelOutline
-        Rectangle {
-            x: 7
-            y: 7
-            width: Math.max(0, parent.width - 14)
-            height: Math.max(0, parent.height - 14)
-            radius: 17
-            color: Config.panelInnerSurface
-            visible: dock.systemInnerSurface
         }
     }
     Rectangle {
@@ -862,18 +915,21 @@ Surface {
     }
     Flickable {
         id: taskViewport
-        x: dock.taskAreaX
-        y: barRect.y - dock.headroom
-        width: dock.taskAreaWidth
-        height: dock.dockH + dock.headroom
-        contentWidth: row.implicitWidth + dock.rowShift
-        contentHeight: height
+        objectName: "application-viewport"
+        x: dock.unified ? applicationsIsland.x + applicationsIsland.inset : dock.taskAreaX
+        y: dock.applicationGridActive ? applicationsIsland.y + applicationsIsland.inset : barRect.y - dock.headroom
+        width: dock.applicationGridActive ? Math.max(1, applicationsIsland.width - 2 * applicationsIsland.inset) : dock.taskAreaWidth
+        height: dock.applicationGridActive ? Math.max(1, applicationsIsland.height - 2 * applicationsIsland.inset) : dock.dockH + dock.headroom
+        contentWidth: dock.applicationGridActive ? width : row.implicitWidth + dock.rowShift
+        contentHeight: dock.applicationGridActive ? row.implicitHeight : height
+        onContentHeightChanged: contentY = Math.min(contentY, Math.max(0, contentHeight - height))
         clip: dock.unified
-        interactive: dock.unified && contentWidth > width && !dock.dragging
+        interactive: dock.unified && !dock.dragging && (dock.applicationGridActive ? contentHeight > height : contentWidth > width)
         boundsBehavior: Flickable.StopAtBounds
-        flickableDirection: Flickable.HorizontalFlick
+        flickableDirection: dock.applicationGridActive ? Flickable.VerticalFlick : Flickable.HorizontalFlick
+        Keys.onPressed: event => dock.handleApplicationKey(event)
         WheelHandler {
-            enabled: taskViewport.interactive
+            enabled: taskViewport.interactive && !dock.applicationGridActive
             target: null
             onWheel: event => {
                 const delta = event.angleDelta.x || event.angleDelta.y;
@@ -881,17 +937,20 @@ Surface {
                 event.accepted = true;
             }
         }
-        Row {
+        Grid {
             id: row
             x: dock.rowShift
-            y: dock.headroom
-            height: dockH
+            y: dock.applicationGridActive ? 0 : dock.headroom
+            columns: dock.applicationGridActive ? dock.applicationColumns : Math.max(1, dock.taskSlotCount + 1)
             spacing: 0
             // launcher glyph
             Item {
-                width: dock.unified ? dock.taskCellSize : Config.dockCell
-                height: dockH
-                readonly property real mag: dock.magFor(-1)
+                id: launchpadCell
+                readonly property real iconSize: dock.applicationGridActive ? 32 : Config.dockIcon * (dock.compactTasks ? dock.compactCellScale : 1)
+                objectName: "application-launchpad"
+                width: dock.applicationGridActive ? applicationsIsland.cellWidth : dock.unified ? dock.taskCellSize : Config.dockCell
+                height: dock.applicationRowHeight
+                readonly property real mag: dock.applicationGridActive ? 1 : dock.magFor(-1)
                 Spotlight {
                     visible: Config.dockSpotlight
                     anchors.fill: parent
@@ -901,7 +960,12 @@ Surface {
                 }
                 // same box as the app icons, so the glyph reads at their size; glows while the launcher is open
                 Sber.Button {
+                    id: launchpadButton
+                    Keys.onPressed: event => dock.handleApplicationKey(event)
+                    horizontalPadding: Math.max(0, (width - launchpadCell.iconSize) / 2)
+                    verticalPadding: Math.max(0, (height - launchpadCell.iconSize) / 2)
                     visible: dock.unified
+                    onActiveFocusChanged: if (activeFocus) dock.focusedApplicationSlot = 0
                     anchors.fill: parent
                     backgroundType: Sber.Widget.Clear
                     Accessible.name: qsTr("Applications")
@@ -910,10 +974,11 @@ Surface {
                         source: "view-app-grid-symbolic"
                         isMask: true
                         color: Config.ink
-                        implicitWidth: Config.dockIcon * (dock.compactTasks ? dock.compactCellScale : 1)
-                        implicitHeight: Config.dockIcon * (dock.compactTasks ? dock.compactCellScale : 1)
+                        implicitWidth: launchpadCell.iconSize
+                        implicitHeight: launchpadCell.iconSize
                     }
                     onClicked: {
+                        dock.overflowOpen = false;
                         if (dock.unified)
                             dock.launchpadRequested();
                         else
@@ -948,17 +1013,35 @@ Surface {
                 }
             }
             Repeater {
+                id: taskRepeater
                 model: dock.tasksModel
                 delegate: Item {
                     id: cell
                     required property int index
                     required property var model
-                    width: index < dock.visibleTaskSlotCount - 1 ? (dock.unified ? dock.taskCellSize : Config.dockCell) : 0
-                    height: dockH
+                    objectName: "application-task-" + index
+                    width: dock.applicationGridActive ? applicationsIsland.cellWidth
+                        : index < dock.visibleTaskSlotCount - 1 ? (dock.unified ? dock.taskCellSize : Config.dockCell) : 0
+                    height: dock.applicationRowHeight
                     visible: width > 0
-                    readonly property real cellScale: dock.compactTasks ? dock.compactCellScale : 1
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: String(model.AppName || model.display || qsTr("Application"))
+                    Accessible.onPressAction: dock.activateCell(index)
+                    onActiveFocusChanged: if (activeFocus) dock.focusedApplicationSlot = index + 1
+                    Keys.onReturnPressed: dock.activateCell(index)
+                    Keys.onEnterPressed: dock.activateCell(index)
+                    Keys.onSpacePressed: event => { dock.activateCell(index); event.accepted = true; }
+                    Keys.onMenuPressed: dock.openMenu(index)
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier)) {
+                            dock.openMenu(index);
+                            event.accepted = true;
+                        } else dock.handleApplicationKey(event);
+                    }
+                    readonly property real cellScale: dock.applicationGridActive ? 32 / Config.dockIcon : dock.compactTasks ? dock.compactCellScale : 1
                     readonly property real iconSize: Config.dockIcon * cellScale
-                    readonly property real mag: dock.magFor(index)
+                    readonly property real mag: dock.applicationGridActive ? 1 : dock.magFor(index)
                     readonly property bool hovered: dock.hoverIndex === index
                     readonly property int windows: model.IsLauncher ? 0 : (model.IsGroupParent ? Math.max(model.ChildCount, 2) : 1)
                     property int activeChild: -1
@@ -1003,7 +1086,9 @@ Surface {
                         if (!dock.tasksModel || model.IsLauncher)
                             return;
                         const gx = dock.x + dock.cellCenter(index) - Config.dockIcon / 2;
-                        const gy = dock.y + dock.dockTopRest + (dock.dockH - Config.dockIcon) / 2;
+                        const slot = cell.visible ? cell : overflowSlot;
+                        const pos = slot.mapToItem(dock.contentItem, 0, slot.height / 2);
+                        const gy = dock.y + pos.y - Config.dockIcon / 2;
                         dock.tasksModel.requestPublishDelegateGeometry(dock.tasksModel.makeModelIndex(index), Qt.rect(Math.round(gx), Math.round(gy), Config.dockIcon, Config.dockIcon), cell);
                     }
                     Timer {
@@ -1178,13 +1263,15 @@ Surface {
 
                     // drag to reorder: the icon follows the pointer; passing half a cell swaps places in the model
                     property real dragX: 0
+                    property real dragY: 0
                     property int dragShift: 0
+                    property int dragStartSlot: 0
                     z: drag.active ? 10 : 0
                     DragHandler {
                         id: drag
                         target: null
                         xAxis.enabled: true
-                        yAxis.enabled: false
+                        yAxis.enabled: dock.applicationGridActive
                         dragThreshold: 8
                         onActiveChanged: {
                             dock.dragging = active;
@@ -1192,15 +1279,25 @@ Surface {
                                 dock.previewShown = false;
                                 openTimer.stop();
                                 cell.dragShift = 0;
+                                cell.dragStartSlot = cell.index + 1;
                             } else {
                                 cell.dragX = 0;
-                                dock.tasksModel.syncLaunchers();
-                                dock.saveLaunchers();
+                                cell.dragY = 0;
+                                dock.finishReorder();
                             }
                         }
                         onTranslationChanged: {
                             if (!active)
                                 return;
+                            if (dock.applicationGridActive) {
+                                const target = dock.gridDropIndex(cell.dragStartSlot, translation.x, translation.y);
+                                if (target !== cell.index) dock.tasksModel.move(cell.index, target);
+                                cell.dragX = translation.x - ((target + 1) % dock.applicationColumns
+                                    - cell.dragStartSlot % dock.applicationColumns) * applicationsIsland.cellWidth;
+                                cell.dragY = translation.y - (Math.floor((target + 1) / dock.applicationColumns)
+                                    - Math.floor(cell.dragStartSlot / dock.applicationColumns)) * applicationsIsland.cellHeight;
+                                return;
+                            }
                             const w = dock.taskCellSize;
                             let x = translation.x - cell.dragShift * w;
                             const n = dock.tasksModel.count;
@@ -1226,14 +1323,14 @@ Surface {
                         anchors.fill: parent
                         anchors.topMargin: 2
                         anchors.bottomMargin: 1
-                        strength: model.IsActive ? 0.36 : (cell.hovered || drag.active ? 0.16 : 0)
+                        strength: model.IsActive ? 0.36 : (cell.hovered || cell.activeFocus || drag.active ? 0.16 : 0)
                     }
                     Item {
                         id: icon
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: cell.dragX + Math.round(cell.wiggleX)
                         anchors.bottom: parent.bottom
-                        anchors.bottomMargin: (dockH - cell.iconSize) / 2 + cell.hop
+                        anchors.bottomMargin: (cell.height - cell.iconSize) / 2 + cell.hop - cell.dragY
                         width: cell.iconSize * (drag.active ? Config.dockMagnify : cell.mag)
                         height: width
                         Behavior on width {
@@ -1251,6 +1348,14 @@ Surface {
                             transformOrigin: Item.TopLeft
                             scale: icon.width / full
                         }
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        radius: 10
+                        color: "transparent"
+                        border.width: cell.activeFocus ? 2 : 0
+                        border.color: Config.accent
                     }
                     // unread badge / progress reported by the app
                     Rectangle {
@@ -1368,11 +1473,18 @@ Surface {
             }
             Item {
                 id: overflowSlot
-                width: dock.hiddenTaskCount > 0 ? dock.taskCellSize : 0
+                objectName: "application-overflow"
+                width: dock.hiddenTaskCount > 0 && !dock.applicationGridActive ? dock.taskCellSize : 0
                 height: dock.dockH
-                visible: width > 0 && !dock.overflowOpen
+                visible: width > 0
                 focus: true
                 activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("%1 more applications").arg(dock.hiddenTaskCount)
+                onActiveFocusChanged: if (activeFocus) dock.focusedApplicationSlot = dock.visibleTaskSlotCount
+                Keys.onReturnPressed: dock.overflowOpen = true
+                Keys.onEnterPressed: dock.overflowOpen = true
+                Keys.onSpacePressed: event => { dock.overflowOpen = true; event.accepted = true; }
                 Rectangle {
                     anchors.centerIn: parent
                     width: Math.min(parent.width - 8, parent.height - 8)
@@ -1392,9 +1504,7 @@ Surface {
                     }
                     TapHandler {
                         onTapped: {
-                            dock.overflowOpen = !dock.overflowOpen;
-                            if (dock.overflowOpen)
-                                Qt.callLater(() => overflowSlot.forceActiveFocus());
+                            dock.overflowOpen = true;
                         }
                     }
                     Accessible.role: Accessible.Button
@@ -1404,67 +1514,36 @@ Surface {
         }
     } // taskViewport
 
-    Item {
-        id: overflowPanel
-        visible: dock.overflowOpen && dock.hiddenTaskCount > 0
-        z: 60
-        x: dock.taskAreaX
-        width: dock.taskAreaWidth
-        readonly property int columns: Math.max(1, Math.floor(width / Math.max(1, dock.taskCellSize)))
-        readonly property int rows: Math.ceil((dock.tasksModel ? dock.tasksModel.count : 0) / columns)
-        readonly property real desiredHeight: rows * dock.dockH + 16
-        height: Math.min(desiredHeight, Math.max(0, dock.barRect.y - dock.gap - 16))
-        y: dock.barRect.y - height - dock.gap
+    Rectangle {
+        visible: dock.unified && dock.lobeH > 1
+        x: dock.lobeX
+        y: dock.systemLobeY
+        width: dock.lobeWidth
+        height: dock.lobeH
+        radius: 24
+        color: Config.panelSurface
+        border.width: 1
+        border.color: Config.panelOutline
         Rectangle {
-            anchors.fill: parent
-            radius: Math.min(16, dock.dockH / 2)
-            color: Theme.Palette.Background.Default.Primary
-            border.width: 1
-            border.color: Config.fg(0.12)
+            x: 7
+            y: 7
+            width: Math.max(0, parent.width - 14)
+            height: Math.max(0, parent.height - 14)
+            radius: 17
+            color: Config.panelInnerSurface
+            visible: dock.systemInnerSurface
         }
-        Flickable {
-            anchors.fill: parent
-            anchors.margins: 8
-            clip: true
-            contentWidth: width
-            contentHeight: overflowGrid.height
-            boundsBehavior: Flickable.StopAtBounds
-            Grid {
-                id: overflowGrid
-                width: parent.width
-                height: implicitHeight
-                columns: overflowPanel.columns
-                spacing: 0
-                Repeater {
-                    model: dock.tasksModel
-                    delegate: Item {
-                        required property int index
-                        required property var model
-                        width: dock.taskCellSize
-                        height: dock.dockH
-                        Kirigami.Icon {
-                            anchors.centerIn: parent
-                            width: Config.dockIcon * (dock.compactTasks ? dock.compactCellScale : 1)
-                            height: width
-                            source: model.decoration
-                            roundToIconSize: false
-                        }
-                        TapHandler {
-                            onTapped: {
-                                dock.activateCell(index);
-                                dock.overflowOpen = false;
-                            }
-                        }
-                        TapHandler {
-                            acceptedButtons: Qt.RightButton
-                            onTapped: {
-                                dock.overflowOpen = false;
-                                dock.openMenu(index);
-                            }
-                        }
-                    }
-                }
-            }
+    }
+    MouseArea {
+        x: applicationsIsland.x
+        y: applicationsIsland.y
+        width: applicationsIsland.width
+        height: applicationsIsland.height
+        visible: dock.overflowOpen && dock.previewShown && dock.lobeMode === "menu"
+        acceptedButtons: Qt.AllButtons
+        onClicked: {
+            dock.previewShown = false;
+            Qt.callLater(() => dock.focusApplicationSlot(dock.focusedApplicationSlot));
         }
     }
 
@@ -1677,9 +1756,13 @@ Surface {
     Shortcut {
         sequence: "Escape"
         onActivated: {
+            if (dock.previewShown) {
+                dock.previewShown = false;
+                if (dock.overflowOpen) Qt.callLater(() => dock.focusApplicationSlot(dock.focusedApplicationSlot));
+                return;
+            }
             if (dock.overflowOpen) {
-                dock.overflowOpen = false;
-                Qt.callLater(() => overflowSlot.forceActiveFocus());
+                dock.closeOverflow(true);
                 return;
             }
             dock.launcherOpen = false;

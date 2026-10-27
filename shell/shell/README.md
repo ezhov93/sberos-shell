@@ -30,8 +30,18 @@ the terminal for desktop actions and pinning. Esc/outside clicks close one child
 level; the existing global launcher action closes all levels or opens the menu
 on the last active screen in unified mode. A development launch does not own Super. The former status-indicator row
 is removed from the panel; only application tray icons remain in that zone. The task model, pinning and app previews are reused from
-Dock. New block and popup backgrounds use UI Kit colours without blur. System popups open upward inside the same layer-shell surface. Long task
-and status areas scroll independently.
+Dock. Applications shrink proportionally and show +N when the compact row overflows.
++N expands the applications island itself upward inside the same native window:
+the existing controls reflow into a grid with up to 12 columns (40×48 cells, 32 px
+icons), with vertical scrolling when needed. Its left and bottom edges stay fixed;
+the other islands, native window geometry and exclusive zone do not move. Escape
+closes a child menu first, then collapses the grid and returns focus to +N. Arrows
+and Tab navigate the grid; Menu/Shift+F10 open the application's menu. Dragging
+between rows preserves the launcher order. `ApplicationsIsland.qml` owns only the
+surface geometry/animation; Dock retains the task model, delegates and actions.
+Block and popup backgrounds follow the mock through Config's panel colours and
+UI Kit controls. System popups open upward inside the same layer-shell surface.
+Long task and status areas scroll independently.
 
 The old `panelLayout` key is ignored. The panel uses `dock…` sizing/visibility/style
 options and fills the screen with `dockFillMargin` side margins.
@@ -168,6 +178,22 @@ Isolated regression tests (no desktop switch, installation or real config writes
 ```sh
 python3 tests/run-settings-tests.py --output /tmp/sber-settings-check
 ```
+
+Applications island regression checks (temporary configuration and private D-Bus):
+
+```sh
+python3 tests/run-applications-island.py --output /tmp/sber-applications-check
+python3 tests/run-applications-island.py --wayland --output /tmp/sber-applications-wayland
+```
+
+The default uses a mock task model offscreen. `--wayland` uses private virtual
+KWin, the real TaskManager, drag/reorder persistence, and maximized/fullscreen
+clients to verify that expansion preserves the work area. Both capture light and
+dark states. `--baseline --binary /path/to/previous/sirca-shell` captures the
+previous implementation. Output directories must be new. The runner terminates
+its own process group; it does not install or switch the desktop.
+See [PANEL-003 evidence](../../docs/tasks/evidence/PANEL-003/expanding-island/README.md)
+for coverage and remaining visual/integration checks.
 
 See [results and screenshots](tests/settings/README.md). Wayland integration,
 real service calls and full accessibility coverage still need desktop verification.

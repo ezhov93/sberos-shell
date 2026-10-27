@@ -1,0 +1,195 @@
+Warning: shell/shell/qml/UnifiedPanel.qml:67:40: Cannot assign binding of type QObject to QQuickItem [incompatible-type]
+    readonly property Item systemView: showingCards ? cards : openLobe === "search" ? searchResults : openLobe === "clock" ? calendarLoader.item : openLobe === "gear" ? controlLoader.item : openLobe === "notif" ? historyLoader.item : openLobe === "tray" ? trayMenuLoader.item : openLobe === "media" ? mediaLoader.item : openLobe === "disks" ? disksLoader.item : openLobe === "system" ? monitorLoader.item : null
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning: shell/shell/qml/UnifiedPanel.qml:110:54: Member "page" not found on type "QObject" [missing-property]
+        if (controlLoader.item && controlLoader.item.page !== undefined)
+                                                     ^^^^
+Warning: shell/shell/qml/UnifiedPanel.qml:190:30: Unqualified access [unqualified]
+        lineHeight: Math.min(panel.dockH - 8, Theme.Sizes.LineHeight.S)
+                             ^^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+// One bottom surface combines the task strip with the former top bar's system functions.
+Warning: shell/shell/qml/Main.qml:15:37: Member "screens" not found on type "QQmlApplication" [missing-property]
+        const have = Qt.application.screens.map(s => s.name);
+                                    ^^^^^^^
+Warning: shell/shell/qml/Main.qml:379:40: Member "screens" not found on type "QQmlApplication" [missing-property]
+        for (const s of Qt.application.screens)
+                                       ^^^^^^^
+Warning: shell/shell/qml/Main.qml:382:31: Member "screens" not found on type "QQmlApplication" [missing-property]
+        return Qt.application.screens[0];
+                              ^^^^^^^
+Warning: shell/shell/qml/Main.qml:44:19: Unqualified access [unqualified]
+            host: main
+                  ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:234:99: Member "screens" not found on type "QQmlApplication" [missing-property]
+        onTriggered: main.openLaunchpad(main.primarySet ? main.primarySet.screen : Qt.application.screens[0])
+                                                                                                  ^^^^^^^
+Warning: shell/shell/qml/Main.qml:253:17: Unqualified access [unqualified]
+                main.activeSberPanel = null;
+                ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:254:17: Unqualified access [unqualified]
+                main.activeSberScreen = null;
+                ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:256:34: Unqualified access [unqualified]
+            onSettingsRequested: main.win("settings").openIt()
+                                 ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:261:22: Unqualified access [unqualified]
+            entries: main.clipboard
+                     ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:262:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:267:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:272:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:284:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:285:48: Unqualified access [unqualified]
+            onRecordRequested: (x, y, w, h) => main.recorder.start(x, y, w, h)
+                                               ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:323:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:324:29: Unqualified access [unqualified]
+            onAction: id => main.desktopAction(id)
+                            ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:404:99: Member "screens" not found on type "QQmlApplication" [missing-property]
+            const p = Screenshot.finish(r.x, r.y, r.width, r.height, s ? s.width : Qt.application.screens[0].width, true, true);
+                                                                                                  ^^^^^^^
+Warning: shell/shell/qml/Main.qml:435:21: Unqualified access [unqualified]
+            screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
+                    ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:435:42: Unqualified access [unqualified]
+            screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
+                                         ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:435:71: Unqualified access [unqualified]
+            screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
+                                                                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:435:89: Unqualified access [unqualified]
+            screen: main.activePanel() ? main.activePanel().screen : (main.primarySet ? main.primarySet.screen : null)
+                                                                                        ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:23: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:52: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                                                   ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:75: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                                                                          ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:110: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                                                                                                             ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:133: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                                                                                                                                    ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:168: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                                                                                                                                                                       ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:436:207: Unqualified access [unqualified]
+            dockHole: main.activePanel() ? Qt.rect(main.activePanel().x + main.activePanel().barRect.x - 12, main.activePanel().y + main.activePanel().barRect.y - 12, main.activePanel().barRect.width + 24, main.activePanel().barRect.height + 24) : Qt.rect(0, 0, 0, 0)
+                                                                                                                                                                                                              ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:437:21: Unqualified access [unqualified]
+            onDone: main.setEditing(false)
+                    ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:439:17: Unqualified access [unqualified]
+                main.setEditing(false);
+                ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:440:17: Unqualified access [unqualified]
+                main.win("settings").openIt();
+                ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:446:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick
+Warning: shell/shell/qml/Main.qml:451:23: Unqualified access [unqualified]
+            onOpened: main.closePopups()
+                      ^^^^
+Info: Set "pragma ComponentBehavior: Bound" in order to use IDs from outer components in nested components.
+pragma ComponentBehavior: Bound
+import QtQuick

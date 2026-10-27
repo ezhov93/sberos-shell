@@ -1,0 +1,20 @@
+[  1%] Running qmlimportscanner for sirca-shell
+[  4%] Built target sirca-shell_copy_res
+[  4%] Copying sirca-shell qml sources into build dir
+[  4%] Built target generate_qmlls_build_ini_file
+[  4%] Built target glass-palette_qmlimportscan
+[  4%] Built target sirca-shell_copy_qml
+[  4%] Built target glass-palette_autogen_timestamp_deps
+[  5%] Built target glass-palette_autogen
+[  7%] Built target glass-palette
+[  7%] Built target sirca-shell_qmlimportscan
+[  7%] Built target sirca-shell_autogen_timestamp_deps
+[  7%] Built target sirca-shell_autogen
+[  9%] Generating meta_types/qt6sirca-shell_metatypes.json
+[  9%] Running rcc for resource sirca-shell_raw_qml_0
+[ 11%] Generating .rcc/qmlcache/sirca-shell_qml_Dock_qml.cpp, .rcc/qmlcache/sirca-shell_qml_Dock_qml.cpp.aotstats
+[ 11%] Generating meta_types/qt6sirca-shell_metatypes.json
+[ 11%] Building CXX object CMakeFiles/sirca-shell.dir/build/.qt/rcc/qrc_sirca-shell_raw_qml_0.cpp.o
+[ 11%] Building CXX object CMakeFiles/sirca-shell.dir/build/.rcc/qmlcache/sirca-shell_qml_Dock_qml.cpp.o
+[ 11%] Linking CXX executable bin/sirca-shell
+[100%] Built target sirca-shell

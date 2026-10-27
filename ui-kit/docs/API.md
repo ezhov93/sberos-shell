@@ -127,6 +127,11 @@ Component.onCompleted: {
 | `Sber.Chip` | `Rectangle`, не AbstractButton | `text`, `idx: string`, `icon`, `closable`, `circle`, `type`, `lineHeight`; `closed(string idx)` |
 | `Sber.Icon` | `Item` | `name: string`, `source: string`, `size: int`, `color: color`, `imageProvider: string` |
 
+Для `Button` с собственным `contentItem` доступны унаследованные `horizontalPadding`
+и `verticalPadding`. Горизонтальный отступ по умолчанию задаёт `BackgroundConfig`;
+при фиксированной узкой кнопке с иконкой потребитель задаёт отступы явно, иначе
+доступная ширина `contentItem` может оказаться меньше размера иконки.
+
 ### События и привязки
 
 У кнопок и переключателей использовать события действий пользователя. `onCheckedChanged` и `onTextChanged` вызываются и при обновлении модели; не сохранять конфигурацию без защиты от обратной записи. Сигнал `toggled()` у Sber.Switch не передаёт аргумент: читать `checked`.

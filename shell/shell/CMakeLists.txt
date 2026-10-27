@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 project(sirca-shell VERSION 0.7.2 LANGUAGES C CXX)   # application version shown by --version and the About page
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
 
 find_package(ECM 6.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -10,6 +9,7 @@ include(KDEInstallDirs)
 include(KDECMakeSettings)
 
 find_package(Qt6 6.6 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 DBus Widgets Concurrent Network)
+qt_standard_project_setup(REQUIRES 6.6)
 option(SIRCA_BUILD_TESTS "Build Sirca Shell's C++ regression tests" OFF)
 if(SIRCA_BUILD_TESTS)
     enable_testing()
@@ -33,8 +33,6 @@ if(PkgConfig_FOUND)
     pkg_check_modules(PipeWire IMPORTED_TARGET libpipewire-0.3)
 endif()
 
-qt_standard_project_setup(REQUIRES 6.6)
-
 # Build the UI Kit separately; no system installation is needed for development.
 set(SBER_QML_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../ui-kit/_build/qml" CACHE PATH
     "QML import root containing the built/installed Sber modules")
@@ -56,6 +54,7 @@ qt_add_qml_module(sirca-shell
         qml/Surface.qml
         qml/ScreenSet.qml
         qml/Dock.qml
+        qml/ApplicationsIsland.qml
         qml/UnifiedPanel.qml
         qml/SberMenu.qml
         qml/SberMenuCatcher.qml

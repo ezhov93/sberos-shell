@@ -55,6 +55,7 @@ qt_add_qml_module(sirca-shell
         qml/ScreenSet.qml
         qml/Dock.qml
         qml/ApplicationsIsland.qml
+        qml/OskaSearchIsland.qml
         qml/UnifiedPanel.qml
         qml/SberMenu.qml
         qml/SberMenuCatcher.qml

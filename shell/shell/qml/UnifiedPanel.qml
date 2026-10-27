@@ -37,6 +37,9 @@ Dock {
     signal showDesktopRequested
     signal sberRequested
     property string openLobe: ""
+    property string previousOpenLobe: ""
+    property bool retainingSearchSurface: false
+    readonly property bool oskaSearchSurfaceActive: openLobe === "search" || retainingSearchSurface || oskaSearchSurface.reveal > 0.001
     property bool greetingVisible: true
     property string requestedPage: "main"
     property real popupAnchor: essentialRect.x + essentialRect.width / 2
@@ -58,20 +61,24 @@ Dock {
             icon: String(oskaFeed.data(index, roles.IconNameRole) || "")
         };
     }
-    readonly property bool oskaNotificationVisible: openLobe === "search" && oskaNotification !== null
+    readonly property bool oskaNotificationVisible: oskaSearchSurfaceActive && oskaNotification !== null
     readonly property real oskaNotificationHeight: oskaNotificationVisible ? 56 : 0
-    readonly property real activeSystemViewHeight: openLobe === "search" ? searchResults.y + searchResults.height + (oskaNotificationVisible ? 8 + oskaNotificationHeight : 0) : systemView ? systemView.y + (systemView.implicitHeight || systemView.height) : 0
+    readonly property real activeSystemViewHeight: oskaSearchSurfaceActive ? searchResults.y + searchResults.height + (oskaNotificationVisible ? 8 + oskaNotificationHeight : 0) : systemView ? systemView.y + (systemView.implicitHeight || systemView.height) : 0
     readonly property bool mediaAvailable: media.hasTrack
     readonly property int barW: dockW
     readonly property bool showingCards: openLobe === "" && !searchField.activeFocus && !launcherOpen && !overflowOpen && !previewShown && cards.count > 0
     readonly property Item systemView: showingCards ? cards : openLobe === "search" ? searchResults : openLobe === "clock" ? calendarLoader.item : openLobe === "gear" ? controlLoader.item : openLobe === "notif" ? historyLoader.item : openLobe === "tray" ? trayMenuLoader.item : openLobe === "media" ? mediaLoader.item : openLobe === "disks" ? disksLoader.item : openLobe === "system" ? monitorLoader.item : null
     systemOpen: openLobe !== "" || showingCards
+    integratedSystemEnabled: oskaSearchSurfaceActive
+    integratedSystemOpen: openLobe === "search"
+    integratedSystemRect: oskaSearchSurface.contentRect
+    integratedSystemSurfaceRect: oskaSearchSurface.surfaceRect
     systemFocus: openLobe !== "" || searchField.activeFocus
     restingKeyboardMode: cards.replyingCount > 0 ? "ondemand" : "none"
     systemContentInset: openLobe === "gear" ? 0 : lobePad
     systemInnerSurface: openLobe !== "gear"
-    systemWidth: openLobe === "search" || openLobe === "notif" || showingCards ? oskaWidth : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * systemContentInset)
-    systemGap: openLobe === "search" ? 16 : openLobe === "notif" || showingCards ? 8 : 0
+    systemWidth: oskaSearchSurfaceActive || openLobe === "notif" || showingCards ? oskaWidth : Math.min(screenW - 48, (systemView ? systemView.implicitWidth || systemView.width : 360) + 2 * systemContentInset)
+    systemGap: oskaSearchSurfaceActive ? 0 : openLobe === "notif" || showingCards ? 8 : 0
     systemHeight: Math.min(Math.max(100, Screen.height - dockH - 2 * gap - 48), (activeSystemViewHeight || 240) + 2 * systemContentInset)
     systemAnchorX: openLobe === "search" || showingCards ? searchField.mapToItem(panel.contentItem, searchField.width / 2, 0).x : popupAnchor
     onSystemCloseRequested: {
@@ -80,6 +87,12 @@ Dock {
         openLobe = "";
     }
     onOpenLobeChanged: {
+        const previous = previousOpenLobe;
+        previousOpenLobe = openLobe;
+        if (openLobe === "search")
+            retainingSearchSurface = false;
+        else if (previous === "search" && openLobe === "" && (oskaSearchSurface.reveal > 0.001 || systemUp))
+            retainingSearchSurface = true;
         if (openLobe !== "") {
             warm = true;
             launcherOpen = false;
@@ -87,6 +100,17 @@ Dock {
         }
         if (openLobe !== "tray")
             nativeTray.openItem = null;
+    }
+    function settleSearchSurface() {
+        if (openLobe !== "search" && oskaSearchSurface.reveal <= 0.001 && !systemUp)
+            retainingSearchSurface = false;
+    }
+    onSystemUpChanged: settleSearchSurface()
+    Connections {
+        target: oskaSearchSurface
+        function onRevealChanged() {
+            panel.settleSearchSurface();
+        }
     }
     function toggle(name, anchor) {
         if (anchor !== undefined)
@@ -408,7 +432,9 @@ Dock {
         x: panel.systemRect.x + panel.systemContentInset
         y: panel.systemRect.y + panel.systemContentInset
         width: Math.max(1, panel.systemWidth - 2 * panel.systemContentInset)
-        height: Math.max(0, panel.systemRect.height - 2 * panel.systemContentInset)
+        height: panel.integratedSystemEnabled
+            ? Math.max(0, Math.min(panel.systemHeight, panel.systemRect.height) - 2 * panel.systemContentInset)
+            : Math.max(0, panel.systemRect.height - 2 * panel.systemContentInset)
         contentWidth: width
         contentHeight: panel.activeSystemViewHeight
         visible: panel.systemUp
@@ -430,7 +456,7 @@ Dock {
             iconLeftInset: searchField.x - panel.lobePad - listMargin
             textLeftInset: searchField.x + 36 - panel.lobePad - listMargin
             textRightInset: searchField.x + searchField.width - panel.lobePad - listMargin
-            visible: panel.openLobe === "search"
+            visible: panel.oskaSearchSurfaceActive
             onActivated: {
                 searchField.text = "";
                 searchField.forceActiveFocus();

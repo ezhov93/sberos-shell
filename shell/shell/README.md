@@ -17,9 +17,11 @@ their own zone. Oska stays at
 the screen centre as neighbouring content changes. The Oska search field stays
 in the centre of the panel. Typing expands
 local KRunner/Milou app and document results above it inside the same surface;
-the results scroll independently. Meta+Space focuses this field. Corporate
-search is excluded from the MVP. The notification button still uses its existing
-view. The Sber button opens a four-entry menu with
+the Oska island itself expands upward and the results scroll independently.
+An active system notification appears above the search field, below the local
+results, without replacing the query or focus. Meta+Space focuses this field.
+Corporate search is excluded from the MVP. The notification button still uses
+its existing view. The Sber button opens a four-entry menu with
 shell settings, the configured terminal, power/session and collapse. The
 applications button opens a full-screen Launchpad on that panel's screen, with
 a blurred desktop background, paged app grid and name-only local search in the

@@ -32,6 +32,7 @@ Surface {
     readonly property int hiddenTaskCount: Math.max(0, taskSlotCount - visibleTaskSlotCount)
     property bool overflowOpen: false
     readonly property alias applicationSurface: applicationsIsland
+    readonly property alias oskaSearchSurface: oskaSearchIsland
     readonly property bool applicationGridActive: unified && applicationsIsland.gridActive
     readonly property real applicationRowHeight: applicationGridActive ? applicationsIsland.cellHeight : dockH
     property int focusedApplicationSlot: 0
@@ -48,6 +49,10 @@ Surface {
     property real systemAnchorX: width / 2
     property int systemContentInset: lobePad
     property bool systemInnerSurface: true
+    property bool integratedSystemEnabled: false
+    property bool integratedSystemOpen: false
+    property rect integratedSystemRect: Qt.rect(0, 0, 0, 0)
+    property rect integratedSystemSurfaceRect: Qt.rect(0, 0, 0, 0)
     signal systemCloseRequested
     signal launchpadRequested
     property real systemGrow: systemOpen ? 1 : 0
@@ -59,7 +64,7 @@ Surface {
     readonly property real lobeWidth: systemUp ? systemWidth : launcherLobe ? launcherFullW + 2 * lobePad : pvW
     readonly property real maskLobeHeight: systemUp ? systemHeight : launcherLobe ? launcherFullH + 2 * lobePad : pvH
     readonly property real systemLobeY: dockTop - systemGap - lobeH
-    readonly property rect systemRect: Qt.rect(lobeX, systemLobeY, systemWidth, lobeH)
+    readonly property rect systemRect: integratedSystemEnabled ? integratedSystemRect : Qt.rect(lobeX, systemLobeY, systemWidth, lobeH)
     onSystemOpenChanged: if (systemOpen) {
         launcherOpen = false;
         previewShown = false;
@@ -363,6 +368,10 @@ Surface {
     ] : [], true, 14)
     inputRegions: unified ? panelZones.map((zone, index) => {
         const r = index === 1 ? applicationsIsland.surfaceRect : zone;
+        if (index === 2 && integratedSystemEnabled)
+            return {x: integratedSystemSurfaceRect.x, y: integratedSystemSurfaceRect.y,
+                w: integratedSystemSurfaceRect.width, h: integratedSystemSurfaceRect.height,
+                r: Math.min(24, dockH / 2)};
         return {
             x: r.x,
             y: r.y,
@@ -370,7 +379,7 @@ Surface {
             h: r.height,
             r: Math.min(24, dockH / 2)
         };
-    }).concat(lobeH > 1 ? [
+    }).concat(lobeH > 1 && !integratedSystemEnabled ? [
         {
             x: lobeX,
             y: systemLobeY,
@@ -864,8 +873,16 @@ Surface {
             }
         }
     }
+    OskaSearchIsland {
+        id: oskaSearchIsland
+        visible: dock.unified
+        compactRect: dock.panelZones.length > 2 ? dock.panelZones[2] : Qt.rect(0, barRect.y, 0, dock.dockH)
+        contentHeight: dock.systemHeight
+        maximumHeight: Math.max(0, dock.barRect.y - dock.gap)
+        expanded: dock.integratedSystemOpen
+    }
     Repeater {
-        model: dock.unified ? dock.panelZones.filter((zone, index) => index !== 1) : []
+        model: dock.unified ? dock.panelZones.filter((zone, index) => index !== 1 && index !== 2) : []
         Rectangle {
             required property var modelData
             x: modelData.x
@@ -1515,7 +1532,7 @@ Surface {
     } // taskViewport
 
     Rectangle {
-        visible: dock.unified && dock.lobeH > 1
+        visible: dock.unified && dock.lobeH > 1 && !dock.integratedSystemEnabled
         x: dock.lobeX
         y: dock.systemLobeY
         width: dock.lobeWidth

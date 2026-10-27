@@ -178,10 +178,11 @@ Plasma и при следующих входах пользователя. `inst
 Скрипт использует установщик с резервными копиями пакетов и отказывается
 перезапускать службу, если в ней не задан SberOS shell plugin.
 
-Для возврата удалить только этот drop-in, выполнить `systemctl --user daemon-reload`
-и `systemctl --user restart plasma-plasmashell.service`. Обычный профиль Plasma
-сохранён. Резервные копии, снимки, состояние службы и ограничения проверки —
-[PLASMA-DEFAULT](../docs/tasks/archive/PLASMA-DEFAULT.md).
+Для возврата к обычной Plasma выполнить `bash plasma-theme/restore-plasma.sh`
+из корня репозитория. Скрипт сохраняет drop-in, удаляет его и перезапускает
+штатную службу; `--dry-run` показывает план без изменений. Обычный профиль
+Plasma сохранён. Резервные копии, снимки, состояние службы и ограничения
+проверки — [PLASMA-DEFAULT](../docs/tasks/archive/PLASMA-DEFAULT.md).
 
 
 ## Выдвижное меню Сбера

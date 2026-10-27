@@ -17,8 +17,8 @@ Item {
     signal activateRequested(int index)
     signal closeRequested(int index)
 
-    readonly property int cardWidth: 248
-    readonly property int cardHeight: 176
+    readonly property int cardWidth: 184
+    readonly property int cardHeight: 132
     readonly property int spacing: 8
     readonly property int contentWidth: Math.max(cardWidth, windows.length * (cardWidth + spacing) - spacing)
 
@@ -80,14 +80,14 @@ Item {
                             x: 1
                             y: 1
                             width: parent.width - 2
-                            height: 140
+                            height: 100
                             windowId: String(card.modelData.windowId || "")
                         }
 
                         Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width
-                            height: 36
+                            height: 32
                             color: root.smartTheme.inner
 
                             Text {

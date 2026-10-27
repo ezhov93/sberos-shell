@@ -276,8 +276,8 @@ PlasmoidItem {
         readonly property int gridHeight: Math.min(availableHeight,
             Math.ceil(tasksModel.count / Math.max(1, Math.floor((gridWidth - 24) / stripMetrics.compactCellSize))) * root.cellSize + 24)
         readonly property int childWidth: root.previewVisible
-            ? Math.min(520, Math.max(272, root.previewWindows.length * 256 + 24)) : 248
-        readonly property int childHeight: root.previewVisible ? 230 : root.contextMenuHeight
+            ? Math.min(420, Math.max(208, root.previewWindows.length * 192 + 16)) : 248
+        readonly property int childHeight: root.previewVisible ? 186 : root.contextMenuHeight
         implicitWidth: root.overflowOpen ? Math.max(gridWidth, root.childOpen ? childWidth : 0) : childWidth
         implicitHeight: root.overflowOpen ? Math.max(gridHeight, root.childOpen ? childHeight : 0) : childHeight
         Layout.minimumWidth: implicitWidth
